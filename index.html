@@ -24,12 +24,54 @@
 <div class="container hero-content"><span class="eyebrow">A place for life's special moments</span><h1>Make room for <em>memories.</em></h1><p class="lede">A welcoming setting for weddings, receptions, birthdays and family celebrations in Rajajinagar, Bengaluru. Explore the venue, picture your event and start planning with a simple enquiry.</p><div class="btn-row"><a class="btn btn-gold" href="booking.html">Check your date <span aria-hidden="true">↗</span></a><a class="btn btn-outline" href="gallery.html">Explore the gallery</a></div><div class="hero-note"><span>Explore the venue</span><span>Plan around your guest count</span><span>Enquire directly</span></div></div>
 <div class="hero-scroll">Scroll to discover</div>
 </section>
-<section class="quick-search"><div class="container"><form class="search-panel" data-enquiry-form action="#">
-<div class="field"><label for="eventType">Celebration</label><select id="eventType" name="Event type" required><option value="">Select event</option><option>Wedding / Reception</option><option>Engagement</option><option>Birthday</option><option>Family function</option><option>Corporate event</option><option>Other celebration</option></select></div>
-<div class="field"><label for="eventDate">Preferred date</label><input id="eventDate" name="Event date" type="date" required></div>
-<div class="field"><label for="guestCount">Expected guests</label><select id="guestCount" name="Guest count" required><option value="">Select range</option><option>Up to 50</option><option>51–100</option><option>101–200</option><option>201–300</option><option>More than 300</option><option>Need guidance</option></select></div>
-<div class="field"><label for="setup">Setup preference</label><select id="setup" name="Setup preference"><option value="">Not decided yet</option><option>Stage-focused celebration</option><option>Dining-focused arrangement</option><option>Formal seating</option><option>Need guidance</option></select></div>
-<button class="btn btn-dark" type="submit">Send enquiry ↗</button><p class="search-note">This starts an enquiry only. Venue availability must be confirmed by the team; dates are not reserved automatically.</p></form></div></section>
+<section class="quick-search" id="booking-enquiry">
+<div class="container">
+<div class="booking-intro reveal">
+  <div class="booking-intro-copy">
+    <span class="eyebrow">Your celebration starts here</span>
+    <h2>Let’s plan your event.</h2>
+    <p>Choose the occasion, preferred date and number of guests. Then press the gold button to send your enquiry on WhatsApp. We’ll guide you through the next step.</p>
+  </div>
+  <div class="booking-steps" aria-label="How your enquiry works">
+    <div class="booking-step"><span>1</span><strong>Share your details</strong></div>
+    <div class="booking-step"><span>2</span><strong>Send on WhatsApp</strong></div>
+    <div class="booking-step"><span>3</span><strong>Team confirms availability</strong></div>
+  </div>
+</div>
+<form class="search-panel reveal" data-enquiry-form action="#">
+  <div class="field">
+    <label for="eventType">01 · Celebration type *</label>
+    <select id="eventType" name="Event type" required>
+      <option value="">Choose an occasion</option>
+      <option>Wedding / Reception</option><option>Engagement</option><option>Birthday</option>
+      <option>Family function</option><option>Corporate event</option><option>Other celebration</option>
+    </select>
+  </div>
+  <div class="field">
+    <label for="eventDate">02 · Preferred date *</label>
+    <input id="eventDate" name="Event date" type="date" required aria-describedby="booking-date-help">
+    <span class="field-hint" id="booking-date-help">Select the date you have in mind.</span>
+  </div>
+  <div class="field">
+    <label for="guestCount">03 · Expected guests *</label>
+    <select id="guestCount" name="Guest count" required>
+      <option value="">Choose a guest range</option><option>Up to 50</option><option>51–100</option>
+      <option>101–200</option><option>201–300</option><option>More than 300</option><option>Need guidance</option>
+    </select>
+  </div>
+  <div class="field">
+    <label for="setup">Optional · Setup preference</label>
+    <select id="setup" name="Setup preference">
+      <option value="">Not decided yet</option><option>Stage-focused celebration</option>
+      <option>Dining-focused arrangement</option><option>Formal seating</option><option>Need guidance</option>
+    </select>
+  </div>
+  <button class="btn btn-booking-primary" type="submit">Continue on WhatsApp <span aria-hidden="true">↗</span></button>
+  <p class="search-note">Your message will be prepared in WhatsApp so you can review and send it. Your date is not booked until our venue team confirms availability.</p>
+  <p class="form-feedback" data-form-feedback role="status" aria-live="polite"></p>
+</form>
+</div>
+</section>
 <section class="section"><div class="container"><div class="section-head reveal"><div><span class="eyebrow">Explore the venue</span><h2>Made for moments<br>worth gathering for.</h2></div><p class="lede">From the first arrival to the final photograph, explore the spaces and styling that help bring a celebration together.</p></div>
 <div class="cards">
 <article class="card reveal"><a href="events.html"><div class="card-media"><img src="assets/images/stage-celebration.jpg" alt="Themed celebration stage and decorative backdrop" loading="lazy" onerror="this.style.display='none'"></div><div class="card-body"><span class="card-meta">01 · Occasions</span><h3>Celebrations, your way</h3><p>Explore event types and discuss the right arrangement for your gathering.</p><span>Explore events ↗</span></div></a></article>
