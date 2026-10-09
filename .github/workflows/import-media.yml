@@ -1,0 +1,51 @@
+name: Import banquet hall media
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "assets/js/gallery-data.js"
+      - "scripts/import_media.py"
+      - ".github/workflows/import-media.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: import-banquet-media-main
+  cancel-in-progress: false
+
+jobs:
+  import-media:
+    if: github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, 'chore: import venue media assets')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+
+      - name: Download supplied media archive
+        run: |
+          curl --fail --location --retry 3 --retry-all-errors \
+            "https://d2ol7oe51mr4n9.cloudfront.net/user_35mtirXTBJzeOp1GtU8b1ixSM0D/629ee2d7-831a-4ad7-b23a-08eee4c92d2a.zip" \
+            --output /tmp/royal-hall-media.zip
+          unzip -t /tmp/royal-hall-media.zip
+
+      - name: Import categorized photo and video files
+        run: python3 scripts/import_media.py /tmp/royal-hall-media.zip
+
+      - name: Commit media assets to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/images assets/videos
+          if git diff --cached --quiet; then
+            echo "All media assets are already committed."
+            exit 0
+          fi
+          git commit -m "chore: import venue media assets"
+          git push origin HEAD:main
