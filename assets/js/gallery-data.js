@@ -1,4 +1,4 @@
-{
+window.ROYAL_HALL_MEDIA = {
   "photos": [
     {
       "src": "assets/images/photo-01.jpg",
@@ -249,3 +249,4 @@
     }
   ]
 }
+;
