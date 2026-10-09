@@ -34,3 +34,6 @@ This is a static enquiry frontend, not a complete reservation backend. The form 
 
 ## Quality checks
 Run `npm run check` to verify page links and manifest media paths. This does not replace production hosting, responsive, accessibility or backend testing.
+
+## Local media build
+The downloadable ZIP distributed with this pull request contains the 35 photos and 7 videos extracted from the user-provided archive, normalized to `assets/images/photo-01.jpeg`…`photo-35.jpeg` and `assets/videos/venue-video-1.mp4`…`venue-video-7.mp4`. Those binaries have not been committed to GitHub; add them before merging/deploying if the remote gallery should display the complete supplied collection.
