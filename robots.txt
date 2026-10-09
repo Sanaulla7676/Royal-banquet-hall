@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://royal-banquet-hall.vercel.app/sitemap.xml
