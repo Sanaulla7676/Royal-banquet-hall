@@ -162,3 +162,13 @@ h1,h2,h3,.display{font-family:var(--serif);letter-spacing:-.035em}
   .hero-content{padding:34px 0 36px}
   .hero h1{font-size:clamp(2.25rem,10vw,2.85rem)}
 }
+
+
+/* Hero size adjustment: increase the compact hero by 10% from its current sizing. */
+.hero{min-height:clamp(330px,47.75vh,501px)}
+@media(max-width:760px){
+  .hero-content{padding:44px 0 48px}
+}
+@media(max-width:420px){
+  .hero-content{padding:37px 0 40px}
+}
