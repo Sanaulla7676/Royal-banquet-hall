@@ -507,3 +507,152 @@ h1,h2,h3,.display,.brand-name strong{font-family:var(--serif)}
 .reviews-map-section{background:#fffdf9}
 @media(max-width:900px){.home-map-grid,.reviews-map-grid{grid-template-columns:1fr}.review-hub-grid{grid-template-columns:1fr 1fr}.map-frame{min-height:300px}}
 @media(max-width:600px){.review-hub-grid{grid-template-columns:1fr}.map-frame,.map-frame iframe{min-height:270px}.site-footer-extras{gap:9px 15px}.home-map-grid,.reviews-map-grid{gap:22px}}
+
+
+/* ================= BLACK + GOLD LUXURY STORY SYSTEM ================= */
+:root{
+  --cream:#090b0f;--paper:#11151b;--ink:#060708;--ink2:#10151b;
+  --gold:#d7af59;--gold2:#e6c87e;--text:#f2eee5;--muted:#b5b0a5;
+  --line:rgba(215,175,89,.2);--serif:"Baskerville Old Face","Book Antiqua",Georgia,serif;
+  --sans:Arial,Helvetica,sans-serif;--shadow:0 24px 70px rgba(0,0,0,.38);
+}
+html{background:#060708;scroll-behavior:smooth;scroll-padding-top:88px}
+body{position:relative;isolation:isolate;background:#060708;color:var(--text);font-family:var(--sans)}
+h1,h2,h3,.display,.brand-name strong{font-family:var(--serif);color:inherit}
+p{color:inherit}
+.lede{color:#c7c1b6}
+.eyebrow{color:var(--gold2)}
+.eyebrow:before{background:linear-gradient(90deg,transparent,var(--gold))}
+.site-header{background:rgba(6,7,8,.84);border-bottom:1px solid rgba(215,175,89,.28);backdrop-filter:blur(20px) saturate(120%)}
+.nav-links a{color:#eae3d5}
+.nav-links a:hover,.nav-links a[aria-current="page"]{color:var(--gold2)}
+.brand-logo{filter:drop-shadow(0 2px 10px rgba(215,175,89,.15))}
+.btn,.btn-booking-primary,.menu-toggle{
+  position:relative;isolation:isolate;overflow:hidden;
+  border-color:rgba(230,200,126,.48);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 7px 24px rgba(0,0,0,.2);
+  transition:transform .3s cubic-bezier(.22,.75,.18,1),box-shadow .35s ease,border-color .35s ease,background-color .35s ease,color .35s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.btn:before,.btn-booking-primary:before,.menu-toggle:before{
+  content:"";position:absolute;z-index:1;pointer-events:none;
+  top:-80%;bottom:-80%;left:-135%;width:66%;
+  transform:rotate(24deg);
+  background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.06) 22%,rgba(255,255,255,.43) 49%,rgba(255,255,255,.09) 70%,transparent 100%);
+  opacity:.78;transition:left .85s cubic-bezier(.2,.7,.1,1);
+}
+.btn:after,.btn-booking-primary:after{
+  content:"";position:absolute;pointer-events:none;inset:1px;border-radius:inherit;
+  border-top:1px solid rgba(255,255,255,.22);opacity:.7;
+}
+.btn:hover:before,.btn:focus-visible:before,.btn-booking-primary:hover:before,.menu-toggle:hover:before{left:155%}
+.btn:hover,.btn-booking-primary:hover{transform:translateY(-2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 12px 32px rgba(0,0,0,.32),0 0 23px rgba(215,175,89,.12)}
+.btn-gold,.btn-booking-primary{
+  background-color:#d7af59;background-image:linear-gradient(135deg,#efd995 0%,#d7af59 48%,#9e762e 100%);
+  background-size:100% 100%;color:#14110a;border-color:rgba(255,227,160,.72);
+}
+.btn-gold:hover,.btn-booking-primary:hover{background-image:linear-gradient(135deg,#fff0b8 0%,#e0be6c 48%,#b78a39 100%);color:#0a0a09}
+.btn-dark{background:linear-gradient(135deg,rgba(34,39,45,.95),rgba(10,12,15,.97));color:#f9f2e3;border-color:rgba(215,175,89,.55)}
+.btn-dark:hover{background:linear-gradient(135deg,#282b30,#111317);color:#fff8e6}
+.btn-outline{color:#f2e9d5;border-color:rgba(230,200,126,.58);background:rgba(12,14,17,.35);backdrop-filter:blur(12px)}
+.btn-outline:hover{color:#fff2cc;background:rgba(215,175,89,.12);border-color:var(--gold2)}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--gold2);outline-offset:4px}
+.section,.section.alt,.section.dark,.quick-search,.amenities-section,.catering-intro,.catering-preview,.qr-contact-section,.contact-map-section,.reviews-hub-section,.reviews-map-section,.home-map-section{
+  color:var(--text);background:rgba(8,10,13,.89);
+  border-top:1px solid rgba(215,175,89,.105);
+  backdrop-filter:blur(14px) saturate(118%);
+}
+.section.dark,.reviews-section,.catering-cta{background:rgba(5,6,8,.94);color:var(--text)}
+.section.alt,.amenities-section,.catering-preview,.reviews-hub-section{background:rgba(15,18,23,.9)}
+.quick-search{background:rgba(8,10,12,.93)}
+.card,.amenity-card,.menu-card,.qr-card,.review-hub-card,.feature,.search-panel,.form-panel,.review-card,.rating-panel,.review-invite{
+  color:var(--text);background:linear-gradient(145deg,rgba(25,29,34,.91),rgba(9,11,14,.94));
+  border:1px solid rgba(215,175,89,.25);
+  box-shadow:0 18px 48px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.035);
+}
+.card:hover,.amenity-card:hover,.review-hub-card:hover{border-color:rgba(230,200,126,.58);box-shadow:0 22px 52px rgba(0,0,0,.33),0 0 24px rgba(215,175,89,.055)}
+.card-body h3,.amenity-card-label h3,.review-hub-card h3,.qr-card h3,.menu-course h3{color:#f4ead2}
+.card-body p,.amenity-card>p,.review-hub-card p,.qr-card p,.menu-course p,.catering-note p{color:#bbb4a8}
+.amenity-card-label,.menu-card-header{background:linear-gradient(120deg,#15191f,#08090b);border-color:rgba(215,175,89,.48)}
+.amenity-card>p{background:rgba(8,10,12,.65)}
+.rating-panel{background:linear-gradient(145deg,#181c22,#0b0d10);color:var(--text)}
+.rating-kicker,.review-source,.review-author small,.review-card .review-quote,.rating-panel p{color:#c4bdae}
+.rating-score,.review-quote,.review-author strong{color:#f6ead0}
+.review-author strong{color:#f6ead0}
+.review-avatar,.review-source-mark,.review-hub-icon{background:#08090b;color:var(--gold2);border:1px solid rgba(215,175,89,.35)}
+.review-invite{background:linear-gradient(150deg,rgba(28,38,32,.96),rgba(8,11,10,.96));color:var(--text)}
+.review-invite h3{color:#fff1ce}
+.review-invite p{color:#c7c1b6}
+.site-footer{background:rgba(4,5,7,.97);color:#e9e0cc;border-top:1px solid rgba(215,175,89,.28)}
+.site-footer .footer-grid h3{color:var(--gold2)}
+.site-footer .footer-grid p,.site-footer .footer-grid a,.footer-bottom{color:#aaa497}
+.site-footer .footer-grid a:hover,.site-footer-extras a{color:var(--gold2)}
+.site-footer-extras{border-color:rgba(215,175,89,.22)}
+.cta-banner{background:linear-gradient(115deg,rgba(27,31,35,.98),rgba(6,7,9,.99));border:1px solid rgba(215,175,89,.32);box-shadow:0 22px 60px rgba(0,0,0,.23)}
+.cta-banner h2{color:#f5e6bd}
+.site-footer a.brand{max-width:max-content}
+.breadcrumb{color:var(--gold2)}
+.gallery-filter,.filter-btn,.faq-question{background:rgba(22,25,30,.88);border-color:rgba(215,175,89,.24);color:#ebe3d4}
+.gallery-filter.is-active,.filter-btn.is-active,.faq-item.open .faq-question{background:#d7af59;color:#17120a;border-color:#e5c779}
+.faq-item,.step,.feature{border-color:rgba(215,175,89,.24)}
+.faq-answer,.field-hint,.search-note,.form-fallback-link{color:#bfb8ab}
+.search-panel .field label,.field label{color:#d4c9b2}
+.field input,.field select,.field textarea,.search-panel .field input,.search-panel .field select,.form-panel input,.form-panel select,.form-panel textarea{
+  background:rgba(5,7,9,.35);color:#f8f0df;border-color:rgba(215,175,89,.26);
+}
+.field input::placeholder,.field textarea::placeholder{color:#8f897d}
+.field select option,.search-panel select option,.form-panel select option{background:#111419;color:#f5eddd}
+.search-panel .field input,.search-panel .field select{border-bottom-color:rgba(215,175,89,.34)}
+.search-panel .field:focus-within input,.search-panel .field:focus-within select{border-bottom-color:var(--gold2)}
+.map-frame{background:#12161b;border-color:rgba(215,175,89,.35)}
+.map-small-note{color:#aaa396}
+.catering-note{background:rgba(21,25,30,.92);border-color:rgba(215,175,89,.29)}
+.catering-note strong{color:#f1e5ca}
+.menu-course{border-color:rgba(215,175,89,.13)}
+.menu-course h3 span{background:rgba(215,175,89,.14);color:#e7ca84;border:1px solid rgba(215,175,89,.19)}
+.menu-course-last{background:rgba(215,175,89,.055)}
+.menu-disclaimer{color:#aaa397}
+.qr-image-link{background:#fffdf7;border-color:rgba(215,175,89,.35)}
+.qr-booking-card{background:linear-gradient(145deg,#1c2d27,#080b09)}
+.reviews-section .section-head h2{color:#e0ba63}
+.review-source-link{color:var(--gold2)}
+.review-source-link:hover{text-decoration-thickness:2px}
+.amenity-footer p,.map-small-note{color:#aaa396}
+.btn-light{background:linear-gradient(135deg,#f3dfac,#c8a45c);color:#14110a;border-color:#f3d795}
+.nav-actions .btn{white-space:nowrap}
+.menu-toggle{background:rgba(20,23,27,.88);color:#f1e3bf}
+
+/* The image remains pinned while dark glass content panels travel over it. */
+.story-backdrop{
+  position:fixed;z-index:-1;inset:0;pointer-events:none;
+  background-image:var(--story-backdrop-image);
+  background-position:center center;background-size:cover;background-repeat:no-repeat;
+  opacity:.16;transform:scale(1.025);filter:saturate(.72) contrast(1.12);
+  will-change:opacity;transition:opacity .5s ease;
+}
+.story-backdrop:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,5,7,.28),rgba(4,5,7,.7) 55%,rgba(4,5,7,.5))}
+.page-hero{position:sticky;top:78px;z-index:0;isolation:isolate;overflow:hidden;background:#08090b}
+.page-hero~.section,.page-hero~section,.page-hero~.catering-cta{position:relative;z-index:2}
+.page-hero+.section,.page-hero+section{margin-top:0}
+.page-hero-media{z-index:-1}
+.page-hero:before{background:linear-gradient(90deg,rgba(5,6,8,.79),rgba(5,6,8,.56) 54%,rgba(5,6,8,.24)),linear-gradient(0deg,rgba(5,6,8,.62),rgba(5,6,8,.04) 60%)}
+.page-hero h1{color:#faefd3;text-shadow:0 6px 30px rgba(0,0,0,.28)}
+.page-hero .lede{color:#ded5c3}
+.page-hero .btn-outline{background:rgba(4,6,8,.35)}
+.story-reveal{backdrop-filter:blur(3px)}
+@media(max-width:760px){
+ .site-header{background:rgba(5,6,8,.95)}
+ .nav-links{background:rgba(8,10,13,.98);border:1px solid rgba(215,175,89,.25);box-shadow:0 18px 40px rgba(0,0,0,.36)}
+ .section,.section.alt,.section.dark,.quick-search,.amenities-section,.catering-intro,.catering-preview,.qr-contact-section,.contact-map-section,.reviews-hub-section,.reviews-map-section,.home-map-section{backdrop-filter:blur(8px)}
+ .page-hero{top:68px;min-height:210px}
+ .story-backdrop{background-position:center 45%;opacity:.12}
+}
+@media(hover:none){
+ .btn:before,.btn-booking-primary:before{left:155%;opacity:.45}
+ .btn:hover,.btn-booking-primary:hover{transform:none}
+}
+@media(prefers-reduced-motion:reduce){
+ html{scroll-behavior:auto}
+ .btn,.btn:before,.btn:after,.btn-booking-primary,.btn-booking-primary:before,.menu-toggle:before,.story-backdrop{transition:none!important;animation:none!important}
+ .page-hero{position:relative;top:auto}
+}
