@@ -1,9 +1,8 @@
-/* Verified public contact details should be checked by the venue owner before launch.
-   This WhatsApp number is retained from the source HTML that was already in the repository.
-   Never place API keys or admin credentials in frontend JavaScript. */
+/* Public venue details shown on the website. Keep this contact in sync with the printed card. */
 window.ROYAL_HALL_CONFIG = {
   whatsappNumber: "919591123456",
-  email: "",
-  locationLabel: "Rajajinagar, Bengaluru",
-  locationUrl: ""
+  email: "info@theroyalhall.in",
+  locationLabel: "The Royal Hall, #722, 3rd Floor, Dr. M.C. Modi Hospital Road, W.O.C. Road, Rajajinagar, Bengaluru 560086",
+  locationUrl: "https://maps.app.goo.gl/KL41TEpJXLMCSc2u5",
+  reviewsUrl: "reviews.html"
 };
