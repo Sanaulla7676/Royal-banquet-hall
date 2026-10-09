@@ -144,3 +144,6 @@ h1,h2,h3,.display{font-family:var(--serif);letter-spacing:-.035em}
   }
   .scroll-progress{display:none}
 }
+
+.form-fallback-link{display:inline-flex;align-items:center;gap:4px;margin:8px 0 0;color:var(--gold2);font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.form-fallback-link:hover{color:var(--ink)}
