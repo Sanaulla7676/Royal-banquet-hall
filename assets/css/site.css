@@ -274,3 +274,11 @@ h1,h2,h3,.display{font-family:var(--serif);letter-spacing:-.035em}
   .search-panel{grid-template-columns:1fr}
   .search-panel .btn-booking-primary{grid-column:auto}
 }
+
+
+.search-panel .field-hint{display:block;margin-top:-4px;color:var(--muted);font-size:.68rem;line-height:1.45}
+.search-panel .btn-booking-primary:active{transform:translateY(0);box-shadow:0 4px 12px rgba(163,123,48,.18)}
+.search-panel .btn-booking-primary:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+@media(max-width:760px){
+  .search-panel .field-hint{font-size:.65rem}
+}
