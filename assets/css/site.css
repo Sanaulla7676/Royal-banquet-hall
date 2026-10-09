@@ -61,3 +61,86 @@ h1,h2,h3,.display{font-family:var(--serif);letter-spacing:-.035em}
  .search-panel{grid-template-columns:1fr}
  .search-panel .btn{grid-column:auto}
 }
+
+
+/* Scroll storytelling: shorter hero, cinematic image reveals, and restrained motion */
+:root{--story-ease:cubic-bezier(.22,.75,.18,1)}
+.hero{
+  /* 70% of the previous 430–650px range = roughly 30% shorter */
+  min-height:clamp(300px,43.4vh,455px);
+  height:auto;
+}
+.hero-content{padding:clamp(42px,5.6vw,78px) 0}
+.hero h1{font-size:clamp(2.6rem,6vw,5rem);line-height:1.03;margin:.28em 0 .22em}
+.hero .lede{max-width:530px;font-size:.94rem;line-height:1.78}
+.hero-note{margin-top:18px}
+.hero-scroll{bottom:12px}
+.quick-search{padding-top:22px}
+
+/* Added by the motion controller only when JavaScript is available. */
+.js-motion-enabled .story-reveal{
+  opacity:0;
+  transform:translate3d(0,26px,0);
+  transition:opacity .78s var(--story-ease),transform .88s var(--story-ease);
+  transition-delay:var(--story-delay,0ms);
+  will-change:opacity,transform;
+}
+.js-motion-enabled .story-reveal.is-story-visible{
+  opacity:1;
+  transform:translate3d(0,0,0);
+  will-change:auto;
+}
+.js-motion-enabled .story-media-reveal{
+  overflow:hidden;
+  clip-path:inset(0 0 10% 0 round 8px);
+  transform:translate3d(0,14px,0);
+  transition:clip-path 1s var(--story-ease),transform .9s var(--story-ease);
+  will-change:clip-path,transform;
+}
+.js-motion-enabled .story-media-reveal.is-story-visible{
+  clip-path:inset(0 0 0 0 round 8px);
+  transform:translate3d(0,0,0);
+  will-change:auto;
+}
+.story-media-reveal img{
+  object-position:center calc(50% + var(--parallax-y,0px));
+  transition:object-position .14s linear,transform 1.15s var(--story-ease);
+}
+.js-motion-enabled .story-media-reveal:not(.is-story-visible) img{transform:scale(1.075)}
+.js-motion-enabled .story-media-reveal.is-story-visible img{transform:scale(1.015)}
+.card:hover .story-media-reveal.is-story-visible img{transform:scale(1.055)}
+.scroll-progress{
+  position:fixed;z-index:5000;top:0;left:0;width:100%;height:2px;
+  background:linear-gradient(90deg,#927039,#e2c783);
+  transform:scaleX(0);transform-origin:left center;pointer-events:none;
+  box-shadow:0 0 12px rgba(198,161,91,.22);
+}
+.btn,.nav-links a,.filter-btn,.gallery-item,.faq-question{ -webkit-tap-highlight-color:transparent }
+:where(a,button,input,select,textarea):focus-visible{
+  outline:2px solid var(--gold2);outline-offset:4px;
+}
+@media(max-width:760px){
+  .hero{min-height:0}
+  .hero-content{padding:44px 0 48px}
+  .hero h1{font-size:clamp(2.5rem,10vw,3.9rem);line-height:1.02}
+  .hero .lede{font-size:.88rem;line-height:1.72}
+  .hero-note{margin-top:14px;gap:9px 14px;font-size:.66rem}
+  .hero-scroll{display:none}
+  .quick-search{padding-top:16px}
+  .js-motion-enabled .story-media-reveal{clip-path:inset(0 0 6% 0 round 6px)}
+  .js-motion-enabled .story-media-reveal.is-story-visible{clip-path:inset(0 round 6px)}
+}
+@media(max-width:420px){
+  .hero-content{padding:38px 0 40px}
+  .hero h1{font-size:clamp(2.3rem,10.5vw,3rem)}
+  .hero .lede{font-size:.84rem}
+}
+@media(prefers-reduced-motion:reduce){
+  .js-motion-enabled .story-reveal,
+  .js-motion-enabled .story-media-reveal,
+  .story-media-reveal img{
+    opacity:1!important;transform:none!important;clip-path:none!important;
+    transition:none!important;will-change:auto!important;object-position:center!important;
+  }
+  .scroll-progress{display:none}
+}
