@@ -26,6 +26,9 @@ Run `python -m http.server 8000` at the project root and open `http://localhost:
 ## Configure before launch
 Edit `assets/js/config.js` with the venue's verified WhatsApp number and/or email. Never place API keys or admin secrets in browser JavaScript. Verify phone, map, hours, capacity, pricing, inclusions and policies before publishing claims.
 
+## Media status
+The gallery manifest is set up for 35 photos and 7 videos, but original binary files are not yet committed to this branch. Upload files matching `assets/js/gallery-data.js` before expecting images/video thumbnails to load. The source repository originally contained no media directories.
+
 ## Booking limitation
 This is a static enquiry frontend, not a complete reservation backend. The form prepares a WhatsApp/email draft after a contact channel is configured. It does not query a live calendar, persist bookings on a server, notify staff automatically, provide an authenticated admin dashboard or take payments. Venue staff must check their authoritative calendar and explicitly confirm every booking. The target production design is described in `docs/SYSTEM-ARCHITECTURE.md`.
 
