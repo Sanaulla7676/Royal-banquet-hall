@@ -7,18 +7,114 @@
       menuButton.setAttribute('aria-expanded', String(open));
       menuButton.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
     });
-    nav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+    const closeMenu = () => {
       nav.classList.remove('open');
       menuButton.setAttribute('aria-expanded', 'false');
-    }));
+      menuButton.setAttribute('aria-label', 'Open menu');
+    };
+    nav.querySelectorAll('a').forEach(a => a.addEventListener('click', closeMenu));
+    document.addEventListener('click', event => {
+      if (nav.classList.contains('open') && !nav.contains(event.target) && !menuButton.contains(event.target)) closeMenu();
+    });
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') closeMenu(); });
+    window.addEventListener('resize', () => { if (window.innerWidth > 760) closeMenu(); }, {passive: true});
   }
-  const revealEls = document.querySelectorAll('.reveal');
-  if ('IntersectionObserver' in window) {
-    const io = new IntersectionObserver(entries => entries.forEach(entry => {
-      if (entry.isIntersecting) { entry.target.classList.add('is-visible'); io.unobserve(entry.target); }
-    }), {threshold: .12});
-    revealEls.forEach(el => io.observe(el));
-  } else revealEls.forEach(el => el.classList.add('is-visible'));
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.documentElement.classList.add('js-motion-enabled');
+
+  // Progressive, scroll-triggered story reveals. No animation library is required.
+  const storySelector = [
+    '.reveal',
+    '.hero-content > .eyebrow',
+    '.hero-content > h1',
+    '.hero-content > .lede',
+    '.hero-content > .btn-row',
+    '.hero-content > .hero-note',
+    '.section-head',
+    '.card',
+    '.card-media',
+    '.split-media',
+    '.feature',
+    '.step',
+    '.cta-banner',
+    '.search-panel',
+    '.gallery-item',
+    '.video-card',
+    '.form-panel',
+    '.page-hero .container'
+  ].join(',');
+  const mediaSelector = '.card-media,.split-media';
+  let storyObserver = null;
+
+  function markStoryVisible(element) {
+    element.classList.add('is-story-visible');
+    if (element.classList.contains('reveal')) element.classList.add('is-visible');
+  }
+
+  function refreshStory(root = document) {
+    if (!root || !root.querySelectorAll) return;
+    const targets = [...root.querySelectorAll(storySelector)];
+    if (root instanceof Element && root.matches(storySelector)) targets.unshift(root);
+    [...new Set(targets)].forEach(element => {
+      const isMedia = element.matches(mediaSelector);
+      element.classList.add(isMedia ? 'story-media-reveal' : 'story-reveal');
+      if (!isMedia && !element.style.getPropertyValue('--story-delay')) {
+        const siblings = [...element.parentElement.children].filter(sibling => sibling.classList.contains('story-reveal'));
+        element.style.setProperty('--story-delay', Math.min(Math.max(0, siblings.indexOf(element)), 5) * 75 + 'ms');
+      }
+      if (reducedMotion || !storyObserver) markStoryVisible(element);
+      else storyObserver.observe(element);
+    });
+  }
+
+  if ('IntersectionObserver' in window && !reducedMotion) {
+    storyObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        markStoryVisible(entry.target);
+        storyObserver.unobserve(entry.target);
+      });
+    }, {threshold: .12, rootMargin: '0px 0px -36px 0px'});
+  }
+
+  // A thin progress line subtly connects the long-form story as the visitor scrolls.
+  let progressBar = null;
+  let scrollFrame = 0;
+  if (!reducedMotion && document.body) {
+    progressBar = document.createElement('div');
+    progressBar.className = 'scroll-progress';
+    progressBar.setAttribute('aria-hidden', 'true');
+    document.body.prepend(progressBar);
+  }
+
+  function updateScrollEffects() {
+    if (progressBar) {
+      const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = scrollable > 0 ? Math.min(1, Math.max(0, window.scrollY / scrollable)) : 0;
+      progressBar.style.transform = 'scaleX(' + progress + ')';
+    }
+    if (!reducedMotion) {
+      document.querySelectorAll('.story-media-reveal img').forEach(image => {
+        const bounds = image.getBoundingClientRect();
+        if (bounds.bottom < -30 || bounds.top > window.innerHeight + 30) return;
+        const distance = (bounds.top + bounds.height / 2 - window.innerHeight / 2) / Math.max(1, window.innerHeight);
+        const offset = Math.max(-12, Math.min(12, -distance * 24));
+        image.style.setProperty('--parallax-y', offset.toFixed(1) + 'px');
+      });
+    }
+    scrollFrame = 0;
+  }
+
+  function requestScrollEffects() {
+    if (scrollFrame) return;
+    scrollFrame = window.requestAnimationFrame(updateScrollEffects);
+  }
+
+  window.RoyalMotion = {refresh: refreshStory};
+  refreshStory(document);
+  updateScrollEffects();
+  window.addEventListener('scroll', requestScrollEffects, {passive: true});
+  window.addEventListener('resize', requestScrollEffects, {passive: true});
 
   document.querySelectorAll('[data-gallery-filter]').forEach(btn => btn.addEventListener('click', () => {
     const wanted = btn.dataset.galleryFilter;
