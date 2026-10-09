@@ -1,19 +1,24 @@
 # Project History
 
-## 2026-10-09 — Multi-page UX and architecture foundation
+## 2026-10-09 — Multi-page UX foundation and supplied media integration
 
-- Inspected the repository's `main` branch. It contained one file named `index (9).html` (123,842 bytes), no asset directories, and no backend.
-- Created branch `feat/production-site-architecture`; existing `main` was left unchanged.
-- Added a new semantic home page and distinct Events, Gallery, Booking, Experience/FAQ and Contact pages.
-- Added shared responsive luxury styles, mobile navigation, scroll reveals, gallery category filtering, keyboard lightbox controls, FAQ toggles, date minimum validation and client-side enquiry preparation.
-- Added a public venue configuration file for contact info and a gallery media manifest.
-- Added UX analysis, user flow diagrams and static vs target production architecture docs.
-- Documented that current booking is an enquiry only. Live availability, persistent booking records, staff notifications, admin panel and payments require backend integrations.
-- Kept media file paths explicit and hid missing sample images gracefully rather than pretending the repository already held the real 85–90+ image collection.
+- Inspected `main`: the repository contained only `index (9).html` (123,842 bytes), with no committed media assets, asset folders or backend.
+- Created development branch `feat/production-site-architecture`, leaving `main` unchanged for review.
+- Added six distinct pages: home, events, gallery, booking enquiry, experience/FAQs and contact.
+- Added shared luxury visual tokens and responsive styles, mobile navigation, categorized gallery filters, image lightbox, video cards, accessible FAQ controls, date validation and enquiry-draft handling.
+- Prepared a manifest of the organised media archive: 35 photo entries across venue/entrance, interiors/seating, stage/décor and celebration details, plus 7 video entries.
+- Added UX analysis, visitor flow, UI architecture and system architecture documentation plus local smoke checks.
+- Current frontend is enquiry-only. No live availability API, authoritative calendar, persistent bookings database, staff notification/admin panel or payments were present or implemented.
+
+## Repository media delivery status
+
+The media manifest records the 35 photos and 7 videos, but binary media files have not yet been committed to this branch. The original `main` repository contained no image/video assets at inspection, and this connected GitHub contents interface did not provide a binary file upload action. Do not merge/deploy expecting the media paths to load until the assets are added.
 
 ## Before production release
 
-1. Upload the 35 images and 7 videos from the previously organized media ZIP, along with all other confirmed photos, to the expected asset folders. Register each in the gallery manifest with accurate category and alt text. This source repo had no media assets at inspection, so the collection cannot appear until uploaded.
-2. Verify real phone, WhatsApp, email, map link, venue capacity, business hours, venue features, and all service claims.
-3. Connect a server-side booking API and authoritative calendar/database before claiming live availability or confirmed online bookings.
-4. Run the local checks and test actual deployment, responsive states, accessibility, forms and media delivery.
+1. Upload the 35 photos and 7 videos from the organised media archive into `assets/images/` and `assets/videos/`, matching the manifest paths; update the manifest with the final filenames and truthful descriptions.
+2. Replace the abbreviated index CSV with the complete supplied photo/video indexes.
+3. Configure verified public WhatsApp/email details in `assets/js/config.js`.
+4. Verify phone, map, hours, safe capacity, event types, service inclusions, pricing and all venue claims.
+5. Add a secure server-side booking API connected to the authoritative venue schedule/database before advertising live availability or confirmed online bookings.
+6. Test deployment, responsive states, accessibility, links, media loading and all enquiry paths.
