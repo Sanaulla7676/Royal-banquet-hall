@@ -41,6 +41,10 @@
     '.gallery-item',
     '.video-card',
     '.form-panel',
+    '.amenity-card',
+    '.rating-panel',
+    '.review-card',
+    '.review-invite',
     '.page-hero .container'
   ].join(',');
   const mediaSelector = '.card-media,.split-media';
