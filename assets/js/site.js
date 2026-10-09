@@ -33,11 +33,10 @@
     btn.setAttribute('aria-expanded', String(open));
   }));
 
-  const date = document.querySelector('[name="eventDate"]');
-  if (date) {
-    const localToday = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0,10);
-    date.min = localToday;
-  }
+  document.querySelectorAll('input[type="date"]').forEach(date => {
+    const now = new Date();
+    date.min = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0,10);
+  });
 
   document.querySelectorAll('form[data-enquiry-form]').forEach(form => {
     form.addEventListener('submit', event => {
