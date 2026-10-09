@@ -16,6 +16,16 @@
 <div class="field full"><button class="btn btn-dark" type="submit">Prepare enquiry ↗</button><p class="search-note">Submitting opens WhatsApp with your enquiry prefilled. Review and send the message to contact the venue; this does not reserve your date.</p><p class="form-feedback" data-form-feedback role="status" aria-live="polite"></p></div>
 </div></form></div></section></main>
 <footer class="site-footer"><div class="container footer-bottom"><span>© The Royal Party Hall</span><a href="contact.html">Contact details</a><a href="gallery.html">Gallery</a></div></footer><script>
-const fromQuery=new URLSearchParams(location.search).get('event');if(fromQuery){const event=document.getElementById('event');if(event)[...event.options].forEach(o=>{if(o.text.toLowerCase()===fromQuery.toLowerCase())event.value=o.value});}
-const saved=sessionStorage.getItem('royalEvent');if(saved&&!fromQuery){const event=document.getElementById('event');if(event)[...event.options].forEach(o=>{if(o.text.toLowerCase()===saved.toLowerCase())event.value=o.value});sessionStorage.removeItem('royalEvent');}
+(() => {
+  const fromQuery = new URLSearchParams(location.search).get('event');
+  const saved = sessionStorage.getItem('royalEvent');
+  const requestedEvent = fromQuery || saved;
+  const eventField = document.getElementById('event');
+  const normalise = value => String(value || '').replace(/\\s+/g, ' ').trim().toLowerCase();
+  if (eventField && requestedEvent) {
+    const match = [...eventField.options].find(option => normalise(option.text) === normalise(requestedEvent));
+    if (match) eventField.value = match.value;
+  }
+  if (saved !== null) sessionStorage.removeItem('royalEvent');
+})();
 </script></body></html>
