@@ -75,15 +75,24 @@
     currentIndex = (index + currentImages.length) % currentImages.length;
     const image = currentImages[currentIndex];
     lightboxImage.src = image.currentSrc || image.src;
-    lightboxImage.alt = image.alt;
+    lightboxImage.alt = image.alt || '';
   }
   function closeLightbox() { if (lightbox) lightbox.classList.remove('open'); document.body.style.overflow = ''; }
+  window.RoyalLightbox = {
+    open(images, index, dialog) {
+      currentImages = images;
+      currentIndex = index;
+      showImage(index);
+      (dialog || lightbox)?.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      (dialog || lightbox)?.querySelector('[data-lb-close]')?.focus();
+    }
+  };
   document.querySelectorAll('[data-lightbox]').forEach(trigger => trigger.addEventListener('click', () => {
+    if (trigger.dataset.galleryCategory !== undefined) return;
     currentImages = [...document.querySelectorAll('[data-lightbox] img')].filter(img => !img.closest('[hidden]'));
     const image = trigger.querySelector('img');
-    currentIndex = Math.max(0, currentImages.indexOf(image));
-    showImage(currentIndex);
-    if (lightbox) { lightbox.classList.add('open'); document.body.style.overflow = 'hidden'; lightbox.querySelector('[data-lb-close]')?.focus(); }
+    window.RoyalLightbox.open(currentImages, Math.max(0, currentImages.indexOf(image)), lightbox);
   }));
   lightbox?.querySelector('[data-lb-close]')?.addEventListener('click', closeLightbox);
   lightbox?.querySelector('[data-lb-prev]')?.addEventListener('click', () => showImage(currentIndex - 1));
