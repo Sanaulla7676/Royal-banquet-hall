@@ -41,6 +41,7 @@
   document.querySelectorAll('form[data-enquiry-form]').forEach(form => {
     form.addEventListener('submit', event => {
       event.preventDefault();
+      if (!form.reportValidity()) return;
       const out = form.querySelector('[data-form-feedback]');
       const data = new FormData(form);
       const settings = window.ROYAL_HALL_CONFIG || {};
