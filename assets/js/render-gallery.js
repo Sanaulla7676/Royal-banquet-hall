@@ -12,10 +12,14 @@
       const imgs=[...target.querySelectorAll('[data-lightbox] img')].filter(img=>!img.closest('[hidden]'));
       window.RoyalLightbox?.open(imgs,imgs.indexOf(btn.querySelector('img')),document.querySelector('.lightbox'));
     }));
+    window.RoyalMotion?.refresh(target);
   }
   renderPhotos(document.getElementById('galleryGrid'));
   renderPhotos(document.getElementById('homeGallery'),12);
   const videos=document.getElementById('videoGallery');
-  if(videos)videos.innerHTML=media.videos.map((v,i)=>'<article class="card video-card reveal"><div class="card-media"><video controls preload="metadata" poster="'+esc(v.poster||'assets/images/hero-venue.jpg')+'"><source src="'+encodeURI(v.src)+'" type="video/mp4">Your browser does not support embedded video.</video></div><div class="card-body"><span class="card-meta">Video '+String(i+1).padStart(2,'0')+'</span><h3>'+esc(v.title||'Venue video')+'</h3><p>'+esc(v.description||'A look at the venue and event details.')+'</p></div></article>').join('');
+  if(videos){
+    videos.innerHTML=media.videos.map((v,i)=>'<article class="card video-card reveal"><div class="card-media"><video controls preload="metadata" poster="'+esc(v.poster||'assets/images/hero-venue.jpg')+'"><source src="'+encodeURI(v.src)+'" type="video/mp4">Your browser does not support embedded video.</video></div><div class="card-body"><span class="card-meta">Video '+String(i+1).padStart(2,'0')+'</span><h3>'+esc(v.title||'Venue video')+'</h3><p>'+esc(v.description||'A look at the venue and event details.')+'</p></div></article>').join('');
+    window.RoyalMotion?.refresh(videos);
+  }
   if('IntersectionObserver'in window){const io=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('is-visible');io.unobserve(e.target);}}),{threshold:.08});document.querySelectorAll('.reveal').forEach(e=>io.observe(e));}
 })();
