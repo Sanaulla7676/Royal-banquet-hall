@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   import-media:
-    if: github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, 'chore: import venue media assets')
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
