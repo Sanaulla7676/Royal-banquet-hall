@@ -1,0 +1,11 @@
+{
+  "name": "royal-party-hall",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Multi-page website for The Royal Party Hall, Rajajinagar, Bengaluru",
+  "scripts": {
+    "serve": "npx serve .",
+    "check": "node scripts/check-site.mjs"
+  },
+  "devDependencies": {}
+}
