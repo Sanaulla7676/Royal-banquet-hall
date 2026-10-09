@@ -153,17 +153,10 @@
       ].join('\n');
       if (number.length >= 10) {
         const whatsappUrl = 'https://wa.me/' + number + '?text=' + encodeURIComponent(message);
-        window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
-        if (out) {
-          out.replaceChildren(document.createTextNode('Your enquiry is prepared. If WhatsApp did not open in a new tab, use this link: '));
-          const fallbackLink = document.createElement('a');
-          fallbackLink.href = whatsappUrl;
-          fallbackLink.target = '_blank';
-          fallbackLink.rel = 'noopener noreferrer';
-          fallbackLink.className = 'form-fallback-link';
-          fallbackLink.textContent = 'Open WhatsApp ↗';
-          out.append(fallbackLink);
-        }
+        if (out) out.textContent = 'Redirecting to WhatsApp…';
+        // Same-tab redirect works with the WhatsApp app on mobile and WhatsApp Web on desktop.
+        window.location.assign(whatsappUrl);
+        return;
       } else {
         const subject = encodeURIComponent('Event enquiry - The Royal Party Hall');
         const body = encodeURIComponent(message);
