@@ -38,6 +38,9 @@ jobs:
       - name: Import categorized photo and video files
         run: python3 scripts/import_media.py /tmp/royal-hall-media.zip
 
+      - name: Verify every media file and local link
+        run: REQUIRE_MEDIA=1 npm run check
+
       - name: Commit media assets to main
         run: |
           git config user.name "github-actions[bot]"
