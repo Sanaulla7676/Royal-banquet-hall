@@ -147,3 +147,18 @@ h1,h2,h3,.display{font-family:var(--serif);letter-spacing:-.035em}
 
 .form-fallback-link{display:inline-flex;align-items:center;gap:4px;margin:8px 0 0;color:var(--gold2);font-weight:700;text-decoration:underline;text-underline-offset:3px}
 .form-fallback-link:hover{color:var(--ink)}
+
+/* Keep the 30% shorter desktop hero true even when its copy wraps onto two lines. */
+.hero-content{padding:clamp(30px,3.5vw,48px) 0}
+.hero h1{font-size:clamp(2.45rem,4.6vw,3.9rem);line-height:1.03;margin:.24em 0 .16em}
+.hero .lede{font-size:.9rem;line-height:1.7}
+.hero .btn-row{margin-top:20px}
+.hero-note{margin-top:14px}
+@media(max-width:760px){
+  .hero-content{padding:40px 0 44px}
+  .hero h1{font-size:clamp(2.45rem,9.3vw,3.7rem)}
+}
+@media(max-width:420px){
+  .hero-content{padding:34px 0 36px}
+  .hero h1{font-size:clamp(2.25rem,10vw,2.85rem)}
+}
