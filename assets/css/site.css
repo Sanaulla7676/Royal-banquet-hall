@@ -172,3 +172,13 @@ h1,h2,h3,.display{font-family:var(--serif);letter-spacing:-.035em}
 @media(max-width:420px){
   .hero-content{padding:37px 0 40px}
 }
+
+
+/* Latest request: increase the current hero size by a further 20%. */
+.hero{min-height:clamp(396px,57.3vh,601px)}
+@media(max-width:760px){
+  .hero-content{padding:48px 0 52px}
+}
+@media(max-width:420px){
+  .hero-content{padding:40px 0 44px}
+}
