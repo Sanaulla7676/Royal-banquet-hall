@@ -20,6 +20,18 @@
     window.addEventListener('resize', () => { if (window.innerWidth > 760) closeMenu(); }, {passive: true});
   }
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Keep the current page's hero photograph pinned behind its content as the story scrolls.
+  // The image is taken from the existing hero, so the homepage art and inner-page image choices stay intact.
+  const storyHeroImage = document.querySelector('.hero-media img, .page-hero-media img');
+  if (storyHeroImage && storyHeroImage.getAttribute('src')) {
+    const backdrop = document.createElement('div');
+    backdrop.className = 'story-backdrop';
+    backdrop.setAttribute('aria-hidden', 'true');
+    backdrop.style.setProperty('--story-backdrop-image', 'url("' + storyHeroImage.src.replace(/"/g, '%22') + '")');
+    document.body.prepend(backdrop);
+  }
+
   document.documentElement.classList.add('js-motion-enabled');
 
   // Progressive, scroll-triggered story reveals. No animation library is required.
