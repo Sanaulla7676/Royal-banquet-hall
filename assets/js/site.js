@@ -148,8 +148,18 @@
         ...[...data.entries()].filter(([key, value]) => String(value).trim()).map(([key, value]) => key + ': ' + value)
       ].join('\n');
       if (number.length >= 10) {
-        window.open('https://wa.me/' + number + '?text=' + encodeURIComponent(message), '_blank', 'noopener,noreferrer');
-        if (out) out.textContent = 'Your enquiry details are ready in WhatsApp. Please send the message to contact the venue.';
+        const whatsappUrl = 'https://wa.me/' + number + '?text=' + encodeURIComponent(message);
+        window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+        if (out) {
+          out.replaceChildren(document.createTextNode('Your enquiry is prepared. If WhatsApp did not open in a new tab, use this link: '));
+          const fallbackLink = document.createElement('a');
+          fallbackLink.href = whatsappUrl;
+          fallbackLink.target = '_blank';
+          fallbackLink.rel = 'noopener noreferrer';
+          fallbackLink.className = 'form-fallback-link';
+          fallbackLink.textContent = 'Open WhatsApp ↗';
+          out.append(fallbackLink);
+        }
       } else {
         const subject = encodeURIComponent('Event enquiry - The Royal Party Hall');
         const body = encodeURIComponent(message);
