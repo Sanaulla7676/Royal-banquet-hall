@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Import the media originals listed in gallery-data.js into their stable website paths."""
 from __future__ import annotations
+import csv
 import json
 import shutil
 import sys
@@ -64,7 +65,43 @@ def main() -> None:
     all_video_paths = [safe_target(item["src"]) for item in videos]
     if any(not path.is_file() for path in all_photo_paths + all_video_paths):
         raise SystemExit("Media import finished but at least one destination is missing.")
-    print(f"Imported {len(photos)} photos, {len(videos)} videos and {len(aliases)} page image aliases.")
+
+    # Generate auditable media indexes directly from the same source of truth.
+    docs = ROOT / "docs"
+    docs.mkdir(parents=True, exist_ok=True)
+    photo_headers = ["Photo No.", "Original Filename", "Primary Category", "Specific Type", "Visual Description", "Tags", "Related-shot Notes", "Website Asset Path"]
+    photo_rows = []
+    category_names = {"venue": "Entrance Exterior Signage", "interior": "Hall Interior Seating", "stage": "Stage Theme Decor", "details": "Cake Dessert Display Tables"}
+    related = {
+        7: "Related display setup also appears in Photos 13 and 25.",
+        13: "Related display setup also appears in Photos 7 and 25.",
+        20: "Similar setup/alternate angle appears in Photo 22.",
+        22: "Similar setup/alternate angle appears in Photo 20.",
+        25: "Related display setup also appears in Photos 7 and 13.",
+        30: "Same venue frontage/arch family as Photos 31 and 35; angle differs.",
+        31: "Same venue frontage/arch family as Photos 30 and 35; angle differs.",
+        35: "Same venue frontage/arch family as Photos 30 and 31; angle differs.",
+    }
+    for idx, photo in enumerate(photos, start=1):
+        primary = "Buffet Catering" if "buffet" in photo.get("tags", "").lower() else category_names.get(photo.get("category"), "Other")
+        photo_rows.append([idx, photo["original"], primary, photo.get("title", ""), photo.get("alt", ""), photo.get("tags", ""), related.get(idx, ""), photo["src"]])
+    with (docs / "PHOTO-MEDIA-INDEX.csv").open("w", newline="", encoding="utf-8-sig") as f:
+        writer = csv.writer(f)
+        writer.writerow(photo_headers)
+        writer.writerows(photo_rows)
+
+    video_headers = ["Video No.", "Original Filename", "Duration (seconds)", "Observed Content", "Tentative Category", "Review Notes", "Website Asset Path"]
+    video_rows = []
+    for idx, video in enumerate(videos, start=1):
+        category = video.get("title", "Venue video")
+        notes = "Based on sampled frames; review the full clip before using specific claims in marketing."
+        video_rows.append([idx, video.get("original", ""), video.get("durationSeconds", ""), video.get("description", ""), category, notes, video["src"]])
+    with (docs / "VIDEO-MEDIA-INDEX.csv").open("w", newline="", encoding="utf-8-sig") as f:
+        writer = csv.writer(f)
+        writer.writerow(video_headers)
+        writer.writerows(video_rows)
+
+    print(f"Imported {len(photos)} photos, {len(videos)} videos, {len(aliases)} page image aliases and refreshed both media indexes.")
 
 if __name__ == "__main__":
     main()
