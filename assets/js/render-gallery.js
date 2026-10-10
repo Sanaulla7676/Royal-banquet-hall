@@ -38,20 +38,25 @@
     const stepAngle = 360 / count;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let activeIndex = 0;
-    let isAnimating = false;
-    let isPaused = false;
-    let pointerStart = null;
-    let dragDelta = 0;
-    let suppressClick = false;
-    let resizeFrame = 0;
-    let autoTimer = null;
+    let totalRotation = 0;
+    let lastBoundary = 0;
+    let lastFrame = 0;
+    let rafId = 0;
+    let dragging = false;
+    let dragStartX = 0;
+    let dragBaseRotation = 0;
+    let tween = null;
+    let inView = !('IntersectionObserver' in window);
     const slots = [];
+
+    stage.tabIndex = 0;
+    stage.setAttribute('aria-roledescription', 'carousel');
 
     for (let i = 0; i < count; i++) {
       const offset = i - centre;
       const card = document.createElement('button');
       card.type = 'button';
-      card.className = 'circle-gallery-card';
+      card.className = 'circle-gallery-card luxury-interactive fx-glare fx-image-zoom';
       card.dataset.circleSlot = String(i);
       card.style.setProperty('--circle-angle', (offset * stepAngle) + 'deg');
       card.setAttribute('aria-label', 'Open featured venue photo');
@@ -69,10 +74,6 @@
       caption.className = 'circle-gallery-caption';
       card.append(image, indexLabel, caption);
       card.addEventListener('click', () => {
-        if (suppressClick) {
-          suppressClick = false;
-          return;
-        }
         const imgs = [...ring.querySelectorAll('.circle-gallery-card img')];
         const selected = imgs.indexOf(image);
         if (selected >= 0) window.RoyalLightbox?.open(imgs, selected, document.querySelector('.lightbox'));
@@ -101,112 +102,101 @@
       stage.setAttribute('aria-label', 'Photo ' + (activeIndex + 1) + ' of ' + photos.length + ': ' + (activePhoto.title || 'Venue photo'));
     }
 
-    function settleBy(steps) {
-      if (isAnimating) return;
-      steps = Math.max(-3, Math.min(3, Math.round(steps)));
-      if (!steps) {
-        ring.style.transition = 'transform .4s cubic-bezier(.19,.78,.2,1)';
-        ring.style.transform = 'rotateY(0deg)';
-        window.setTimeout(() => { ring.style.transition = ''; }, 430);
-        return;
-      }
-      isAnimating = true;
-      root.classList.add('is-changing');
-      ring.style.transition = 'transform .78s cubic-bezier(.19,.78,.2,1)';
-      ring.style.transform = 'rotateY(' + (-steps * stepAngle) + 'deg)';
-      window.setTimeout(() => {
-        activeIndex = modulo(activeIndex + steps, photos.length);
+    // Re-index by one card-width each time the orbit crosses a card, so rotation stays seamless.
+    function syncOrbit() {
+      const boundary = Math.trunc(totalRotation / stepAngle);
+      while (boundary > lastBoundary) {
+        activeIndex = modulo(activeIndex - 1, photos.length);
+        lastBoundary++;
         refreshCards();
-        ring.style.transition = 'none';
-        ring.style.transform = 'rotateY(0deg)';
-        ring.getBoundingClientRect();
-        ring.style.transition = '';
-        root.classList.remove('is-changing');
-        isAnimating = false;
-      }, 810);
+      }
+      while (boundary < lastBoundary) {
+        activeIndex = modulo(activeIndex + 1, photos.length);
+        lastBoundary--;
+        refreshCards();
+      }
+      const visibleRotation = totalRotation - lastBoundary * stepAngle;
+      ring.style.transform = 'rotateY(' + visibleRotation.toFixed(3) + 'deg)';
     }
 
-    function next() { settleBy(1); }
-    function previous() { settleBy(-1); }
+    function tweenTo(target, duration = 680) {
+      tween = {from:totalRotation,to:target,start:performance.now(),duration};
+    }
 
-    root.querySelector('[data-circle-next]')?.addEventListener('click', next);
-    root.querySelector('[data-circle-prev]')?.addEventListener('click', previous);
+    function move(direction) {
+      if (dragging) return;
+      const target = totalRotation + (direction * stepAngle);
+      tweenTo(target, 690);
+    }
+    root.querySelector('[data-circle-next]')?.addEventListener('click', () => move(1));
+    root.querySelector('[data-circle-prev]')?.addEventListener('click', () => move(-1));
     stage.addEventListener('keydown', event => {
-      if (event.key === 'ArrowRight') { event.preventDefault(); next(); }
-      if (event.key === 'ArrowLeft') { event.preventDefault(); previous(); }
+      if (event.key === 'ArrowRight') { event.preventDefault(); move(1); }
+      if (event.key === 'ArrowLeft') { event.preventDefault(); move(-1); }
     });
 
-    // Drag/swipe rotates the ring and snaps to the nearest photo when released.
     stage.addEventListener('pointerdown', event => {
       if (event.target.closest('.circle-gallery-control')) return;
-      pointerStart = {x:event.clientX, y:event.clientY};
-      dragDelta = 0;
-      isPaused = true;
+      dragging = true;
+      tween = null;
+      dragStartX = event.clientX;
+      dragBaseRotation = totalRotation;
       root.classList.add('is-dragging');
     });
     stage.addEventListener('pointermove', event => {
-      if (!pointerStart || isAnimating) return;
-      const dx = event.clientX - pointerStart.x;
-      const dy = event.clientY - pointerStart.y;
-      if (Math.abs(dx) > Math.abs(dy) + 3) {
-        dragDelta = dx;
-        if (Math.abs(dx) > 8) {
-          root.classList.add('is-dragging');
-          ring.style.transition = 'none';
-          ring.style.transform = 'rotateY(' + (-dx * stepAngle / 95) + 'deg)';
-        }
-      }
+      if (!dragging) return;
+      totalRotation = dragBaseRotation + (event.clientX - dragStartX) * .22;
+      syncOrbit();
     });
     const endDrag = () => {
-      if (!pointerStart) return;
-      const steps = Math.round(-dragDelta / 95);
-      if (Math.abs(dragDelta) > 18) {
-        suppressClick = true;
-        window.setTimeout(() => { suppressClick = false; }, 250);
-      }
-      pointerStart = null;
+      if (!dragging) return;
+      dragging = false;
       root.classList.remove('is-dragging');
-      if (Math.abs(dragDelta) > 34) settleBy(steps || (dragDelta < 0 ? 1 : -1));
-      else {
-        ring.style.transition = 'transform .4s cubic-bezier(.19,.78,.2,1)';
-        ring.style.transform = 'rotateY(0deg)';
-        window.setTimeout(() => { ring.style.transition = ''; }, 430);
-      }
-      dragDelta = 0;
-      if (!root.matches(':hover') && !root.contains(document.activeElement)) isPaused = false;
+      const snapped = Math.round(totalRotation / stepAngle) * stepAngle;
+      tweenTo(snapped, 360);
     };
     window.addEventListener('pointerup', endDrag);
     window.addEventListener('pointercancel', endDrag);
 
-    root.addEventListener('mouseenter', () => { isPaused = true; });
-    root.addEventListener('mouseleave', () => { if (!pointerStart && !root.contains(document.activeElement)) isPaused = false; });
-    root.addEventListener('focusin', () => { isPaused = true; });
-    root.addEventListener('focusout', event => {
-      if (!root.contains(event.relatedTarget) && !root.matches(':hover')) isPaused = false;
-    });
-
     function updateRadius() {
-      if (resizeFrame) cancelAnimationFrame(resizeFrame);
-      resizeFrame = requestAnimationFrame(() => {
-        const width = Math.max(280, stage.clientWidth);
-        const radius = Math.min(width * (width < 560 ? .39 : .42), 455);
-        slots.forEach(slot => slot.card.style.setProperty('--circle-radius', radius.toFixed(1) + 'px'));
-      });
+      const width = Math.max(280, stage.clientWidth);
+      const radius = Math.min(width * (width < 560 ? .39 : .42), 455);
+      slots.forEach(slot => slot.card.style.setProperty('--circle-radius', radius.toFixed(1) + 'px'));
     }
     window.addEventListener('resize', updateRadius, {passive:true});
+
+    // Auto-spin forever while visible. Respect reduced-motion and browser-tab visibility.
+    function tick(now) {
+      if (!lastFrame) lastFrame = now;
+      const delta = Math.min(40, Math.max(0, now - lastFrame));
+      lastFrame = now;
+      if (!reducedMotion && inView && !document.hidden && !dragging) {
+        if (tween) {
+          const progress = Math.min(1, (now - tween.start) / tween.duration);
+          const eased = progress < .5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+          totalRotation = tween.from + (tween.to - tween.from) * eased;
+          if (progress >= 1) tween = null;
+        } else {
+          totalRotation += delta * .012; // 12 degrees per second; continuous loop.
+        }
+        syncOrbit();
+      }
+      rafId = requestAnimationFrame(tick);
+    }
+
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver(entries => {
+        inView = Boolean(entries[0]?.isIntersecting);
+      }, {threshold:.06,rootMargin:'80px 0px 80px 0px'});
+      observer.observe(root);
+    }
     refreshCards();
     updateRadius();
-
-    if (!reducedMotion) {
-      autoTimer = window.setInterval(() => {
-        if (!isPaused && !isAnimating && !document.hidden) next();
-      }, 5200);
-      document.addEventListener('visibilitychange', () => { if (document.hidden) isPaused = true; });
-    }
-    // Keep the carousel lightweight when it is not mounted to the viewport.
+    syncOrbit();
+    if (!reducedMotion) rafId = requestAnimationFrame(tick);
     root.dataset.carouselInitialized = 'true';
+    root.dataset.carouselMode = reducedMotion ? 'manual-reduced-motion' : 'continuous-loop';
   }
-
   renderCircleGallery();
 
 })();
