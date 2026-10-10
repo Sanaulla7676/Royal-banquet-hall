@@ -45,6 +45,7 @@
     let dragging = false;
     let dragStartX = 0;
     let dragBaseRotation = 0;
+    let suppressClick = false;
     let tween = null;
     let inView = !('IntersectionObserver' in window);
     const slots = [];
@@ -74,6 +75,7 @@
       caption.className = 'circle-gallery-caption';
       card.append(image, indexLabel, caption);
       card.addEventListener('click', () => {
+        if (suppressClick) { suppressClick = false; return; }
         const imgs = [...ring.querySelectorAll('.circle-gallery-card img')];
         const selected = imgs.indexOf(image);
         if (selected >= 0) window.RoyalLightbox?.open(imgs, selected, document.querySelector('.lightbox'));
@@ -152,6 +154,10 @@
       if (!dragging) return;
       dragging = false;
       root.classList.remove('is-dragging');
+      if (Math.abs(totalRotation - dragBaseRotation) > 5) {
+        suppressClick = true;
+        window.setTimeout(() => { suppressClick = false; }, 280);
+      }
       const snapped = Math.round(totalRotation / stepAngle) * stepAngle;
       tweenTo(snapped, 360);
     };
@@ -170,25 +176,30 @@
       if (!lastFrame) lastFrame = now;
       const delta = Math.min(40, Math.max(0, now - lastFrame));
       lastFrame = now;
-      if (!reducedMotion && inView && !document.hidden && !dragging) {
+      if (inView && !document.hidden && !dragging) {
         if (tween) {
           const progress = Math.min(1, (now - tween.start) / tween.duration);
           const eased = progress < .5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
           totalRotation = tween.from + (tween.to - tween.from) * eased;
           if (progress >= 1) tween = null;
-        } else {
+        } else if (!reducedMotion) {
           totalRotation += delta * .012; // 12 degrees per second; continuous loop.
         }
         syncOrbit();
       }
-      rafId = requestAnimationFrame(tick);
+      if (inView || dragging || tween) rafId = requestAnimationFrame(tick);
+      else { rafId = 0; lastFrame = 0; }
     }
 
     if ('IntersectionObserver' in window) {
       const observer = new IntersectionObserver(entries => {
         inView = Boolean(entries[0]?.isIntersecting);
+        if (inView && !reducedMotion && !rafId) { lastFrame = 0; rafId = requestAnimationFrame(tick); }
       }, {threshold:.06,rootMargin:'80px 0px 80px 0px'});
       observer.observe(root);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && inView && !reducedMotion && !rafId) { lastFrame = 0; rafId = requestAnimationFrame(tick); }
+      });
     }
     refreshCards();
     updateRadius();
