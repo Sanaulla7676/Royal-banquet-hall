@@ -676,3 +676,114 @@ body.intro-pending> :not(#site-intro){visibility:hidden!important}
 @media(prefers-reduced-motion:reduce){
   .site-intro,.site-intro.is-hidden{transition:opacity .16s linear,visibility .16s step-end}
 }
+
+
+/* ================= OBSIDIAN + GOLD BACKDROP / REPEATING LIGHT SWEEP ================= */
+:root{
+  --luxury-bg:url("https://d2ol7oe51mr4n9.cloudfront.net/user_35mtirXTBJzeOp1GtU8b1ixSM0D/9bae3d91-52af-4301-95e4-f8535efca82e.jpg");
+  --gold-white:#fff7df;
+  --gold-highlight:#fffdf5;
+}
+html{background:#060709}
+body{background:transparent!important;color:#fff8e9}
+
+/* One persistent image layer across every page; all site content remains in the foreground. */
+body:before{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background-image:linear-gradient(180deg,rgba(4,5,7,.38),rgba(4,5,7,.52) 48%,rgba(4,5,7,.62)),var(--luxury-bg);
+  background-size:cover;background-position:center 43%;background-repeat:no-repeat;
+  opacity:1;transform:translateZ(0);will-change:transform;
+}
+.site-header{background:rgba(5,6,8,.72)!important;backdrop-filter:blur(19px) saturate(125%)}
+.section,.section.alt,.section.dark,.quick-search,.amenities-section,.catering-intro,.catering-preview,.qr-contact-section,.contact-map-section,.reviews-hub-section,.reviews-map-section,.home-map-section{
+  color:#fff6e5!important;background:rgba(7,9,12,.55)!important;
+  border-top:1px solid rgba(225,184,88,.22);
+  backdrop-filter:blur(13px) saturate(125%);
+}
+.section.alt,.amenities-section,.catering-preview,.reviews-hub-section{background:rgba(13,16,21,.62)!important}
+.section.dark,.reviews-section,.catering-cta{background:rgba(4,5,7,.68)!important;color:#fff6e5}
+.quick-search{background:rgba(5,7,9,.66)!important}
+.card,.amenity-card,.menu-card,.qr-card,.review-hub-card,.feature,.search-panel,.form-panel,.review-card,.rating-panel,.review-invite{
+  color:#fff6e5;background:linear-gradient(145deg,rgba(23,27,33,.79),rgba(5,7,10,.83));
+  border:1px solid rgba(225,184,88,.42);
+  box-shadow:0 18px 48px rgba(0,0,0,.33),inset 0 1px 0 rgba(255,255,255,.075);
+}
+.amenity-card-label,.menu-card-header{background:linear-gradient(112deg,rgba(26,28,32,.94),rgba(5,6,8,.96));border-color:rgba(230,197,116,.75)}
+.amenity-card>p{background:rgba(6,8,10,.7)}
+.rating-panel{background:linear-gradient(145deg,rgba(22,26,32,.93),rgba(7,9,12,.95));color:#fff6e5}
+.review-invite{background:linear-gradient(145deg,rgba(31,35,31,.88),rgba(5,8,8,.91))}
+.cta-banner{background:linear-gradient(115deg,rgba(25,28,32,.86),rgba(4,5,7,.93));border:1px solid rgba(230,197,116,.55)}
+.site-footer{background:rgba(3,4,6,.9)!important;color:#fff4db;border-top:1px solid rgba(225,184,88,.4)}
+.page-hero{background:rgba(4,5,7,.24)!important}
+.page-hero-media img{filter:brightness(.52) saturate(.9) contrast(1.08)}
+.page-hero:before{background:linear-gradient(90deg,rgba(4,5,7,.73),rgba(4,5,7,.43) 55%,rgba(4,5,7,.19)),linear-gradient(0deg,rgba(4,5,7,.54),rgba(4,5,7,.02) 58%)}
+.hero:after{background:linear-gradient(90deg,rgba(4,5,7,.71),rgba(4,5,7,.42) 50%,rgba(4,5,7,.12)),linear-gradient(0deg,rgba(4,5,7,.24),transparent 58%)}
+.search-panel,.form-panel{backdrop-filter:blur(19px) saturate(125%)}
+.search-panel .field label,.field label{color:#f4dfad!important;font-weight:800}
+.search-panel .field input,.search-panel .field select,.field input,.field select,.field textarea{
+  color:#fff9ed!important;border-color:rgba(230,197,116,.48)!important;
+}
+.field input::placeholder,.field textarea::placeholder{color:#bcb3a3!important}
+.search-panel .field select option,.field select option{background:#111318!important;color:#fff9ed!important}
+.search-panel .search-note,.form-panel .search-note,.search-note{color:#e0d5c0!important}
+.section-head .lede,.lede,.card-body p,.amenity-card>p,.review-hub-card p,.qr-card p,.menu-course p{color:#e0d9ca}
+.eyebrow,.hero h1 em,.page-hero .eyebrow,.card-meta,.amenity-number,.amenity-arrow,.menu-tier,.review-source-link,.review-score,.review-invite-icon,.qr-phone-link,.site-footer .footer-grid h3,.site-footer-extras a,.hero-scroll{
+  color:#f0ce7a!important;
+  animation:luxury-gold-glow 3.6s ease-in-out infinite;
+}
+.hero h1 em,.page-hero h1 em,.reviews-section .section-head h2,.catering-preview-copy h2{
+  color:#f0ce7a;
+  text-shadow:0 0 12px rgba(240,206,122,.16);
+}
+
+/* White silk-like reflection sweeps across all buttons in a continuous, offset loop. */
+.btn:before,.btn-booking-primary:before,.menu-toggle:before{
+  left:-145%;width:62%;opacity:.92;
+  animation:luxury-button-sheen 5.2s cubic-bezier(.43,0,.23,1) infinite;
+  transition:none;
+}
+.btn:after,.btn-booking-primary:after{
+  border-top:1px solid rgba(255,255,255,.46);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+}
+.btn-gold,.btn-booking-primary,.btn-light{
+  background-image:linear-gradient(115deg,#e5c274 0%,#f4de9f 24%,#c39338 52%,#f5d98c 76%,#b6812c 100%)!important;
+  background-size:220% 100%!important;color:#171107!important;
+  border-color:rgba(255,242,200,.9)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.54),0 8px 28px rgba(0,0,0,.28),0 0 18px rgba(224,180,76,.13);
+}
+.btn-gold:before,.btn-booking-primary:before,.btn-light:before{background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.12) 18%,rgba(255,255,255,.84) 47%,rgba(255,255,255,.22) 68%,transparent 100%)}
+.btn-outline:before,.btn-dark:before{background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.07) 18%,rgba(255,255,255,.62) 48%,rgba(255,255,255,.13) 68%,transparent 100%)}
+.btn:hover,.btn-booking-primary:hover{filter:brightness(1.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 13px 35px rgba(0,0,0,.37),0 0 28px rgba(230,197,116,.22)}
+.btn:nth-child(2):before{animation-delay:1.1s}
+.btn:nth-child(3):before{animation-delay:2.2s}
+.btn:nth-child(4):before{animation-delay:3.3s}
+.nav-actions .btn:before{animation-delay:.65s}
+.search-panel .btn-booking-primary:before{animation-delay:.8s}
+.menu-card-footer .btn:before{animation-delay:1.5s}
+.footer-links a{transition:color .25s ease,text-shadow .25s ease}
+.footer-links a:hover{color:#fff2c9!important;text-shadow:0 0 11px rgba(255,247,223,.36)}
+@keyframes luxury-button-sheen{
+  0%,8%{left:-145%}
+  34%{left:160%}
+  100%{left:160%}
+}
+@keyframes luxury-gold-glow{
+  0%,100%{text-shadow:0 0 1px rgba(255,255,255,.02),0 0 7px rgba(230,197,116,.07);filter:brightness(1)}
+  48%{text-shadow:0 0 2px rgba(255,255,255,.45),0 0 11px rgba(255,248,222,.3),0 0 21px rgba(230,197,116,.25);filter:brightness(1.2)}
+}
+
+/* Guest capacity bands match the venue's requested booking ranges. */
+#guestCount,#guests{font-weight:700}
+.search-panel .btn-booking-primary{min-height:56px;font-weight:900;letter-spacing:.015em}
+@media(max-width:760px){
+  body:before{background-position:center 45%;background-size:cover}
+  .section,.section.alt,.section.dark,.quick-search,.amenities-section,.catering-intro,.catering-preview,.qr-contact-section,.contact-map-section,.reviews-hub-section,.reviews-map-section,.home-map-section{backdrop-filter:blur(8px) saturate(115%)}
+  .btn:before,.btn-booking-primary:before,.menu-toggle:before{animation-duration:6.2s}
+}
+@media(prefers-reduced-motion:reduce){
+  .btn:before,.btn-booking-primary:before,.menu-toggle:before,.eyebrow,.hero h1 em,.page-hero .eyebrow,.card-meta,.amenity-number,.amenity-arrow,.menu-tier,.review-source-link,.review-score,.review-invite-icon,.qr-phone-link,.site-footer .footer-grid h3,.site-footer-extras a,.hero-scroll{
+    animation:none!important;
+  }
+  .btn:before,.btn-booking-primary:before,.menu-toggle:before{display:none}
+}
