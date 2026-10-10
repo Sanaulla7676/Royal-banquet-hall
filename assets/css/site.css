@@ -1023,3 +1023,91 @@ body:after{display:none!important}
 @media(prefers-reduced-motion:reduce){
   .circle-gallery-ring,.circle-gallery-card,.circle-gallery-control{transition:none!important}
 }
+
+
+/* Fix: one shared floral backdrop only. Hero photography stays inside its hero and scrolls away. */
+body{background:transparent!important}
+body:before{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background-color:#020203;
+  background-image:linear-gradient(90deg,rgba(0,0,0,.015),rgba(0,0,0,.02)),url("https://d2ol7oe51mr4n9.cloudfront.net/user_35mtirXTBJzeOp1GtU8b1ixSM0D/bd5156e5-4702-4ea1-8af6-958e12655619.jpg");
+  background-repeat:no-repeat,no-repeat;
+  background-size:100% 100%,auto 100%;
+  background-position:center,right center;
+  opacity:1;transform:translateZ(0);
+}
+body:after{display:none!important}
+.page-hero{position:relative!important;top:auto!important;z-index:1!important;isolation:isolate;overflow:hidden}
+.page-hero~.section,.page-hero~section,.page-hero~.catering-cta{position:relative;z-index:1}
+.story-backdrop{display:none!important}
+
+/* Five coordinated React Bits-inspired effect families used throughout all pages:
+   1 ShinyText, 2 Glare Hover, 3 AnimatedContent/ScrollReveal,
+   4 soft floating motion, 5 gold edge pulse / image zoom. */
+.rb-shiny-text,.fx-shiny{
+  background-image:linear-gradient(105deg,#d7af59 0%,#f3da91 25%,#fffef7 42%,#e7c577 54%,#c08c35 75%,#f9e6ae 100%);
+  background-size:230% 100%;background-position:100% 50%;
+  -webkit-background-clip:text;background-clip:text;color:transparent!important;-webkit-text-fill-color:transparent;
+  animation:rb-shiny-text 6.8s ease-in-out infinite;
+}
+.luxury-interactive{--mx:50%;--my:50%;--tilt-x:0deg;--tilt-y:0deg;position:relative}
+.luxury-interactive.fx-glare{overflow:hidden;isolation:isolate}
+.luxury-interactive.fx-glare:before{
+  content:"";position:absolute;inset:-1px;z-index:2;pointer-events:none;border-radius:inherit;
+  background:radial-gradient(circle at var(--mx) var(--my),rgba(255,248,223,.22),rgba(224,184,92,.085) 19%,transparent 48%);
+  opacity:0;transition:opacity .3s ease;
+}
+.luxury-interactive.fx-glare:hover:before,.luxury-interactive.fx-glare:focus-within:before{opacity:1}
+.luxury-interactive.fx-tilt{transform-style:preserve-3d;will-change:transform}
+.luxury-interactive.fx-tilt:hover{
+  transform:perspective(900px) rotateX(var(--tilt-y)) rotateY(var(--tilt-x)) translateY(-3px);
+  box-shadow:0 24px 54px rgba(0,0,0,.42),0 0 22px rgba(230,197,116,.12);
+}
+.luxury-interactive.fx-float.is-story-visible{animation:luxury-card-float 7.8s ease-in-out infinite}
+.luxury-interactive.fx-edge{transition:box-shadow .35s ease,border-color .35s ease}
+.luxury-interactive.fx-edge:hover,.luxury-interactive.fx-edge:focus-within{
+  border-color:rgba(255,235,174,.8);
+  box-shadow:0 18px 48px rgba(0,0,0,.36),0 0 0 1px rgba(230,197,116,.18),0 0 23px rgba(230,197,116,.13);
+  animation:luxury-edge-pulse 2.6s ease-in-out infinite;
+}
+.luxury-interactive.fx-image-zoom img,.luxury-interactive.fx-image-zoom .amenity-image img{
+  transition:transform .85s cubic-bezier(.2,.75,.15,1),filter .6s ease;
+}
+.luxury-interactive.fx-image-zoom:hover img{transform:scale(1.075);filter:saturate(1.08) brightness(1.08)}
+@keyframes luxury-card-float{0%,100%{translate:0 0}50%{translate:0 -5px}}
+@keyframes luxury-edge-pulse{0%,100%{box-shadow:0 18px 48px rgba(0,0,0,.36),0 0 12px rgba(230,197,116,.07)}50%{box-shadow:0 18px 48px rgba(0,0,0,.36),0 0 26px rgba(255,239,194,.2)}}
+@keyframes luxury-select-pulse{0%,100%{box-shadow:0 0 0 rgba(230,197,116,0)}50%{box-shadow:0 0 0 3px rgba(230,197,116,.12)}}
+
+/* Selection feedback: gold focus ring makes the event/date/guest controls visibly actionable. */
+.search-panel .field,.form-panel .field{transition:transform .28s ease,background .28s ease}
+.search-panel .field:focus-within,.form-panel .field:focus-within{
+  transform:translateY(-2px);
+}
+.search-panel .field:focus-within label,.form-panel .field:focus-within label{color:#fff1c3!important}
+#guestCount,#guests{
+  border-radius:8px 8px 3px 3px;
+  transition:border-color .25s ease,box-shadow .25s ease,background .25s ease;
+}
+#guestCount:focus,#guests:focus{
+  outline:2px solid rgba(255,234,173,.85);outline-offset:3px;
+  box-shadow:0 0 0 6px rgba(215,175,89,.12),0 0 25px rgba(215,175,89,.11);
+  background-color:rgba(215,175,89,.07);
+}
+
+/* Keep the floral image flush to the right and reduce obstruction from content panels. */
+.section,.section.alt,.section.dark,.quick-search,.amenities-section,.catering-intro,.catering-preview,.qr-contact-section,.contact-map-section,.reviews-hub-section,.reviews-map-section,.home-map-section{
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+  background-color:rgba(3,4,6,.17)!important;
+}
+.section.dark,.reviews-section,.catering-cta{background-color:rgba(3,4,6,.29)!important}
+@media(max-width:760px){
+  body:before{background-size:100% 100%,auto 100%;background-position:center,right center}
+  .luxury-interactive.fx-float.is-story-visible{animation-duration:9.5s}
+  .luxury-interactive.fx-tilt:hover{transform:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .rb-shiny-text,.fx-shiny,.luxury-interactive.fx-float.is-story-visible,.luxury-interactive.fx-edge:hover,.luxury-interactive.fx-edge:focus-within{
+    animation:none!important;transition:none!important
+  }
+  .luxury-interactive.fx-tilt:hover{transform:none!important}
+}
