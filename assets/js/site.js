@@ -193,6 +193,73 @@
 
   window.RoyalMotion = {refresh: refreshStory};
   refreshStory(document);
+
+  // Reusable cross-site motion system: ShinyText, glare cards, 3D tilt, float,
+  // luminous edges, pointer spotlight, magnetic CTAs and scroll reveal.
+  const effectTargets = [...document.querySelectorAll(
+    '.card,.amenity-card,.review-card,.rating-panel,.review-invite,.qr-card,'+
+    '.review-hub-card,.feature,.step,.gallery-item,.menu-card,.search-panel,.form-panel'
+  )];
+  const effectClasses = ['fx-glare','fx-tilt','fx-float','fx-edge','fx-image-zoom'];
+  effectTargets.forEach((element,index) => {
+    element.classList.add('luxury-interactive',effectClasses[index % effectClasses.length]);
+    element.style.setProperty('--effect-delay',(index % 7) * -0.7 + 's');
+  });
+
+  document.querySelectorAll(
+    '.hero h1 em,.page-hero h1 em,.booking-intro h2,.hero .eyebrow,.page-hero .eyebrow'
+  ).forEach(element => element.classList.add('rb-shiny-text'));
+
+  // Pointer-tracked highlight and restrained 3D tilt. No canvas/WebGL loop needed.
+  const canHover = window.matchMedia('(hover:hover) and (pointer:fine)').matches;
+  if (canHover && !reducedMotion) {
+    let pointerFrame = 0;
+    let pointerX = window.innerWidth * .82;
+    let pointerY = window.innerHeight * .38;
+    const updateSpotlight = () => {
+      document.body.style.setProperty('--spot-x', (pointerX / Math.max(1,window.innerWidth) * 100).toFixed(2) + '%');
+      document.body.style.setProperty('--spot-y', (pointerY / Math.max(1,window.innerHeight) * 100).toFixed(2) + '%');
+      pointerFrame = 0;
+    };
+    document.addEventListener('pointermove', event => {
+      if (event.pointerType === 'touch') return;
+      pointerX = event.clientX;
+      pointerY = event.clientY;
+      if (!pointerFrame) pointerFrame = requestAnimationFrame(updateSpotlight);
+      const target = event.target.closest?.('.luxury-interactive.fx-tilt');
+      if (target) {
+        const rect = target.getBoundingClientRect();
+        const x = (event.clientX - rect.left) / Math.max(1,rect.width);
+        const y = (event.clientY - rect.top) / Math.max(1,rect.height);
+        target.style.setProperty('--tilt-x', ((x - .5) * 7).toFixed(2) + 'deg');
+        target.style.setProperty('--tilt-y', ((.5 - y) * 6).toFixed(2) + 'deg');
+        target.style.setProperty('--mx',(x * 100).toFixed(1) + '%');
+        target.style.setProperty('--my',(y * 100).toFixed(1) + '%');
+      }
+    }, {passive:true});
+    document.addEventListener('pointerout', event => {
+      const target = event.target.closest?.('.luxury-interactive.fx-tilt');
+      if (target && !target.contains(event.relatedTarget)) {
+        target.style.setProperty('--tilt-x','0deg');
+        target.style.setProperty('--tilt-y','0deg');
+      }
+    }, {passive:true});
+  }
+
+  // Tiny magnetic pull on primary CTAs, only for precise-pointer devices.
+  if (canHover && !reducedMotion) {
+    document.querySelectorAll('.btn-gold,.btn-booking-primary').forEach(button => {
+      button.addEventListener('pointermove', event => {
+        const rect = button.getBoundingClientRect();
+        const dx = event.clientX - (rect.left + rect.width / 2);
+        const dy = event.clientY - (rect.top + rect.height / 2);
+        button.style.translate = (dx * .045).toFixed(1) + 'px ' + (dy * .07).toFixed(1) + 'px';
+      }, {passive:true});
+      button.addEventListener('pointerleave', () => { button.style.translate = ''; });
+      button.addEventListener('blur', () => { button.style.translate = ''; });
+    });
+  }
+
   updateScrollEffects();
   window.addEventListener('scroll', requestScrollEffects, {passive: true});
   window.addEventListener('resize', requestScrollEffects, {passive: true});
