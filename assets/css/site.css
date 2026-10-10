@@ -1111,3 +1111,47 @@ body:after{display:none!important}
   }
   .luxury-interactive.fx-tilt:hover{transform:none!important}
 }
+
+
+/* Final layered backdrop and scroll behavior: only the supplied floral image is fixed. */
+body:before{
+  background-image:
+    radial-gradient(circle at var(--spot-x,82%) var(--spot-y,38%),rgba(232,195,105,.105),transparent 29%),
+    linear-gradient(90deg,rgba(0,0,0,.015),rgba(0,0,0,.025)),
+    url("https://d2ol7oe51mr4n9.cloudfront.net/user_35mtirXTBJzeOp1GtU8b1ixSM0D/bd5156e5-4702-4ea1-8af6-958e12655619.jpg");
+  background-repeat:no-repeat,no-repeat,no-repeat;
+  background-size:100% 100%,100% 100%,auto 100%;
+  background-position:center,center,right center;
+}
+body:after{display:none!important}
+.page-hero{position:relative!important;top:auto!important}
+.story-backdrop{display:none!important}
+.hero-media{position:absolute}
+.page-hero-media{position:absolute}
+
+/* Add visual variety without running heavy WebGL loops across every screen. */
+.luxury-interactive.fx-float{animation-delay:var(--effect-delay,0s)}
+.luxury-interactive.fx-edge{animation-delay:var(--effect-delay,0s)}
+.luxury-interactive.fx-glare:after{
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(115deg,transparent 20%,rgba(255,255,255,.065) 43%,rgba(255,248,225,.18) 50%,rgba(255,255,255,.045) 57%,transparent 76%);
+  background-size:230% 100%;background-position:200% 0;opacity:0;
+  transition:opacity .3s ease;
+}
+.luxury-interactive.fx-glare:hover:after{
+  opacity:1;animation:luxury-card-glint 1.15s ease-out forwards;
+}
+@keyframes luxury-card-glint{
+  from{background-position:200% 0}
+  to{background-position:-150% 0}
+}
+.btn,.btn-booking-primary{will-change:transform}
+@media(hover:none){
+  .luxury-interactive.fx-tilt:hover{transform:none}
+  .luxury-interactive.fx-glare:before{display:none}
+  .luxury-interactive.fx-glare:hover:after{animation:none}
+}
+@media(prefers-reduced-motion:reduce){
+  body:before{background-image:linear-gradient(90deg,rgba(0,0,0,.015),rgba(0,0,0,.025)),url("https://d2ol7oe51mr4n9.cloudfront.net/user_35mtirXTBJzeOp1GtU8b1ixSM0D/bd5156e5-4702-4ea1-8af6-958e12655619.jpg")}
+  .luxury-interactive.fx-glare:hover:after{animation:none!important}
+}
