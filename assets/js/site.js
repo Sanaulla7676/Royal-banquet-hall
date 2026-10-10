@@ -46,6 +46,34 @@
   }
 
 
+  // Apply React Bits-inspired ShinyText to selected luxury accents without a React runtime.
+  document.querySelectorAll('.hero h1 em,.page-hero h1 em,.booking-intro h2,.hero .eyebrow,.page-hero .eyebrow')
+    .forEach(element => element.classList.add('rb-shiny-text'));
+
+  // Keep the looping venue film active while it is near/in view, and pause it far off screen.
+  const venueFilm = document.querySelector('.venue-film');
+  if (venueFilm) {
+    venueFilm.muted = true;
+    venueFilm.loop = true;
+    venueFilm.playsInline = true;
+    if ('IntersectionObserver' in window) {
+      const filmObserver = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const attempt = venueFilm.play();
+            if (attempt && typeof attempt.catch === 'function') attempt.catch(() => {});
+          } else {
+            venueFilm.pause();
+          }
+        });
+      }, {threshold:0.08, rootMargin:'120px 0px 120px 0px'});
+      filmObserver.observe(venueFilm);
+    } else {
+      const attempt = venueFilm.play();
+      if (attempt && typeof attempt.catch === 'function') attempt.catch(() => {});
+    }
+  }
+
   const menuButton = document.querySelector('.menu-toggle');
   const nav = document.querySelector('.nav-links');
   if (menuButton && nav) {
