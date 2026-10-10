@@ -223,6 +223,38 @@
   refreshStory(document);
   applyLuxuryEffects(document);
 
+  // Gallery cards are inserted after the shared script loads. Observe those additions too,
+  // so the same reveal/glare effects work on phones and desktop rather than only static cards.
+  if ('MutationObserver' in window && document.body) {
+    let motionRefreshFrame = 0;
+    const motionObserver = new MutationObserver(records => {
+      if (motionRefreshFrame) cancelAnimationFrame(motionRefreshFrame);
+      motionRefreshFrame = requestAnimationFrame(() => {
+        records.forEach(record => {
+          record.addedNodes.forEach(node => {
+            if (!(node instanceof Element)) return;
+            refreshStory(node);
+            applyLuxuryEffects(node);
+          });
+        });
+        updateScrollEffects();
+        motionRefreshFrame = 0;
+      });
+    });
+    motionObserver.observe(document.body, {childList:true,subtree:true});
+  }
+
+  // On narrow/touch devices, keep interactions tap-first. No hover transforms are required.
+  const touchLayout = window.matchMedia('(hover:none), (pointer:coarse)').matches;
+  if (touchLayout) {
+    document.documentElement.classList.add('touch-layout');
+    document.querySelectorAll('.venue-film').forEach(video => {
+      video.muted = true;
+      video.playsInline = true;
+      video.loop = true;
+    });
+  }
+
   // Pointer-tracked highlight and restrained 3D tilt. No canvas/WebGL loop needed.
   const canHover = window.matchMedia('(hover:hover) and (pointer:fine)').matches;
   if (canHover && !reducedMotion) {
