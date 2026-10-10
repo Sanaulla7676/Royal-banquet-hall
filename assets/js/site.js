@@ -208,7 +208,7 @@
       element.style.setProperty('--effect-delay',(luxuryEffectSequence % 7) * -.7 + 's');
       luxuryEffectSequence++;
     });
-    const shinySelector = '.hero h1 em,.page-hero h1 em,.booking-intro h2,.hero .eyebrow,.page-hero .eyebrow';
+    const shinySelector = '.hero h1 em,.page-hero h1 em,.booking-intro h2,.section-head h2,.cta-banner h2,.catering-preview-copy h2,.home-map-copy h2,.reviews-map-copy h2,.menu-card-header h2,.hero .eyebrow,.page-hero .eyebrow';
     const headings = [...root.querySelectorAll(shinySelector)];
     if (root instanceof Element && root.matches(shinySelector)) headings.unshift(root);
     headings.forEach(element => element.classList.add('rb-shiny-text'));
