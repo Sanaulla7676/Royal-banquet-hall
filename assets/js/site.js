@@ -191,24 +191,37 @@
     scrollFrame = window.requestAnimationFrame(updateScrollEffects);
   }
 
-  window.RoyalMotion = {refresh: refreshStory};
-  refreshStory(document);
-
-  // Reusable cross-site motion system: ShinyText, glare cards, 3D tilt, float,
-  // luminous edges, pointer spotlight, magnetic CTAs and scroll reveal.
-  const effectTargets = [...document.querySelectorAll(
+  const luxuryEffectSelector =
     '.card,.amenity-card,.review-card,.rating-panel,.review-invite,.qr-card,'+
-    '.review-hub-card,.feature,.step,.gallery-item,.menu-card,.search-panel,.form-panel'
-  )];
-  const effectClasses = ['fx-glare','fx-tilt','fx-float','fx-edge','fx-image-zoom'];
-  effectTargets.forEach((element,index) => {
-    element.classList.add('luxury-interactive',effectClasses[index % effectClasses.length]);
-    element.style.setProperty('--effect-delay',(index % 7) * -0.7 + 's');
-  });
+    '.review-hub-card,.feature,.step,.gallery-item,.menu-card,.search-panel,.form-panel';
+  const luxuryEffectClasses = ['fx-glare','fx-tilt','fx-float','fx-edge','fx-image-zoom'];
+  let luxuryEffectSequence = 0;
 
-  document.querySelectorAll(
-    '.hero h1 em,.page-hero h1 em,.booking-intro h2,.hero .eyebrow,.page-hero .eyebrow'
-  ).forEach(element => element.classList.add('rb-shiny-text'));
+  function applyLuxuryEffects(root = document) {
+    if (!root || !root.querySelectorAll) return;
+    const targets = [...root.querySelectorAll(luxuryEffectSelector)];
+    if (root instanceof Element && root.matches(luxuryEffectSelector)) targets.unshift(root);
+    targets.forEach(element => {
+      if (element.classList.contains('luxury-interactive')) return;
+      const effect = luxuryEffectClasses[luxuryEffectSequence % luxuryEffectClasses.length];
+      element.classList.add('luxury-interactive',effect);
+      element.style.setProperty('--effect-delay',(luxuryEffectSequence % 7) * -.7 + 's');
+      luxuryEffectSequence++;
+    });
+    const shinySelector = '.hero h1 em,.page-hero h1 em,.booking-intro h2,.hero .eyebrow,.page-hero .eyebrow';
+    const headings = [...root.querySelectorAll(shinySelector)];
+    if (root instanceof Element && root.matches(shinySelector)) headings.unshift(root);
+    headings.forEach(element => element.classList.add('rb-shiny-text'));
+  }
+
+  window.RoyalMotion = {
+    refresh(root = document) {
+      refreshStory(root);
+      applyLuxuryEffects(root);
+    }
+  };
+  refreshStory(document);
+  applyLuxuryEffects(document);
 
   // Pointer-tracked highlight and restrained 3D tilt. No canvas/WebGL loop needed.
   const canHover = window.matchMedia('(hover:hover) and (pointer:fine)').matches;
