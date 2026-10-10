@@ -1155,3 +1155,12 @@ body:after{display:none!important}
   body:before{background-image:linear-gradient(90deg,rgba(0,0,0,.015),rgba(0,0,0,.025)),url("https://d2ol7oe51mr4n9.cloudfront.net/user_35mtirXTBJzeOp1GtU8b1ixSM0D/bd5156e5-4702-4ea1-8af6-958e12655619.jpg")}
   .luxury-interactive.fx-glare:hover:after{animation:none!important}
 }
+
+
+/* Slow ambient movement on the floral artwork; text/cards remain stable and readable. */
+body:before{animation:floral-edge-breathe 28s ease-in-out infinite alternate}
+@keyframes floral-edge-breathe{
+  0%{background-position:center,center,right center;filter:brightness(1) saturate(1)}
+  100%{background-position:center,center,calc(100% + 10px) center;filter:brightness(1.075) saturate(1.035)}
+}
+@media(prefers-reduced-motion:reduce){body:before{animation:none!important}}
