@@ -1439,3 +1439,19 @@ body:before{
   .luxury-interactive,.luxury-interactive:hover,.luxury-interactive.fx-tilt:hover{transform:none!important;animation:none!important}
   .btn:before,.btn-booking-primary:before,.menu-toggle:before{display:none!important}
 }
+
+
+/* Touch layout helpers: avoid sticky hover states, preserve tap feedback and safe areas. */
+.touch-layout .luxury-interactive.fx-tilt:hover,
+.touch-layout .luxury-interactive.fx-tilt:active{transform:none!important}
+.touch-layout .luxury-interactive.fx-glare:before{display:none}
+.touch-layout .luxury-interactive.fx-glare:after{display:none}
+.touch-layout .btn:active,.touch-layout .btn-booking-primary:active{filter:brightness(1.08)}
+.touch-layout .nav-links a{touch-action:manipulation}
+.touch-layout .circle-gallery-control{min-width:34px;min-height:34px}
+.touch-layout .circle-gallery-card{touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.touch-layout input,.touch-layout select,.touch-layout textarea{font-size:16px!important}
+@supports(padding:max(0px)){
+  .site-header{padding-left:max(0px,env(safe-area-inset-left));padding-right:max(0px,env(safe-area-inset-right))}
+  .site-footer{padding-bottom:max(24px,env(safe-area-inset-bottom))}
+}
