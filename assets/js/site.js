@@ -1,4 +1,51 @@
 (() => {
+  // Play the supplied logo animation once per tab session, then reveal the site.
+  const intro = document.getElementById('site-intro');
+  if (intro) {
+    const video = intro.querySelector('video');
+    const sessionKey = 'royalHallIntroPlayed_v1';
+    let alreadyPlayed = false;
+    try { alreadyPlayed = sessionStorage.getItem(sessionKey) === '1'; } catch (_) {}
+
+    const finishIntro = (completed) => {
+      if (completed) {
+        try { sessionStorage.setItem(sessionKey, '1'); } catch (_) {}
+      }
+      document.body.classList.remove('intro-pending');
+      intro.classList.add('is-hidden');
+      window.setTimeout(() => intro.remove(), 700);
+    };
+
+    if (alreadyPlayed) {
+      intro.remove();
+    } else if (video) {
+      document.body.classList.add('intro-pending');
+      video.muted = true;
+      video.addEventListener('ended', () => finishIntro(true), {once:true});
+      video.addEventListener('error', () => finishIntro(false), {once:true});
+
+      const attemptPlayback = () => {
+        const result = video.play();
+        if (result && typeof result.catch === 'function') {
+          result.catch(() => {
+            // If browser settings block muted autoplay, any tap on the video
+            // retries playback. The intro itself still has no visible UI.
+            const retry = () => { video.muted = true; video.play().catch(() => {}); };
+            intro.addEventListener('pointerdown', retry, {once:true});
+            intro.addEventListener('keydown', retry, {once:true});
+          });
+        }
+      };
+
+      video.addEventListener('canplay', attemptPlayback, {once:true});
+      video.src = video.dataset.src;
+      video.load();
+    } else {
+      finishIntro(false);
+    }
+  }
+
+
   const menuButton = document.querySelector('.menu-toggle');
   const nav = document.querySelector('.nav-links');
   if (menuButton && nav) {
