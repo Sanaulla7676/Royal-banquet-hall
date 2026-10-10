@@ -123,6 +123,7 @@
 
     function tweenTo(target, duration = 680) {
       tween = {from:totalRotation,to:target,start:performance.now(),duration};
+      if (!rafId && inView) { lastFrame = 0; rafId = requestAnimationFrame(tick); }
     }
 
     function move(direction) {
@@ -187,7 +188,7 @@
         }
         syncOrbit();
       }
-      if (inView || dragging || tween) rafId = requestAnimationFrame(tick);
+      if ((inView && !reducedMotion) || dragging || tween) rafId = requestAnimationFrame(tick);
       else { rafId = 0; lastFrame = 0; }
     }
 
