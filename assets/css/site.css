@@ -680,7 +680,7 @@ body.intro-pending> :not(#site-intro){visibility:hidden!important}
 
 /* ================= OBSIDIAN + GOLD BACKDROP / REPEATING LIGHT SWEEP ================= */
 :root{
-  --luxury-bg:url("https://d2ol7oe51mr4n9.cloudfront.net/user_35mtirXTBJzeOp1GtU8b1ixSM0D/9bae3d91-52af-4301-95e4-f8535efca82e.jpg");
+  --luxury-bg:url("https://d2ol7oe51mr4n9.cloudfront.net/user_35mtirXTBJzeOp1GtU8b1ixSM0D/bd5156e5-4702-4ea1-8af6-958e12655619.jpg");
   --gold-white:#fff7df;
   --gold-highlight:#fffdf5;
 }
@@ -795,7 +795,7 @@ body:after{
   content:"";position:fixed;z-index:-1;pointer-events:none;top:0;right:0;
   width:clamp(340px,52vw,760px);height:100vh;height:100dvh;
   background-color:#030405;
-  background-image:linear-gradient(90deg,rgba(3,4,5,0) 0%,rgba(3,4,5,.04) 48%,rgba(3,4,5,.02) 100%),url("https://d2ol7oe51mr4n9.cloudfront.net/user_35mtirXTBJzeOp1GtU8b1ixSM0D/9bae3d91-52af-4301-95e4-f8535efca82e.jpg");
+  background-image:linear-gradient(90deg,rgba(3,4,5,0) 0%,rgba(3,4,5,.04) 48%,rgba(3,4,5,.02) 100%),url("https://d2ol7oe51mr4n9.cloudfront.net/user_35mtirXTBJzeOp1GtU8b1ixSM0D/bd5156e5-4702-4ea1-8af6-958e12655619.jpg");
   background-repeat:no-repeat,no-repeat;
   background-size:100% 100%,auto 100%;
   background-position:right center,right center;
