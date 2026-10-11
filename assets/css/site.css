@@ -1935,3 +1935,30 @@ body.site-revealed .hero .hero-brand-crest{animation:hero-crest-arrive-left 1.05
   .gallery-carousel-stage{height:280px}
   .gallery-carousel-card{width:120px}
 }
+
+
+/* Final interaction polish: attach ambient motion to the floral layer only. */
+body.fx-background-ambient{animation:none!important}
+body.fx-background-ambient:before{animation:floral-edge-breathe 28s ease-in-out infinite alternate}
+.fx-image-caption:hover .gallery-caption{opacity:1;transform:translateY(0)}
+.gallery-carousel-card.fx-gallery-center{
+  border-color:rgba(255,240,188,.96);
+  box-shadow:0 26px 65px rgba(0,0,0,.48),0 0 26px rgba(224,183,94,.17);
+}
+.gallery-carousel-card.fx-gallery-center img{filter:brightness(1.03)}
+.form-panel .field input[type="date"]{
+  color-scheme:dark;accent-color:#e0b75e;min-height:50px;width:100%;
+  color:#fffaf0;background:rgba(4,6,9,.82);border:1px solid rgba(235,201,125,.32);
+  border-radius:7px;padding:10px 9px;
+}
+.form-panel .field input[type="date"]::-webkit-calendar-picker-indicator{
+  display:block;opacity:1;visibility:visible;cursor:pointer;width:23px;height:23px;padding:3px;
+  filter:invert(87%) sepia(39%) saturate(548%) hue-rotate(350deg) brightness(105%) contrast(95%);
+  background-color:rgba(224,183,94,.15);border:1px solid rgba(255,235,179,.44);border-radius:6px;
+}
+@media(max-width:760px){
+  .hero-slideshow-controls{right:14px;bottom:14px}
+  .hero-brand-crest{max-width:calc(100vw - 24px)}
+  .search-panel .field input[type="date"],.form-panel .field input[type="date"]{font-size:16px!important}
+  .gallery-carousel-card.fx-gallery-center{box-shadow:0 17px 35px rgba(0,0,0,.43),0 0 18px rgba(224,183,94,.15)}
+}
