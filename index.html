@@ -19,9 +19,22 @@
 </div></header>
 <main>
 <section class="hero">
-<div class="hero-media"><img src="assets/images/hero-venue.jpg" alt="" fetchpriority="high" onerror="this.style.display='none'"></div>
+<div class="hero-media hero-slideshow" aria-label="The Royal Hall venue photos">
+  <img class="hero-slide is-active" data-hero-slide src="assets/images/hero-venue.jpg" alt="" fetchpriority="high" decoding="async">
+  <img class="hero-slide" data-hero-slide src="assets/images/stage-celebration.jpg" alt="" loading="eager" decoding="async">
+  <img class="hero-slide" data-hero-slide src="assets/images/hall-interior.jpg" alt="" loading="eager" decoding="async">
+  <img class="hero-slide" data-hero-slide src="assets/images/venue-entrance.jpg" alt="" loading="eager" decoding="async">
+  <img class="hero-slide" data-hero-slide src="assets/images/cake-display.jpg" alt="" loading="eager" decoding="async">
+</div>
 <img class="hero-brand-crest" src="assets/images/royal-hall-crest.webp" alt="The Royal Hall gold crest" width="240" height="240" fetchpriority="high" decoding="async">
 <div class="container hero-content"><span class="eyebrow">A place for life's special moments</span><h1 aria-label="Make room for memories."><span class="hero-title-primary">Make room for</span> <em class="hero-title-accent">memories.</em></h1><p class="lede">A welcoming setting for weddings, receptions, birthdays and family celebrations in Rajajinagar, Bengaluru. Explore the venue, picture your event and start planning with a simple enquiry.</p><div class="btn-row"><a class="btn btn-gold" href="booking.html">Check your date <span aria-hidden="true">↗</span></a><a class="btn btn-outline" href="gallery.html">Explore the gallery</a></div><div class="hero-note"><span>Explore the venue</span><span>Plan around your guest count</span><span>Enquire directly</span></div></div>
+<div class="hero-slideshow-controls" role="group" aria-label="Choose venue hero photograph">
+  <button type="button" class="hero-slide-dot is-active" data-hero-dot="0" aria-label="Show venue photo 1" aria-pressed="true"></button>
+  <button type="button" class="hero-slide-dot" data-hero-dot="1" aria-label="Show venue photo 2" aria-pressed="false"></button>
+  <button type="button" class="hero-slide-dot" data-hero-dot="2" aria-label="Show venue photo 3" aria-pressed="false"></button>
+  <button type="button" class="hero-slide-dot" data-hero-dot="3" aria-label="Show venue photo 4" aria-pressed="false"></button>
+  <button type="button" class="hero-slide-dot" data-hero-dot="4" aria-label="Show venue photo 5" aria-pressed="false"></button>
+</div>
 <div class="hero-scroll">Scroll to discover</div>
 </section>
 <section class="quick-search" id="booking-enquiry">
