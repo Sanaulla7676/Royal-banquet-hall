@@ -311,6 +311,7 @@
     addClassTo(root,'.hero-title-primary','fx-text-rise');
     addClassTo(root,'.hero-title-accent','fx-text-blur');
     addClassTo(root,'.hero-brand-crest','fx-logo-pop');
+    addClassTo(root,'.hero-slideshow [data-hero-slide]','fx-hero-crossfade');
 
     const buttons = addClassTo(root,'.btn,.btn-booking-primary,.menu-toggle','fx-button-sheen fx-button-lift fx-button-press fx-button-border');
     buttons.forEach(button => {
@@ -318,6 +319,7 @@
       if (button.querySelector('span,.arrow')) button.classList.add('fx-button-arrow');
     });
     addClassTo(root,'.nav-links a','fx-nav-sweep fx-nav-glint');
+    addClassTo(root,'.gallery-carousel-progress','fx-gallery-progress');
     addClassTo(root,'.search-panel','fx-panel-glow');
     addClassTo(root,'.search-panel .field','fx-form-focus fx-select-lift');
     addClassTo(root,'.search-panel .field:has(input[type="date"])','fx-date-glow');
