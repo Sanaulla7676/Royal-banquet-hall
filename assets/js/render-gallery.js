@@ -73,6 +73,7 @@
       slot.card.style.opacity = String(opacity);
       slot.card.style.filter = abs === 0 ? 'brightness(1)' : 'brightness(' + (abs === 1 ? '.78' : '.59') + ')';
       slot.card.classList.toggle('is-centre',abs === 0);
+      slot.card.classList.toggle('fx-gallery-center',abs === 0);
       slot.card.style.transform = 'translate(calc(-50% + ' + (offset * distance + drag * .46).toFixed(1) + 'px), -50%) scale(' + scale + ')';
       slot.card.setAttribute('aria-hidden',String(abs > 1));
       slot.card.tabIndex = abs > 1 ? -1 : 0;
@@ -123,7 +124,7 @@
 
     function move(direction = 1, fromUser = true) {
       if (animating || photos.length < 2) return;
-      if (fromUser) startTimer();
+      if (fromUser) { paused = false; showcase?.classList.remove('is-paused'); startTimer(); }
       animating = true;
       root.classList.add('is-moving');
       root.classList.remove('is-paused');
