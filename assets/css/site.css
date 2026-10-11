@@ -2957,3 +2957,171 @@ body.site-revealed .hero .hero-brand-crest.fx-logo-pop{
 @media(max-width:420px){
   .hero{height:clamp(472px,calc(80vh - 49.6px),600px)!important;height:clamp(472px,calc(80svh - 49.6px),600px)!important}
 }
+
+
+/* ================= MOBILE NAV + SITE-WIDE PHONE LAYOUT FIX ================= */
+/* A compact mobile header with a deliberately controlled dropdown menu. */
+@media(max-width:760px){
+  html,body{width:100%;max-width:100%;overflow-x:clip}
+  .site-header{
+    height:66px!important;min-height:66px!important;
+    overflow:visible!important;z-index:1100!important;
+  }
+  .site-header .container.nav{
+    position:relative!important;display:flex!important;
+    width:calc(100% - 20px)!important;height:66px!important;min-height:66px!important;
+    margin:0 10px!important;padding:0 0 0 72px!important;
+    align-items:center!important;justify-content:flex-end!important;gap:8px!important;
+    overflow:visible!important;
+  }
+  .site-header .brand{
+    left:0!important;top:50%!important;transform:translateY(-50%)!important;
+    width:64px!important;height:64px!important;min-width:64px!important;
+    padding:4px!important;margin:0!important;
+  }
+  .site-header .brand-logo{
+    display:block!important;width:56px!important;height:56px!important;max-width:56px!important;
+  }
+  .site-header .nav-actions{
+    position:static!important;top:auto!important;right:auto!important;
+    transform:none!important;display:flex!important;align-items:center!important;
+    flex:0 0 auto!important;margin-left:auto!important;gap:0!important;
+  }
+  .site-header .nav-actions .btn{display:none!important}
+  .site-header .menu-toggle{
+    display:grid!important;place-items:center!important;
+    width:43px!important;height:43px!important;min-width:43px!important;min-height:43px!important;
+    padding:0!important;border-radius:50%!important;
+    background:linear-gradient(145deg,#171510,#050505)!important;
+    border:1px solid rgba(236,200,117,.78)!important;
+    color:#ffe7a0!important;font-size:1.15rem!important;line-height:1!important;
+    box-shadow:0 4px 15px rgba(0,0,0,.35),inset 0 1px rgba(255,255,255,.1)!important;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .site-header .menu-toggle:active{transform:scale(.95)}
+  .site-header .nav-links{
+    display:none!important;
+    position:fixed!important;
+    top:calc(66px + env(safe-area-inset-top,0px))!important;
+    right:10px!important;bottom:auto!important;left:10px!important;inset-inline:10px!important;
+    width:auto!important;max-width:none!important;
+    max-height:calc(100dvh - 82px - env(safe-area-inset-top,0px))!important;
+    overflow-x:hidden!important;overflow-y:auto!important;
+    flex-direction:column!important;align-items:stretch!important;justify-content:flex-start!important;
+    gap:3px!important;margin:0!important;padding:10px!important;
+    border:1px solid rgba(230,197,116,.38)!important;border-radius:17px!important;
+    background:linear-gradient(145deg,rgba(12,12,12,.985),rgba(3,3,3,.99))!important;
+    box-shadow:0 22px 65px rgba(0,0,0,.68),inset 0 1px rgba(255,255,255,.055)!important;
+    backdrop-filter:blur(18px) saturate(125%);
+    overscroll-behavior:contain;z-index:1200!important;
+  }
+  .site-header .nav-links.open{
+    display:flex!important;animation:royal-mobile-menu-in .22s ease-out both;
+  }
+  @keyframes royal-mobile-menu-in{
+    from{opacity:0;transform:translateY(-7px) scale(.985)}
+    to{opacity:1;transform:translateY(0) scale(1)}
+  }
+  .site-header .nav-links>a,
+  .site-header .nav-links.gooey-nav-ready>a{
+    display:flex!important;align-items:center!important;justify-content:flex-start!important;
+    width:100%!important;min-width:0!important;min-height:48px!important;
+    padding:13px 14px!important;margin:0!important;
+    border:0!important;border-radius:10px!important;
+    background:transparent!important;box-shadow:none!important;
+    color:#f3ead9!important;text-align:left!important;text-decoration:none!important;
+    white-space:normal!important;overflow-wrap:anywhere;
+    font-size:.94rem!important;font-weight:600!important;line-height:1.25!important;
+    transform:none!important;text-shadow:none!important;
+  }
+  .site-header .nav-links>a:hover,
+  .site-header .nav-links>a:focus-visible{
+    color:#fff0bc!important;background:rgba(226,185,92,.1)!important;
+  }
+  .site-header .nav-links>a[aria-current="page"],
+  .site-header .nav-links>a.gooey-active{
+    color:#ffe8a0!important;
+    background:linear-gradient(90deg,rgba(224,183,94,.16),rgba(224,183,94,.045))!important;
+    box-shadow:inset 2px 0 #e4bd68!important;
+  }
+  .site-header .nav-links>a:after{display:none!important}
+  .site-header .gooey-nav-layer{display:none!important}
+  .site-header .nav-links.open .gooey-nav-layer{display:none!important}
+
+  /* Additional circular black crest just below the navbar on the homepage. */
+  .mobile-hero-crest-seal{
+    display:grid!important;place-items:center!important;
+    position:absolute!important;top:71px!important;left:10px!important;
+    width:64px!important;height:64px!important;z-index:1090!important;
+    overflow:hidden;border-radius:50%!important;padding:4px!important;
+    background:radial-gradient(circle at 34% 25%,#28251d 0%,#090909 58%,#000 100%)!important;
+    border:1px solid rgba(245,207,120,.9)!important;
+    box-shadow:0 7px 23px rgba(0,0,0,.55),0 0 0 4px rgba(0,0,0,.28),inset 0 1px rgba(255,255,255,.12)!important;
+    isolation:isolate;pointer-events:none;
+  }
+  .mobile-hero-crest-seal:before{
+    content:"";position:absolute;inset:4px;z-index:1;border-radius:50%;
+    border:1px solid rgba(255,231,174,.25);pointer-events:none;
+  }
+  .mobile-hero-crest-seal:after{
+    content:"";position:absolute;inset:-55% 24%;z-index:2;
+    background:linear-gradient(108deg,transparent 34%,rgba(255,246,215,.4) 49%,transparent 63%);
+    transform:translateX(-150%) rotate(12deg);animation:mobile-crest-glint 6.5s ease-in-out infinite;
+  }
+  .mobile-hero-crest-seal img{
+    position:relative;z-index:0;display:block!important;width:100%!important;height:100%!important;
+    max-width:none!important;object-fit:contain!important;object-position:center!important;
+    filter:drop-shadow(0 1px 5px rgba(232,193,93,.2));
+  }
+  @keyframes mobile-crest-glint{
+    0%,23%{transform:translateX(-150%) rotate(12deg)}
+    48%,100%{transform:translateX(150%) rotate(12deg)}
+  }
+  .hero-content{padding-top:clamp(132px,28vw,150px)!important}
+
+  /* Two evenly sized gallery columns on phones; no one-card-per-row surprises. */
+  .gallery-grid{
+    display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    grid-auto-flow:row!important;gap:10px!important;width:100%!important;
+    margin-inline:0!important;opacity:1!important;visibility:visible!important;
+  }
+  .gallery-grid>.gallery-item,
+  .gallery-grid>.gallery-item:nth-child(7n+1){
+    display:block!important;grid-column:span 1!important;grid-row:auto!important;
+    min-width:0!important;width:100%!important;height:auto!important;
+    aspect-ratio:3/4!important;opacity:1!important;visibility:visible!important;
+    transform:none!important;filter:none!important;clip-path:none!important;
+  }
+  .gallery-grid>.gallery-item img{
+    display:block!important;width:100%!important;height:100%!important;min-height:100%!important;
+    object-fit:cover!important;opacity:1!important;visibility:visible!important;
+  }
+  .gallery-grid>.gallery-item[hidden]{display:none!important}
+  .gallery-caption{font-size:.78rem!important;line-height:1.35!important;padding:30px 9px 10px!important}
+
+  /* General mobile guardrails for every page and form. */
+  main,.container,.section,.section-head,.card,.split,.cta-banner,.form-panel,.search-panel{
+    min-width:0;max-width:100%;
+  }
+  .container{width:calc(100% - 28px)!important}
+  img,video,iframe{max-width:100%}
+  input,select,textarea,button{max-width:100%}
+  .field input,.field select,.field textarea{width:100%;min-width:0;font-size:16px!important}
+  .btn,.btn-booking-primary{white-space:normal;overflow-wrap:anywhere}
+  .section-head h1,.section-head h2,.page-hero h1,.hero h1,.booking-intro-copy h2{overflow-wrap:normal;text-wrap:balance}
+  .site-footer,.footer-grid,.footer-bottom{min-width:0}
+}
+@media(max-width:420px){
+  .site-header .container.nav{padding-left:62px!important}
+  .site-header .brand{width:58px!important;height:58px!important;min-width:58px!important}
+  .site-header .brand-logo{width:50px!important;height:50px!important;max-width:50px!important}
+  .site-header .menu-toggle{width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important}
+  .mobile-hero-crest-seal{top:67px!important;left:8px!important;width:58px!important;height:58px!important}
+  .hero-content{padding-top:126px!important}
+  .gallery-grid{gap:8px!important}
+  .gallery-caption{font-size:.72rem!important}
+}
+@media(prefers-reduced-motion:reduce){
+  .mobile-hero-crest-seal:after,.site-header:after{animation:none!important}
+  .site-header .nav-links.open{animation:none!important}
+}
