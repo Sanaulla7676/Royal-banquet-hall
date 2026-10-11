@@ -1,5 +1,13 @@
 (() => {
-  // Play the supplied logo animation once per tab session, then reveal the site.
+  // Reveal the website in deliberate stages after the silent intro finishes.
+  const revealWebsite = () => {
+    if (!document.body) return;
+    document.body.classList.remove('intro-pending');
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      document.body.classList.add('site-revealed');
+    }));
+  };
+
   const intro = document.getElementById('site-intro');
   if (intro) {
     const video = intro.querySelector('video');
@@ -13,11 +21,14 @@
       }
       document.body.classList.remove('intro-pending');
       intro.classList.add('is-hidden');
-      window.setTimeout(() => intro.remove(), 700);
+      // Let the intro veil begin fading away, then start the layered site entrance.
+      window.setTimeout(revealWebsite, 140);
+      window.setTimeout(() => intro.remove(), 760);
     };
 
     if (alreadyPlayed) {
       intro.remove();
+      revealWebsite();
     } else if (video) {
       document.body.classList.add('intro-pending');
       video.muted = true;
@@ -28,8 +39,7 @@
         const result = video.play();
         if (result && typeof result.catch === 'function') {
           result.catch(() => {
-            // If browser settings block muted autoplay, any tap on the video
-            // retries playback. The intro itself still has no visible UI.
+            // Browser autoplay policies may require the visitor's first tap.
             const retry = () => { video.muted = true; video.play().catch(() => {}); };
             intro.addEventListener('pointerdown', retry, {once:true});
             intro.addEventListener('keydown', retry, {once:true});
@@ -43,6 +53,8 @@
     } else {
       finishIntro(false);
     }
+  } else {
+    revealWebsite();
   }
 
 
