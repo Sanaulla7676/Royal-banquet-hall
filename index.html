@@ -26,7 +26,6 @@
   <img class="hero-slide" data-hero-slide src="assets/images/venue-entrance.jpg" alt="" loading="eager" decoding="async">
   <img class="hero-slide" data-hero-slide src="assets/images/cake-display.jpg" alt="" loading="eager" decoding="async">
 </div>
-<img class="hero-brand-crest" src="assets/images/royal-hall-crest.webp" alt="The Royal Hall gold crest" width="240" height="240" fetchpriority="high" decoding="async">
 <div class="container hero-content"><span class="eyebrow">A place for life's special moments</span><h1 aria-label="Make room for memories."><span class="hero-title-primary">Make room for</span> <em class="hero-title-accent">memories.</em></h1><p class="lede">A welcoming setting for weddings, receptions, birthdays and family celebrations in Rajajinagar, Bengaluru. Explore the venue, picture your event and start planning with a simple enquiry.</p><div class="btn-row"><a class="btn btn-gold" href="booking.html">Check your date <span aria-hidden="true">↗</span></a><a class="btn btn-outline" href="gallery.html">Explore the gallery</a></div><div class="hero-note"><span>Explore the venue</span><span>Plan around your guest count</span><span>Enquire directly</span></div></div>
 <div class="hero-slideshow-controls" role="group" aria-label="Choose venue hero photograph">
   <button type="button" class="hero-slide-dot is-active" data-hero-dot="0" aria-label="Show venue photo 1" aria-pressed="true"></button>
@@ -38,54 +37,84 @@
 <div class="hero-scroll">Scroll to discover</div>
 </section>
 <section class="quick-search" id="booking-enquiry">
-<div class="container">
-<div class="booking-intro reveal">
-  <div class="booking-intro-copy">
-    <span class="eyebrow">Your celebration starts here</span>
-    <h2>Let’s plan your event.</h2>
-    <p>Choose the occasion, preferred date and number of guests. Then press the gold button to send your enquiry on WhatsApp. We’ll guide you through the next step.</p>
+  <div class="container booking-layout">
+    <div class="booking-intro reveal">
+      <div class="booking-intro-copy">
+        <span class="eyebrow">Make it a day to remember</span>
+        <h2>Let’s plan<br>your <em>event.</em></h2>
+        <p>Choose your occasion, preferred date and number of guests. Send your enquiry on WhatsApp, and our team will help you plan a celebration worthy of the moment.</p>
+      </div>
+      <div class="booking-steps" aria-label="How your enquiry works">
+        <div class="booking-step">
+          <span class="booking-step-number">01</span>
+          <span class="booking-step-icon" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none"><path d="M8 5h12l5 5v17H8z" stroke="currentColor" stroke-width="1.7"/><path d="M20 5v6h5M12 16h9M12 20h9M12 24h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          </span>
+          <div><strong>Share your details</strong><p>Tell us the occasion, date and guest count.</p></div>
+        </div>
+        <div class="booking-step">
+          <span class="booking-step-number">02</span>
+          <span class="booking-step-icon" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none"><path d="M26 15.4A11 11 0 0 1 9.7 24.9L5 26l1.3-4.5A11 11 0 1 1 26 15.4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M11 10.7c.7 4 3.1 6.4 7.2 8l2-2 3 1.5c-.7 2.4-2.4 3.1-4.3 2.7-5.8-1.4-9.6-5.3-10.2-10.1-.2-1.8 1-3.1 2.7-3.4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          </span>
+          <div><strong>Send on WhatsApp</strong><p>Review the enquiry and send it directly.</p></div>
+        </div>
+        <div class="booking-step">
+          <span class="booking-step-number">03</span>
+          <span class="booking-step-icon" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none"><rect x="5" y="7" width="22" height="21" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M10 4v6M22 4v6M5 13h22M10 20l4 4 8-8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <div><strong>Team confirms availability</strong><p>Our venue team checks your date and gets back to you.</p></div>
+        </div>
+      </div>
+      <div class="booking-signoff" aria-label="Royal Hall promise">
+        <span aria-hidden="true">♛</span>
+        <p>Special moments <i></i> Beautiful celebrations <i></i> At Royal Hall</p>
+      </div>
+    </div>
+
+    <form class="search-panel reveal" data-enquiry-form action="#">
+      <div class="enquiry-form-heading">
+        <div><span class="eyebrow">Event enquiry</span><h3>Start your celebration</h3></div>
+        <img src="assets/images/royal-hall-crest.webp" alt="Royal Hall" width="94" height="84" loading="lazy">
+      </div>
+      <div class="field">
+        <label for="eventType">Celebration type <span aria-hidden="true">*</span></label>
+        <select id="eventType" name="Event type" required>
+          <option value="">Choose an occasion</option>
+          <option>Wedding / Reception</option><option>Engagement</option><option>Birthday</option>
+          <option>Family function</option><option>Corporate event</option><option>Other celebration</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="eventDate">Preferred date <span aria-hidden="true">*</span></label>
+        <input id="eventDate" name="Event date" type="date" required aria-describedby="booking-date-help">
+        <span class="field-hint" id="booking-date-help">Choose your preferred date.</span>
+      </div>
+      <div class="field">
+        <label for="guestCount">Expected guests <span aria-hidden="true">*</span></label>
+        <select id="guestCount" name="Guest count" required>
+          <option value="">Choose guest count</option>
+          <option>100–150 guests</option>
+          <option>150–250 guests</option>
+          <option>More than 250 guests</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="setup">Setup preference <span class="optional-label">(optional)</span></label>
+        <select id="setup" name="Setup preference">
+          <option value="">Not decided yet</option><option>Stage-focused celebration</option>
+          <option>Dining-focused arrangement</option><option>Formal seating</option><option>Need guidance</option>
+        </select>
+      </div>
+      <button class="btn btn-booking-primary" type="submit">
+        <svg class="whatsapp-mark" viewBox="0 0 24 24" aria-hidden="true" fill="none"><path d="M20 11.6a8.1 8.1 0 0 1-12 7.1L4 20l1.2-3.9A8.1 8.1 0 1 1 20 11.6Z" stroke="currentColor" stroke-width="1.7"/><path d="M8.2 7.8c.4 2.7 2 4.5 4.9 5.7l1.4-1.3 2.2 1.1c-.4 1.7-1.6 2.4-3.1 2.1-3.8-.8-6.5-3.7-6.8-6.7-.1-1.1.7-2 1.8-2.1z" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"/></svg>
+        Continue on WhatsApp <span aria-hidden="true">↗</span>
+      </button>
+      <p class="search-note">You can review the WhatsApp message before sending. Your date is not booked until our venue team confirms availability.</p>
+      <p class="form-feedback" data-form-feedback role="status" aria-live="polite"></p>
+    </form>
   </div>
-  <div class="booking-steps" aria-label="How your enquiry works">
-    <div class="booking-step"><span>1</span><strong>Share your details</strong></div>
-    <div class="booking-step"><span>2</span><strong>Send on WhatsApp</strong></div>
-    <div class="booking-step"><span>3</span><strong>Team confirms availability</strong></div>
-  </div>
-</div>
-<form class="search-panel reveal" data-enquiry-form action="#">
-  <div class="field">
-    <label for="eventType">01 · Celebration type *</label>
-    <select id="eventType" name="Event type" required>
-      <option value="">Choose an occasion</option>
-      <option>Wedding / Reception</option><option>Engagement</option><option>Birthday</option>
-      <option>Family function</option><option>Corporate event</option><option>Other celebration</option>
-    </select>
-  </div>
-  <div class="field">
-    <label for="eventDate">02 · Preferred date *</label>
-    <input id="eventDate" name="Event date" type="date" required aria-describedby="booking-date-help">
-    <span class="field-hint" id="booking-date-help">Select the date you have in mind.</span>
-  </div>
-  <div class="field">
-    <label for="guestCount">03 · Expected guests *</label>
-    <select id="guestCount" name="Guest count" required>
-<option value="">Choose a guest range</option>
-<option>100–150 guests</option>
-<option>150–250 guests</option>
-<option>More than 250 guests</option>
-</select>
-  </div>
-  <div class="field">
-    <label for="setup">Optional · Setup preference</label>
-    <select id="setup" name="Setup preference">
-      <option value="">Not decided yet</option><option>Stage-focused celebration</option>
-      <option>Dining-focused arrangement</option><option>Formal seating</option><option>Need guidance</option>
-    </select>
-  </div>
-  <button class="btn btn-booking-primary" type="submit">Continue on WhatsApp <span aria-hidden="true">↗</span></button>
-  <p class="search-note">Your message will be prepared in WhatsApp so you can review and send it. Your date is not booked until our venue team confirms availability.</p>
-  <p class="form-feedback" data-form-feedback role="status" aria-live="polite"></p>
-</form>
-</div>
 </section>
 <section class="venue-film-section" aria-label="A film of the venue">
   <div class="container">
