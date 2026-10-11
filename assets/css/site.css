@@ -1455,3 +1455,135 @@ body:before{
   .site-header{padding-left:max(0px,env(safe-area-inset-left));padding-right:max(0px,env(safe-area-inset-right))}
   .site-footer{padding-bottom:max(24px,env(safe-area-inset-bottom))}
 }
+
+
+/* ================= HERO ENTRANCE SEQUENCE AFTER INTRO VIDEO ================= */
+/* The fixed floral artwork fades first; the stage photo then scales into place,
+   followed by crest, title, supporting copy and CTAs in deliberate staggered order. */
+body:not(.site-revealed):before{opacity:0;animation:none!important}
+body.site-revealed:before{
+  animation:hero-floral-fade 1.45s ease-out both,floral-edge-breathe 28s ease-in-out 1.45s infinite alternate;
+}
+@keyframes hero-floral-fade{from{opacity:0}to{opacity:1}}
+
+.hero{isolation:isolate}
+.hero-brand-crest{
+  position:absolute;z-index:3;display:block;
+  left:max(22px,calc((100vw - var(--max))/2 + 20px));
+  top:2.5%;width:clamp(150px,14.5vw,232px);height:auto;max-height:48%;
+  object-fit:contain;object-position:center;opacity:0;
+  filter:drop-shadow(0 9px 22px rgba(0,0,0,.44)) drop-shadow(0 0 15px rgba(230,197,116,.16));
+  transform:translate3d(0,20px,0) scale(.82);transform-origin:center;
+  pointer-events:none;
+}
+body.site-revealed .hero .hero-media img{
+  animation:hero-stage-pop 1.35s cubic-bezier(.18,.78,.19,1) .08s both;
+  will-change:opacity,transform;
+}
+@keyframes hero-stage-pop{
+  0%{opacity:0;transform:scale(1.085)}
+  70%{opacity:1;transform:scale(.992)}
+  100%{opacity:1;transform:scale(1)}
+}
+body.site-revealed .hero .hero-brand-crest{
+  animation:hero-crest-arrive 1.05s cubic-bezier(.16,.8,.24,1) .38s both;
+  will-change:opacity,transform,filter;
+}
+@keyframes hero-crest-arrive{
+  0%{opacity:0;transform:translate3d(0,24px,0) scale(.76);filter:blur(9px) drop-shadow(0 9px 22px rgba(0,0,0,.44))}
+  72%{opacity:1;transform:translate3d(0,-3px,0) scale(1.035);filter:blur(0) drop-shadow(0 9px 22px rgba(0,0,0,.44)) drop-shadow(0 0 18px rgba(230,197,116,.2))}
+  100%{opacity:1;transform:translate3d(0,0,0) scale(1);filter:drop-shadow(0 9px 22px rgba(0,0,0,.44)) drop-shadow(0 0 15px rgba(230,197,116,.16))}
+}
+body.site-revealed .hero .hero-content>.eyebrow{
+  animation:hero-copy-rise .72s cubic-bezier(.2,.75,.2,1) .62s both;
+}
+body.site-revealed .hero .hero-content>h1{
+  animation:hero-copy-rise .86s cubic-bezier(.2,.75,.2,1) .82s both;
+}
+body.site-revealed .hero .hero-title-primary{
+  display:inline-block;
+  animation:hero-word-blur-in .88s cubic-bezier(.16,.8,.24,1) .91s both;
+}
+body.site-revealed .hero .hero-title-accent{
+  display:inline-block;
+  animation:hero-word-blur-in 1s cubic-bezier(.16,.8,.24,1) 1.13s both,rb-shiny-text 6.8s ease-in-out 2.2s infinite;
+}
+body.site-revealed .hero .hero-content>.lede{
+  animation:hero-copy-rise .76s cubic-bezier(.2,.75,.2,1) 1.42s both;
+}
+body.site-revealed .hero .hero-content>.btn-row{
+  animation:hero-copy-rise .76s cubic-bezier(.2,.75,.2,1) 1.72s both;
+}
+body.site-revealed .hero .hero-content>.hero-note{
+  animation:hero-copy-rise .76s cubic-bezier(.2,.75,.2,1) 2.02s both;
+}
+body.site-revealed .hero .hero-scroll{
+  animation:hero-copy-rise .7s ease 2.2s both;
+}
+@keyframes hero-copy-rise{
+  0%{opacity:0;transform:translate3d(0,24px,0);filter:blur(7px)}
+  100%{opacity:1;transform:translate3d(0,0,0);filter:blur(0)}
+}
+@keyframes hero-word-blur-in{
+  0%{opacity:0;transform:translate3d(0,28px,0) scale(.98);filter:blur(11px)}
+  68%{opacity:1;filter:blur(0)}
+  100%{opacity:1;transform:translate3d(0,0,0) scale(1);filter:blur(0)}
+}
+
+/* Inner-page hero images and copy enter in the same restrained sequence. */
+body.site-revealed .page-hero-media img{
+  animation:hero-stage-pop 1.25s cubic-bezier(.18,.78,.19,1) .1s both;
+  will-change:opacity,transform;
+}
+body.site-revealed .page-hero .breadcrumb{animation:hero-copy-rise .6s ease .42s both}
+body.site-revealed .page-hero .eyebrow{animation:hero-copy-rise .66s ease .54s both}
+body.site-revealed .page-hero h1{animation:hero-copy-rise .88s cubic-bezier(.16,.8,.24,1) .72s both}
+body.site-revealed .page-hero .lede{animation:hero-copy-rise .72s ease 1.02s both}
+body.site-revealed .page-hero .btn-row{animation:hero-copy-rise .72s ease 1.24s both}
+
+/* Mobile placement: keep the crest visible above the title, without covering the text. */
+@media(max-width:760px){
+  .hero-brand-crest{
+    left:16px;top:13px;width:clamp(74px,19vw,104px);max-height:88px;
+    object-position:left top;
+  }
+  .hero-content{padding-top:clamp(112px,25vw,145px)!important}
+  .hero .hero-title-primary,.hero .hero-title-accent{overflow-wrap:normal}
+  body.site-revealed .hero .hero-media img{animation-duration:1.15s}
+  body.site-revealed .hero .hero-brand-crest{animation-delay:.28s}
+  body.site-revealed .hero .hero-content>.eyebrow{animation-delay:.5s}
+  body.site-revealed .hero .hero-content>h1{animation-delay:.72s}
+  body.site-revealed .hero .hero-title-primary{animation-delay:.78s}
+  body.site-revealed .hero .hero-title-accent{animation-delay:.98s,2.2s}
+  body.site-revealed .hero .hero-content>.lede{animation-delay:1.28s}
+  body.site-revealed .hero .hero-content>.btn-row{animation-delay:1.55s}
+  body.site-revealed .hero .hero-content>.hero-note{animation-delay:1.8s}
+}
+@media(max-width:420px){
+  .hero-brand-crest{left:14px;top:11px;width:74px;max-height:76px}
+  .hero-content{padding-top:100px!important}
+}
+
+/* Honor explicit motion reduction while keeping the complete hero visible. */
+@media(prefers-reduced-motion:reduce){
+  body:not(.site-revealed):before{opacity:1}
+  body.site-revealed:before{animation:none!important;opacity:1}
+  body.site-revealed .hero .hero-media img,
+  body.site-revealed .hero .hero-brand-crest,
+  body.site-revealed .hero .hero-content>.eyebrow,
+  body.site-revealed .hero .hero-content>h1,
+  body.site-revealed .hero .hero-title-primary,
+  body.site-revealed .hero .hero-title-accent,
+  body.site-revealed .hero .hero-content>.lede,
+  body.site-revealed .hero .hero-content>.btn-row,
+  body.site-revealed .hero .hero-content>.hero-note,
+  body.site-revealed .hero .hero-scroll,
+  body.site-revealed .page-hero-media img,
+  body.site-revealed .page-hero .breadcrumb,
+  body.site-revealed .page-hero .eyebrow,
+  body.site-revealed .page-hero h1,
+  body.site-revealed .page-hero .lede,
+  body.site-revealed .page-hero .btn-row{
+    animation:none!important;opacity:1!important;transform:none!important;filter:none!important;will-change:auto!important;
+  }
+}
