@@ -1983,3 +1983,13 @@ body.site-revealed .hero .hero-brand-crest.fx-logo-pop{
 @media(max-width:760px) and (prefers-reduced-motion:reduce){
   .hero-brand-crest.fx-logo-pop{transform:none!important}
 }
+
+
+/* Keep banquet photography luminous on the right, with the dark fade focused on text/logo at left. */
+.hero-slideshow [data-hero-slide]{filter:brightness(.86) saturate(1.04) contrast(1.03)!important}
+body.site-revealed .hero-slideshow [data-hero-slide].is-active{
+  animation:hero-stage-pop 1.3s cubic-bezier(.18,.78,.19,1) .08s both!important;
+}
+@media(max-width:760px){
+  .hero-slideshow [data-hero-slide]{filter:brightness(.8) saturate(1.03) contrast(1.03)!important}
+}
