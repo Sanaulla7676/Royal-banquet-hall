@@ -23,192 +23,243 @@
   }
   if('IntersectionObserver'in window){const io=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('is-visible');io.unobserve(e.target);}}),{threshold:.08});document.querySelectorAll('.reveal').forEach(e=>io.observe(e));}
 
-  // React Bits Circle Gallery-inspired 3D carousel, implemented without a React dependency.
-  // Nine cards form an orbit. The center image advances through the full photo dataset.
-  function renderCircleGallery() {
-    const root = document.getElementById('circleGallery');
-    const stage = document.getElementById('circleGalleryStage');
-    const ring = document.getElementById('circleGalleryRing');
-    const status = document.getElementById('circleGalleryStatus');
-    if (!root || !stage || !ring || !media.photos.length) return;
+  // React Bits-inspired Parallax Carousel / Coverflow with 5-card depth and a seamless data loop.
+  function renderParallaxCarousel() {
+    const root = document.getElementById('galleryCarousel');
+    const stage = document.getElementById('galleryCarouselStage');
+    const showcase = document.getElementById('galleryCarouselShowcase');
+    const caption = document.getElementById('galleryCarouselCaption');
+    const counter = document.getElementById('galleryCarouselCounter');
+    const progress = document.getElementById('galleryCarouselProgress');
+    const progressBar = document.getElementById('galleryCarouselProgressBar');
+    if (!root || !stage || !media.photos.length) return;
 
     const photos = media.photos;
-    const count = Math.min(9, photos.length);
-    const centre = Math.floor(count / 2);
-    const stepAngle = 360 / count;
+    const count = Math.min(5, photos.length);
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let activeIndex = 0;
-    let totalRotation = 0;
-    let lastBoundary = 0;
-    let lastFrame = 0;
-    let rafId = 0;
-    let dragging = false;
-    let dragStartX = 0;
-    let dragBaseRotation = 0;
-    let suppressClick = false;
-    let tween = null;
-    let inView = !('IntersectionObserver' in window);
     const slots = [];
+    let activeIndex = 0;
+    let inView = !('IntersectionObserver' in window);
+    let paused = false;
+    let animating = false;
+    let timer = 0;
+    let progressFrame = 0;
+    let pointerStart = null;
+    let dragDx = 0;
+    let suppressClick = false;
 
-    stage.tabIndex = 0;
-    stage.setAttribute('aria-roledescription', 'carousel');
+    function mod(value, length) { return ((value % length) + length) % length; }
 
-    for (let i = 0; i < count; i++) {
-      const offset = i - centre;
-      const card = document.createElement('button');
-      card.type = 'button';
-      card.className = 'circle-gallery-card luxury-interactive fx-glare fx-image-zoom';
-      card.dataset.circleSlot = String(i);
-      card.style.setProperty('--circle-angle', (offset * stepAngle) + 'deg');
-      card.setAttribute('aria-label', 'Open featured venue photo');
+    function photoIndexFor(offset) { return mod(activeIndex + offset, photos.length); }
 
-      const image = document.createElement('img');
-      image.loading = i < 5 ? 'eager' : 'lazy';
-      image.decoding = 'async';
-      image.draggable = false;
-
-      const indexLabel = document.createElement('span');
-      indexLabel.className = 'circle-gallery-index';
-      indexLabel.setAttribute('aria-hidden', 'true');
-
-      const caption = document.createElement('span');
-      caption.className = 'circle-gallery-caption';
-      card.append(image, indexLabel, caption);
-      card.addEventListener('click', () => {
-        if (suppressClick) { suppressClick = false; return; }
-        const imgs = [...ring.querySelectorAll('.circle-gallery-card img')];
-        const selected = imgs.indexOf(image);
-        if (selected >= 0) window.RoyalLightbox?.open(imgs, selected, document.querySelector('.lightbox'));
-      });
-      slots.push({card, image, indexLabel, caption, offset});
-      ring.appendChild(card);
-    }
-
-    function modulo(value, length) { return ((value % length) + length) % length; }
-
-    function setCard(slot) {
-      const photoIndex = modulo(activeIndex + slot.offset, photos.length);
-      const photo = photos[photoIndex];
+    function fillCard(slot, index) {
+      const photo = photos[mod(index, photos.length)];
       slot.image.src = encodeURI(photo.src);
       slot.image.alt = photo.alt || photo.title || 'Royal Hall venue photograph';
-      slot.caption.textContent = photo.title || ('Venue photo ' + (photoIndex + 1));
-      slot.indexLabel.textContent = String(photoIndex + 1).padStart(2, '0');
-      slot.card.setAttribute('aria-label', 'View photo ' + (photoIndex + 1) + ' of ' + photos.length + ': ' + (photo.title || 'Venue photo'));
-      slot.card.dataset.photoIndex = String(photoIndex);
+      slot.label.textContent = photo.title || ('Venue photograph ' + (mod(index, photos.length) + 1));
+      slot.number.textContent = String(mod(index, photos.length) + 1).padStart(2,'0');
+      slot.card.setAttribute('aria-label','View photo ' + (mod(index, photos.length) + 1) + ' of ' + photos.length + ': ' + (photo.title || 'Venue photograph'));
+      slot.card.dataset.photoIndex = String(mod(index, photos.length));
     }
 
-    function refreshCards() {
-      slots.forEach(setCard);
-      const activePhoto = photos[activeIndex];
-      if (status) status.textContent = 'PHOTO ' + String(activeIndex + 1).padStart(2, '0') + ' / ' + photos.length + '  ·  ' + (activePhoto.title || 'The Royal Hall');
-      stage.setAttribute('aria-label', 'Photo ' + (activeIndex + 1) + ' of ' + photos.length + ': ' + (activePhoto.title || 'Venue photo'));
-    }
-
-    // Re-index by one card-width each time the orbit crosses a card, so rotation stays seamless.
-    function syncOrbit() {
-      const boundary = Math.trunc(totalRotation / stepAngle);
-      while (boundary > lastBoundary) {
-        activeIndex = modulo(activeIndex - 1, photos.length);
-        lastBoundary++;
-        refreshCards();
+    function positionCard(slot, offset, immediate = false, drag = 0) {
+      const stageWidth = Math.max(280, stage.clientWidth);
+      const cardWidth = slot.card.offsetWidth || Math.min(288,stageWidth * .4);
+      const distance = Math.min(stageWidth * (stageWidth < 560 ? .265 : .26), cardWidth * .92);
+      const abs = Math.abs(offset);
+      const scale = abs === 0 ? 1 : abs === 1 ? .84 : .69;
+      const opacity = abs === 0 ? 1 : abs === 1 ? .73 : .38;
+      slot.card.style.zIndex = String(10 - abs);
+      slot.card.style.opacity = String(opacity);
+      slot.card.style.filter = abs === 0 ? 'brightness(1)' : 'brightness(' + (abs === 1 ? '.78' : '.59') + ')';
+      slot.card.classList.toggle('is-centre',abs === 0);
+      slot.card.style.transform = 'translate(calc(-50% + ' + (offset * distance + drag * .46).toFixed(1) + 'px), -50%) scale(' + scale + ')';
+      slot.card.setAttribute('aria-hidden',String(abs > 1));
+      slot.card.tabIndex = abs > 1 ? -1 : 0;
+      if (immediate) {
+        slot.card.style.transition = 'none';
+        slot.card.getBoundingClientRect();
+        requestAnimationFrame(() => { slot.card.style.transition = ''; });
       }
-      while (boundary < lastBoundary) {
-        activeIndex = modulo(activeIndex + 1, photos.length);
-        lastBoundary--;
-        refreshCards();
+    }
+
+    function setStatus() {
+      const photo = photos[activeIndex];
+      if (caption) caption.textContent = photo.title || 'The Royal Hall';
+      if (counter) counter.textContent = String(activeIndex + 1).padStart(2,'0') + ' / ' + String(photos.length).padStart(2,'0');
+      root.setAttribute('aria-label','Featured photograph ' + (activeIndex + 1) + ' of ' + photos.length);
+    }
+
+    function resetProgress() {
+      if (!progressBar || !progress) return;
+      progress.classList.remove('is-running');
+      progress.setAttribute('aria-valuenow','0');
+      progressBar.style.width = '0%';
+      void progress.offsetWidth;
+      if (!reducedMotion && !paused && inView) {
+        progress.classList.add('is-running');
       }
-      const visibleRotation = totalRotation - lastBoundary * stepAngle;
-      ring.style.transform = 'rotateY(' + visibleRotation.toFixed(3) + 'deg)';
     }
 
-    function tweenTo(target, duration = 680) {
-      tween = {from:totalRotation,to:target,start:performance.now(),duration};
-      if (!rafId && inView) { lastFrame = 0; rafId = requestAnimationFrame(tick); }
+    function pause() {
+      paused = true;
+      showcase?.classList.add('is-paused');
+      if (timer) window.clearInterval(timer);
+      timer = 0;
     }
 
-    function move(direction) {
-      if (dragging) return;
-      const target = totalRotation + (direction * stepAngle);
-      tweenTo(target, 690);
+    function startTimer() {
+      if (timer) window.clearInterval(timer);
+      timer = 0;
+      if (reducedMotion || paused || !inView || document.hidden) return;
+      showcase?.classList.remove('is-paused');
+      resetProgress();
+      timer = window.setInterval(() => move(1,false),4800);
     }
-    root.querySelector('[data-circle-next]')?.addEventListener('click', () => move(1));
-    root.querySelector('[data-circle-prev]')?.addEventListener('click', () => move(-1));
-    stage.addEventListener('keydown', event => {
-      if (event.key === 'ArrowRight') { event.preventDefault(); move(1); }
-      if (event.key === 'ArrowLeft') { event.preventDefault(); move(-1); }
+
+    function refreshPositions() {
+      slots.forEach(slot => positionCard(slot,slot.offset,true));
+    }
+
+    function move(direction = 1, fromUser = true) {
+      if (animating || photos.length < 2) return;
+      if (fromUser) startTimer();
+      animating = true;
+      root.classList.add('is-moving');
+      root.classList.remove('is-paused');
+      slots.forEach(slot => positionCard(slot,slot.offset - direction));
+      window.setTimeout(() => {
+        activeIndex = mod(activeIndex + direction,photos.length);
+        slots.forEach(slot => {
+          let nextOffset = slot.offset - direction;
+          if (nextOffset < -2) {
+            nextOffset = 2;
+            slot.offset = nextOffset;
+            slot.card.style.transition = 'none';
+            fillCard(slot,photoIndexFor(nextOffset));
+            positionCard(slot,nextOffset,true);
+          } else if (nextOffset > 2) {
+            nextOffset = -2;
+            slot.offset = nextOffset;
+            slot.card.style.transition = 'none';
+            fillCard(slot,photoIndexFor(nextOffset));
+            positionCard(slot,nextOffset,true);
+          } else {
+            slot.offset = nextOffset;
+          }
+        });
+        setStatus();
+        root.classList.remove('is-moving');
+        animating = false;
+        slots.forEach(slot => { slot.card.style.transition = ''; });
+        resetProgress();
+      }, reducedMotion ? 0 : 780);
+    }
+
+    for (let i = 0; i < count; i++) {
+      const offset = i - 2;
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'gallery-carousel-card luxury-interactive fx-glare fx-image-zoom fx-gallery-parallax';
+      card.dataset.carouselOffset = String(offset);
+      const image = document.createElement('img');
+      image.loading = i < 3 ? 'eager' : 'lazy';
+      image.decoding = 'async';
+      image.draggable = false;
+      const number = document.createElement('span');
+      number.className = 'gallery-carousel-count';
+      number.setAttribute('aria-hidden','true');
+      const label = document.createElement('span');
+      label.className = 'gallery-carousel-label';
+      card.append(image,number,label);
+      const slot = {card,image,number,label,offset};
+      card.addEventListener('click',() => {
+        if (suppressClick) { suppressClick = false; return; }
+        if (slot.offset !== 0) {
+          move(slot.offset < 0 ? -1 : 1,true);
+          return;
+        }
+        const visibleImages = [...document.querySelectorAll('#galleryGrid [data-lightbox] img')];
+        const selected = visibleImages.findIndex(img => (img.getAttribute('src') || '').replace(/^\.\//,'') === photos[activeIndex].src);
+        window.RoyalLightbox?.open(visibleImages,Math.max(0,selected),document.querySelector('.lightbox'));
+      });
+      slots.push(slot);
+      stage.appendChild(card);
+    }
+
+    slots.forEach(slot => {
+      fillCard(slot,photoIndexFor(slot.offset));
+      positionCard(slot,slot.offset,true);
+    });
+    setStatus();
+
+    root.querySelector('[data-gallery-next]')?.addEventListener('click',() => move(1,true));
+    root.querySelector('[data-gallery-prev]')?.addEventListener('click',() => move(-1,true));
+    stage.addEventListener('keydown',event => {
+      if(event.key === 'ArrowRight'){event.preventDefault();move(1,true)}
+      if(event.key === 'ArrowLeft'){event.preventDefault();move(-1,true)}
     });
 
-    stage.addEventListener('pointerdown', event => {
-      if (event.target.closest('.circle-gallery-control')) return;
-      dragging = true;
-      tween = null;
-      dragStartX = event.clientX;
-      dragBaseRotation = totalRotation;
-      root.classList.add('is-dragging');
+    stage.addEventListener('pointerdown',event => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      pointerStart = {x:event.clientX,y:event.clientY};
+      dragDx = 0;
+      pause();
     });
-    stage.addEventListener('pointermove', event => {
-      if (!dragging) return;
-      totalRotation = dragBaseRotation + (event.clientX - dragStartX) * .22;
-      syncOrbit();
+    stage.addEventListener('pointermove',event => {
+      if(!pointerStart || animating) return;
+      const dx = event.clientX - pointerStart.x;
+      const dy = event.clientY - pointerStart.y;
+      if(Math.abs(dx) > Math.abs(dy) + 4 && Math.abs(dx) > 7) {
+        dragDx = dx;
+        root.classList.add('is-dragging');
+        slots.forEach(slot => positionCard(slot,slot.offset, false,dx));
+      }
     });
     const endDrag = () => {
-      if (!dragging) return;
-      dragging = false;
+      if(!pointerStart) return;
+      pointerStart = null;
       root.classList.remove('is-dragging');
-      if (Math.abs(totalRotation - dragBaseRotation) > 5) {
+      if(Math.abs(dragDx) > 40) {
         suppressClick = true;
-        window.setTimeout(() => { suppressClick = false; }, 280);
+        window.setTimeout(() => { suppressClick = false; },300);
+        const dir = dragDx < 0 ? 1 : -1;
+        dragDx = 0;
+        move(dir,true);
+      } else {
+        dragDx = 0;
+        refreshPositions();
+        startTimer();
       }
-      const snapped = Math.round(totalRotation / stepAngle) * stepAngle;
-      tweenTo(snapped, 360);
     };
-    window.addEventListener('pointerup', endDrag);
-    window.addEventListener('pointercancel', endDrag);
+    window.addEventListener('pointerup',endDrag);
+    window.addEventListener('pointercancel',endDrag);
 
-    function updateRadius() {
-      const width = Math.max(280, stage.clientWidth);
-      const radius = Math.min(width * (width < 560 ? .39 : .42), 455);
-      slots.forEach(slot => slot.card.style.setProperty('--circle-radius', radius.toFixed(1) + 'px'));
-    }
-    window.addEventListener('resize', updateRadius, {passive:true});
+    root.addEventListener('mouseenter',pause);
+    root.addEventListener('mouseleave',() => { paused = false; startTimer(); });
+    root.addEventListener('focusin',pause);
+    root.addEventListener('focusout',event => {
+      if(!root.contains(event.relatedTarget)){paused=false;startTimer()}
+    });
+    document.addEventListener('visibilitychange',() => {
+      if(document.hidden) pause();
+      else {paused=false;startTimer()}
+    });
 
-    // Auto-spin forever while visible. Respect reduced-motion and browser-tab visibility.
-    function tick(now) {
-      if (!lastFrame) lastFrame = now;
-      const delta = Math.min(40, Math.max(0, now - lastFrame));
-      lastFrame = now;
-      if (inView && !document.hidden && !dragging) {
-        if (tween) {
-          const progress = Math.min(1, (now - tween.start) / tween.duration);
-          const eased = progress < .5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-          totalRotation = tween.from + (tween.to - tween.from) * eased;
-          if (progress >= 1) tween = null;
-        } else if (!reducedMotion) {
-          totalRotation += delta * .012; // 12 degrees per second; continuous loop.
-        }
-        syncOrbit();
-      }
-      if ((inView && !reducedMotion) || dragging || tween) rafId = requestAnimationFrame(tick);
-      else { rafId = 0; lastFrame = 0; }
+    if('IntersectionObserver' in window){
+      const io=new IntersectionObserver(entries=>{
+        inView=Boolean(entries[0]?.isIntersecting);
+        if(!inView)pause();
+        else {paused=false;startTimer()}
+      },{threshold:.08,rootMargin:'80px 0px 80px 0px'});
+      io.observe(showcase || root);
     }
-
-    if ('IntersectionObserver' in window) {
-      const observer = new IntersectionObserver(entries => {
-        inView = Boolean(entries[0]?.isIntersecting);
-        if (inView && !reducedMotion && !rafId) { lastFrame = 0; rafId = requestAnimationFrame(tick); }
-      }, {threshold:.06,rootMargin:'80px 0px 80px 0px'});
-      observer.observe(root);
-      document.addEventListener('visibilitychange', () => {
-        if (!document.hidden && inView && !reducedMotion && !rafId) { lastFrame = 0; rafId = requestAnimationFrame(tick); }
-      });
-    }
-    refreshCards();
-    updateRadius();
-    syncOrbit();
-    if (!reducedMotion) rafId = requestAnimationFrame(tick);
-    root.dataset.carouselInitialized = 'true';
-    root.dataset.carouselMode = reducedMotion ? 'manual-reduced-motion' : 'continuous-loop';
+    window.addEventListener('resize',refreshPositions,{passive:true});
+    if(!reducedMotion)startTimer();
+    else progress?.classList.add('is-paused');
+    root.dataset.carouselInitialized='true';
+    root.dataset.carouselMode=reducedMotion?'manual-reduced-motion':'parallax-coverflow-loop';
   }
-  renderCircleGallery();
 
+  renderParallaxCarousel();
 })();
