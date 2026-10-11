@@ -306,7 +306,7 @@
     });
 
     addClassTo(root,'.section-head h2,.booking-intro h2,.cta-banner h2,.catering-preview-copy h2,.home-map-copy h2,.reviews-map-copy h2','fx-heading-glow fx-heading-line');
-    addClassTo(root,'.section-head h2,.booking-intro h2,.cta-banner h2,.catering-preview-copy h2,.home-map-copy h2,.reviews-map-copy h2','.fx-heading-sweep');
+    addClassTo(root,'.section-head h2,.booking-intro h2,.cta-banner h2,.catering-preview-copy h2,.home-map-copy h2,.reviews-map-copy h2','fx-heading-sweep');
     addClassTo(root,'.hero h1 em,.page-hero h1 em,.hero .eyebrow,.page-hero .eyebrow','fx-text-shimmer');
     addClassTo(root,'.hero-title-primary','fx-text-rise');
     addClassTo(root,'.hero-title-accent','fx-text-blur');
