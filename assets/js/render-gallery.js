@@ -161,7 +161,7 @@
       const offset = i - 2;
       const card = document.createElement('button');
       card.type = 'button';
-      card.className = 'gallery-carousel-card luxury-interactive fx-glare fx-image-zoom fx-gallery-parallax';
+      card.className = 'gallery-carousel-card luxury-interactive fx-glare fx-image-zoom fx-gallery-parallax fx-card-glare fx-card-border fx-card-lift';
       card.dataset.carouselOffset = String(offset);
       const image = document.createElement('img');
       image.loading = i < 3 ? 'eager' : 'lazy';
@@ -229,6 +229,8 @@
         move(dir,true);
       } else {
         dragDx = 0;
+        paused = false;
+        showcase?.classList.remove('is-paused');
         refreshPositions();
         startTimer();
       }
