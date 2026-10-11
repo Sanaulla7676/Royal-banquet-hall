@@ -134,6 +134,97 @@
     }
   }
 
+  // React Bits-inspired Gooey Nav: one liquid gold active pill glides between real page links.
+  function initRoyalGooeyNav() {
+    const nav = document.querySelector('.nav-links');
+    if (!nav || nav.dataset.gooeyReady === 'true') return;
+    const links = [...nav.querySelectorAll('a[href]')];
+    if (!links.length) return;
+
+    const normalizePath = value => {
+      const path = (value || '').split(/[?#]/)[0].replace(/\\/g,'/');
+      const last = path.split('/').filter(Boolean).pop();
+      return !last || last === 'index.html' ? 'index.html' : last.toLowerCase();
+    };
+    const currentPath = normalizePath(window.location.pathname);
+    let activeLink = links.find(link => normalizePath(link.getAttribute('href')) === currentPath) ||
+      links.find(link => link.getAttribute('aria-current') === 'page') || links[0];
+
+    links.forEach(link => {
+      const active = link === activeLink;
+      if (active) link.setAttribute('aria-current','page');
+      else link.removeAttribute('aria-current');
+    });
+
+    const svgNS = 'http://www.w3.org/2000/svg';
+    if (!document.getElementById('royal-gooey-filter')) {
+      const svg = document.createElementNS(svgNS,'svg');
+      svg.setAttribute('aria-hidden','true');
+      svg.setAttribute('focusable','false');
+      svg.classList.add('royal-gooey-svg');
+      svg.innerHTML = '<defs><filter id="royal-gooey-filter" x="-35%" y="-45%" width="170%" height="190%"><feGaussianBlur in="SourceGraphic" stdDeviation="5.5" result="goo-blur"></feGaussianBlur><feColorMatrix in="goo-blur" mode="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 22 -9" result="goo"></feColorMatrix><feComposite in="SourceGraphic" in2="goo" operator="atop"></feComposite></filter></defs>';
+      document.body.appendChild(svg);
+    }
+
+    const layer = document.createElement('span');
+    layer.className = 'gooey-nav-layer';
+    layer.setAttribute('aria-hidden','true');
+    const blob = document.createElement('span');
+    blob.className = 'gooey-nav-blob';
+    const tail = document.createElement('span');
+    tail.className = 'gooey-nav-tail';
+    layer.append(blob,tail);
+    nav.insertBefore(layer,nav.firstChild);
+
+    let ready = false;
+    let resizeFrame = 0;
+    const place = (link, animate = true) => {
+      if (!link || !nav.isConnected) return;
+      const navBox = nav.getBoundingClientRect();
+      const linkBox = link.getBoundingClientRect();
+      if (!navBox.width || !linkBox.width) return;
+      const left = linkBox.left - navBox.left;
+      const width = linkBox.width;
+      layer.style.setProperty('--goo-x', left + 'px');
+      layer.style.setProperty('--goo-width', width + 'px');
+      blob.style.width = width + 'px';
+      tail.style.width = Math.max(22, width * .46) + 'px';
+      tail.style.left = Math.max(0,left - 9) + 'px';
+      blob.style.left = left + 'px';
+      blob.style.transitionDuration = animate ? '.62s' : '0s';
+      layer.classList.add('is-positioned');
+      nav.classList.add('gooey-nav-ready');
+      if (!ready) {
+        requestAnimationFrame(() => layer.classList.add('is-visible'));
+        ready = true;
+      }
+    };
+
+    links.forEach(link => {
+      link.addEventListener('click', () => {
+        links.forEach(item => item.classList.toggle('gooey-active', item === link));
+        activeLink = link;
+        place(link,true);
+      });
+      link.classList.toggle('gooey-active',link === activeLink);
+    });
+
+    place(activeLink,false);
+    window.addEventListener('resize',() => {
+      if (resizeFrame) cancelAnimationFrame(resizeFrame);
+      resizeFrame = requestAnimationFrame(() => place(activeLink,false));
+    },{passive:true});
+
+    if ('ResizeObserver' in window) {
+      const observer = new ResizeObserver(() => place(activeLink,false));
+      observer.observe(nav);
+      links.forEach(link => observer.observe(link));
+    }
+    nav.dataset.gooeyReady = 'true';
+  }
+
+  initRoyalGooeyNav();
+
   const menuButton = document.querySelector('.menu-toggle');
   const nav = document.querySelector('.nav-links');
   if (menuButton && nav) {
