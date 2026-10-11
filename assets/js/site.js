@@ -205,12 +205,24 @@
         links.forEach(item => item.classList.toggle('gooey-active', item === link));
         activeLink = link;
         place(link,true);
-        // Let the liquid pill travel before same-tab navigation, while preserving
-        // middle-click, modifier-click and links explicitly opening another tab.
-        if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey ||
-            event.shiftKey || event.altKey || link.target === '_blank') return;
-        event.preventDefault();
-        window.setTimeout(() => { window.location.href = link.href; }, 230);
+
+        // Let the browser perform exactly one normal navigation. The previous delayed
+        // location.href redirect could race with native anchor handling and cause a
+        // duplicate page load when a visitor clicked again during the transition.
+        if (event.button !== 0 || event.metaKey || event.ctrlKey ||
+            event.shiftKey || event.altKey || link.target === '_blank' ||
+            link.hasAttribute('download')) return;
+
+        const destination = new URL(link.href, window.location.href);
+        const targetPath = normalizePath(destination.pathname);
+        const currentPath = normalizePath(window.location.pathname);
+        if (destination.origin === window.location.origin &&
+            targetPath === currentPath &&
+            destination.search === window.location.search &&
+            !destination.hash) {
+          // Clicking the already-active page should not reload it.
+          event.preventDefault();
+        }
       });
       link.classList.toggle('gooey-active',link === activeLink);
     });
