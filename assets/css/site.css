@@ -3125,3 +3125,6 @@ body.site-revealed .hero .hero-brand-crest.fx-logo-pop{
   .mobile-hero-crest-seal:after,.site-header:after{animation:none!important}
   .site-header .nav-links.open{animation:none!important}
 }
+
+
+@media(min-width:761px){.mobile-hero-crest-seal{display:none!important}}
