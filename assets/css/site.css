@@ -1962,3 +1962,22 @@ body.fx-background-ambient:before{animation:floral-edge-breathe 28s ease-in-out 
   .search-panel .field input[type="date"],.form-panel .field input[type="date"]{font-size:16px!important}
   .gallery-carousel-card.fx-gallery-center{box-shadow:0 17px 35px rgba(0,0,0,.43),0 0 18px rgba(224,183,94,.15)}
 }
+
+
+/* Final entrance timing: do not let the crest's animation finish behind the intro veil. */
+.hero-brand-crest.fx-logo-pop{animation:none!important;opacity:0}
+body.site-revealed .hero .hero-brand-crest.fx-logo-pop{
+  animation:hero-crest-arrive-left 1.05s cubic-bezier(.16,.8,.24,1) .38s both!important;
+}
+@media(max-width:760px){
+  body.site-revealed .hero .hero-brand-crest.fx-logo-pop{
+    animation:hero-crest-arrive-mobile .95s cubic-bezier(.16,.8,.24,1) .38s both!important;
+  }
+}
+.hero-content{padding-left:clamp(190px,22vw,350px)!important}
+@media(max-width:760px){.hero-content{padding-left:0!important}}
+@media(prefers-reduced-motion:reduce){
+  .hero-brand-crest.fx-logo-pop{animation:none!important;opacity:1!important;transform:translateY(-50%) scale(1)!important}
+  @media(max-width:760px){.hero-brand-crest.fx-logo-pop{transform:none!important}}
+  .gallery-carousel-card{transition:none!important}
+}
