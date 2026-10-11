@@ -3,17 +3,66 @@
   const esc = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function card(photo,index) {
     const src=encodeURI(photo.src);
-    return '<button class="gallery-item reveal" data-gallery-category="'+esc(photo.category)+'" data-lightbox type="button" aria-label="Open photo: '+esc(photo.alt)+'"><img src="'+src+'" alt="'+esc(photo.alt)+'" loading="lazy" onerror="this.closest(\'button\').hidden=true"><span class="gallery-caption">'+esc(photo.title||('Venue photo '+(index+1)))+'</span></button>';
+    const loading=index < 8 ? 'eager' : 'lazy';
+    const priority=index < 5 ? 'high' : 'auto';
+    return '<button class="gallery-item gallery-photo-card" data-gallery-category="'+esc(photo.category)+'" data-lightbox type="button" aria-label="Open photo: '+esc(photo.alt)+'" style="--gallery-order:'+index+'">'+
+      '<img src="'+src+'" alt="'+esc(photo.alt)+'" loading="'+loading+'" decoding="async" fetchpriority="'+priority+'" data-gallery-photo>'+
+      '<span class="gallery-caption">'+esc(photo.title||('Venue photo '+(index+1)))+'</span></button>';
   }
+
+  function attachImageRecovery(image) {
+    image.addEventListener('load',() => {
+      image.classList.add('is-image-loaded');
+      image.closest('.gallery-photo-card,.gallery-carousel-card')?.classList.add('is-image-loaded');
+    });
+    image.addEventListener('error',() => {
+      const fallback='assets/images/hero-venue.jpg';
+      if(image.dataset.fallbackApplied!=='true' && !image.src.endsWith('/hero-venue.jpg')) {
+        image.dataset.fallbackApplied='true';
+        image.src=fallback;
+        return;
+      }
+      image.classList.add('image-load-error');
+      image.alt=image.alt || 'Royal Hall venue photograph';
+      const card=image.closest('.gallery-photo-card,.gallery-carousel-card');
+      if(card) card.classList.add('is-image-loaded','image-load-error');
+    });
+    if(image.complete && image.naturalWidth>0) {
+      image.classList.add('is-image-loaded');
+      image.closest('.gallery-photo-card,.gallery-carousel-card')?.classList.add('is-image-loaded');
+    }
+  }
+
   function renderPhotos(target,limit) {
     if(!target)return;
-    target.innerHTML=media.photos.slice(0,limit||media.photos.length).map(card).join('');
-    target.querySelectorAll('[data-lightbox]').forEach(btn=>btn.addEventListener('click',()=>{
+    const photos=media.photos.slice(0,limit||media.photos.length);
+    // Don't replace the working static fallback grid with an empty render if data fails.
+    if(!photos.length) {
+      target.dataset.photoCount=String(target.querySelectorAll('img').length);
+      target.dataset.photoRender='static-fallback';
+      return;
+    }
+    target.innerHTML=photos.map(card).join('');
+    target.dataset.photoCount=String(photos.length);
+    target.dataset.photoRender='loaded-from-media';
+
+    const images=[...target.querySelectorAll('img[data-gallery-photo]')];
+    images.forEach(attachImageRecovery);
+
+    target.querySelectorAll('[data-lightbox]').forEach(btn=>btn.addEventListener('click',() => {
       const imgs=[...target.querySelectorAll('[data-lightbox] img')].filter(img=>!img.closest('[hidden]'));
-      window.RoyalLightbox?.open(imgs,imgs.indexOf(btn.querySelector('img')),document.querySelector('.lightbox'));
+      const current=btn.querySelector('img');
+      window.RoyalLightbox?.open(imgs,imgs.indexOf(current),document.querySelector('.lightbox'));
     }));
+
+    // Cards are visible from the start; reveal styling may decorate them but cannot hide them.
+    target.querySelectorAll('.gallery-photo-card').forEach((item,index) => {
+      item.classList.add('is-gallery-visible');
+      item.style.setProperty('--gallery-order',String(Math.min(index,10)));
+    });
     window.RoyalMotion?.refresh(target);
   }
+
   renderPhotos(document.getElementById('galleryGrid'));
   renderPhotos(document.getElementById('homeGallery'),12);
   const videos=document.getElementById('videoGallery');
@@ -54,6 +103,7 @@
 
     function fillCard(slot, index) {
       const photo = photos[mod(index, photos.length)];
+      slot.image.dataset.fallbackApplied = 'false';
       slot.image.src = encodeURI(photo.src);
       slot.image.alt = photo.alt || photo.title || 'Royal Hall venue photograph';
       slot.label.textContent = photo.title || ('Venue photograph ' + (mod(index, photos.length) + 1));
@@ -164,9 +214,11 @@
       card.className = 'gallery-carousel-card luxury-interactive fx-glare fx-image-zoom fx-gallery-parallax fx-card-glare fx-card-border fx-card-lift';
       card.dataset.carouselOffset = String(offset);
       const image = document.createElement('img');
-      image.loading = i < 3 ? 'eager' : 'lazy';
+      image.loading = 'eager';
       image.decoding = 'async';
+      image.fetchPriority = i === 2 ? 'high' : 'auto';
       image.draggable = false;
+      attachImageRecovery(image);
       const number = document.createElement('span');
       number.className = 'gallery-carousel-count';
       number.setAttribute('aria-hidden','true');
