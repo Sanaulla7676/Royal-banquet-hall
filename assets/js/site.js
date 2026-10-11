@@ -201,10 +201,16 @@
     };
 
     links.forEach(link => {
-      link.addEventListener('click', () => {
+      link.addEventListener('click', event => {
         links.forEach(item => item.classList.toggle('gooey-active', item === link));
         activeLink = link;
         place(link,true);
+        // Let the liquid pill travel before same-tab navigation, while preserving
+        // middle-click, modifier-click and links explicitly opening another tab.
+        if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey ||
+            event.shiftKey || event.altKey || link.target === '_blank') return;
+        event.preventDefault();
+        window.setTimeout(() => { window.location.href = link.href; }, 230);
       });
       link.classList.toggle('gooey-active',link === activeLink);
     });
