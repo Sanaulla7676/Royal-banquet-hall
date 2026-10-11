@@ -2947,3 +2947,13 @@ body.site-revealed .hero .hero-brand-crest.fx-logo-pop{
   .site-header:after,.site-header .brand:after{animation:none!important}
   .gallery-grid .gallery-photo-card,.gallery-grid .gallery-photo-card img{transition:none!important}
 }
+
+
+/* Fallback viewport units for older mobile browsers. */
+.hero{height:clamp(552px,calc(80vh - 67.2px),704px)!important;height:clamp(552px,calc(80svh - 67.2px),704px)!important}
+@media(max-width:760px){
+  .hero{height:clamp(496px,calc(80vh - 54.4px),632px)!important;height:clamp(496px,calc(80svh - 54.4px),632px)!important}
+}
+@media(max-width:420px){
+  .hero{height:clamp(472px,calc(80vh - 49.6px),600px)!important;height:clamp(472px,calc(80svh - 49.6px),600px)!important}
+}
