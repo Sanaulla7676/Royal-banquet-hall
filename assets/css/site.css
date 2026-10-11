@@ -1587,3 +1587,28 @@ body.site-revealed .page-hero .btn-row{animation:hero-copy-rise .72s ease 1.24s 
     animation:none!important;opacity:1!important;transform:none!important;filter:none!important;will-change:auto!important;
   }
 }
+
+
+/* Keep the gold CTA reflections synchronized with the delayed hero reveal. */
+body:not(.site-revealed) .hero .btn:before{animation:none!important;opacity:0}
+body.site-revealed .hero .hero-content>.btn-row .btn:nth-child(1){
+  animation:hero-copy-rise .7s cubic-bezier(.2,.75,.2,1) 1.82s both;
+}
+body.site-revealed .hero .hero-content>.btn-row .btn:nth-child(2){
+  animation:hero-copy-rise .7s cubic-bezier(.2,.75,.2,1) 2.03s both;
+}
+body.site-revealed .hero .hero-content>.btn-row .btn:nth-child(1):before{
+  animation:luxury-button-sheen 5.2s cubic-bezier(.43,0,.23,1) 2.25s infinite;
+}
+body.site-revealed .hero .hero-content>.btn-row .btn:nth-child(2):before{
+  animation:luxury-button-sheen 5.2s cubic-bezier(.43,0,.23,1) 2.5s infinite;
+}
+@media(max-width:760px){
+  body.site-revealed .hero .hero-content>.btn-row .btn:nth-child(1){animation-delay:1.55s}
+  body.site-revealed .hero .hero-content>.btn-row .btn:nth-child(2){animation-delay:1.72s}
+  body.site-revealed .hero .hero-content>.btn-row .btn:nth-child(1):before{animation-delay:1.85s}
+  body.site-revealed .hero .hero-content>.btn-row .btn:nth-child(2):before{animation-delay:2.05s}
+}
+@media(prefers-reduced-motion:reduce){
+  body:not(.site-revealed) .hero .btn:before{animation:none!important;opacity:1}
+}
