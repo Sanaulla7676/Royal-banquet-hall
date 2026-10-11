@@ -5,8 +5,56 @@
     document.body.classList.remove('intro-pending');
     requestAnimationFrame(() => requestAnimationFrame(() => {
       document.body.classList.add('site-revealed');
+      initHeroSlideshow();
     }));
   };
+
+  let heroSlideshowStarted = false;
+  function initHeroSlideshow() {
+    if (heroSlideshowStarted) return;
+    heroSlideshowStarted = true;
+    const slides = [...document.querySelectorAll('[data-hero-slide]')];
+    const dots = [...document.querySelectorAll('[data-hero-dot]')];
+    if (slides.length < 2) return;
+    let current = Math.max(0, slides.findIndex(slide => slide.classList.contains('is-active')));
+    let timer = 0;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const show = (index) => {
+      current = (index + slides.length) % slides.length;
+      slides.forEach((slide, i) => {
+        slide.classList.toggle('is-active', i === current);
+        slide.setAttribute('aria-hidden', String(i !== current));
+      });
+      dots.forEach((dot, i) => {
+        dot.classList.toggle('is-active', i === current);
+        dot.setAttribute('aria-pressed', String(i === current));
+      });
+    };
+    const stop = () => { if (timer) window.clearInterval(timer); timer = 0; };
+    const start = () => {
+      stop();
+      if (reducedMotion) return;
+      timer = window.setInterval(() => {
+        if (!document.hidden) show(current + 1);
+      }, 5000);
+    };
+    dots.forEach((dot, i) => dot.addEventListener('click', () => { show(i); start(); }));
+    const hero = document.querySelector('.hero-slideshow');
+    hero?.addEventListener('mouseenter', stop);
+    hero?.addEventListener('mouseleave', start);
+    hero?.addEventListener('focusin', stop);
+    hero?.addEventListener('focusout', event => { if (!hero.contains(event.relatedTarget)) start(); });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); else start(); });
+    show(current);
+    start();
+    const warmNext = () => {
+      const next = slides[(current + 1) % slides.length];
+      if (next && !next.complete) next.loading = 'eager';
+    };
+    slides.forEach((slide, i) => {
+      if (i > 0) slide.addEventListener('load', warmNext, {once:true});
+    });
+  }
 
   const intro = document.getElementById('site-intro');
   if (intro) {
@@ -207,23 +255,82 @@
     '.card,.amenity-card,.review-card,.rating-panel,.review-invite,.qr-card,'+
     '.review-hub-card,.feature,.step,.gallery-item,.menu-card,.search-panel,.form-panel';
   const luxuryEffectClasses = ['fx-glare','fx-tilt','fx-float','fx-edge','fx-image-zoom'];
+  const cardEffectVariants = [
+    'fx-card-glare','fx-card-tilt','fx-card-float','fx-card-border','fx-card-lift',
+    'fx-image-zoom','fx-image-pan','fx-image-wipe','fx-image-caption','fx-review-reveal'
+  ];
+  const revealVariants = ['fx-scroll-reveal','fx-scroll-left','fx-scroll-right','fx-scroll-blur','fx-scroll-scale'];
   let luxuryEffectSequence = 0;
+  let motionObserver = null;
+
+  function attachMotionReveal(element) {
+    if (!element || element.classList.contains('is-motion-visible')) return;
+    if (!('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      element.classList.add('is-motion-visible');
+      return;
+    }
+    if (!motionObserver) {
+      motionObserver = new IntersectionObserver(entries => entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-motion-visible');
+          motionObserver.unobserve(entry.target);
+        }
+      }), {threshold:0.12,rootMargin:'0px 0px -5% 0px'});
+    }
+    motionObserver.observe(element);
+  }
+
+  function addClassTo(root, selector, classNames) {
+    const nodes = [...root.querySelectorAll(selector)];
+    if (root instanceof Element && root.matches(selector)) nodes.unshift(root);
+    nodes.forEach(node => classNames.split(' ').forEach(name => node.classList.add(name)));
+    return nodes;
+  }
 
   function applyLuxuryEffects(root = document) {
     if (!root || !root.querySelectorAll) return;
+
     const targets = [...root.querySelectorAll(luxuryEffectSelector)];
     if (root instanceof Element && root.matches(luxuryEffectSelector)) targets.unshift(root);
     targets.forEach(element => {
-      if (element.classList.contains('luxury-interactive')) return;
-      const effect = luxuryEffectClasses[luxuryEffectSequence % luxuryEffectClasses.length];
-      element.classList.add('luxury-interactive',effect);
-      element.style.setProperty('--effect-delay',(luxuryEffectSequence % 7) * -.7 + 's');
-      luxuryEffectSequence++;
+      if (!element.classList.contains('luxury-interactive')) {
+        element.classList.add('luxury-interactive',luxuryEffectClasses[luxuryEffectSequence % luxuryEffectClasses.length]);
+        element.style.setProperty('--effect-delay',(luxuryEffectSequence % 7) * -.7 + 's');
+        luxuryEffectSequence++;
+      }
+      const variant = cardEffectVariants[luxuryEffectSequence % cardEffectVariants.length];
+      element.classList.add(variant);
+      if (element.matches('.gallery-item,.card-media,.amenity-image')) element.classList.add('fx-gallery-parallax');
+      if (element.matches('.review-card,.review-hub-card,.rating-panel,.review-invite')) element.classList.add('fx-review-reveal');
+      if (element.matches('.gallery-item,.card,.amenity-card,.review-card,.review-hub-card')) attachMotionReveal(element);
     });
-    const shinySelector = '.hero h1 em,.page-hero h1 em,.booking-intro h2,.section-head h2,.cta-banner h2,.catering-preview-copy h2,.home-map-copy h2,.reviews-map-copy h2,.menu-card-header h2,.hero .eyebrow,.page-hero .eyebrow';
-    const headings = [...root.querySelectorAll(shinySelector)];
-    if (root instanceof Element && root.matches(shinySelector)) headings.unshift(root);
-    headings.forEach(element => element.classList.add('rb-shiny-text'));
+
+    addClassTo(root,'.section-head h2,.booking-intro h2,.cta-banner h2,.catering-preview-copy h2,.home-map-copy h2,.reviews-map-copy h2','fx-heading-glow fx-heading-line');
+    addClassTo(root,'.section-head h2,.booking-intro h2,.cta-banner h2,.catering-preview-copy h2,.home-map-copy h2,.reviews-map-copy h2','.fx-heading-sweep');
+    addClassTo(root,'.hero h1 em,.page-hero h1 em,.hero .eyebrow,.page-hero .eyebrow','fx-text-shimmer');
+    addClassTo(root,'.hero-title-primary','fx-text-rise');
+    addClassTo(root,'.hero-title-accent','fx-text-blur');
+    addClassTo(root,'.hero-brand-crest','fx-logo-pop');
+
+    const buttons = addClassTo(root,'.btn,.btn-booking-primary,.menu-toggle','fx-button-sheen fx-button-lift fx-button-press fx-button-border');
+    buttons.forEach(button => {
+      if (button.matches('.btn-gold,.btn-booking-primary,.btn-light')) button.classList.add('fx-button-pulse');
+      if (button.querySelector('span,.arrow')) button.classList.add('fx-button-arrow');
+    });
+    addClassTo(root,'.nav-links a','fx-nav-sweep fx-nav-glint');
+    addClassTo(root,'.search-panel','fx-panel-glow');
+    addClassTo(root,'.search-panel .field','fx-form-focus fx-select-lift');
+    addClassTo(root,'.search-panel .field:has(input[type="date"])','fx-date-glow');
+    addClassTo(root,'.quick-search,.section-head,.cta-banner,.home-map-copy,.reviews-map-copy','fx-scroll-reveal');
+    addClassTo(root,'.review-card,.review-hub-card,.rating-panel','fx-review-reveal');
+    addClassTo(root,'.map-frame','fx-map-glint');
+    addClassTo(root,'.site-footer .footer-links a,.site-footer-extras a','fx-footer-sweep');
+    addClassTo(root,'.site-footer .footer-grid h3,.hero-slideshow-controls','fx-text-shimmer');
+    addClassTo(root,'.gallery-filters,.circle-gallery-heading,.gallery-carousel-showcase','fx-separator-shimmer');
+
+    const revealNodes = [...root.querySelectorAll('.fx-scroll-reveal,.fx-scroll-left,.fx-scroll-right,.fx-scroll-blur,.fx-scroll-scale,.fx-review-reveal,.fx-image-wipe,.fx-heading-line')];
+    revealNodes.forEach(attachMotionReveal);
+    document.body.classList.add('fx-background-ambient');
   }
 
   window.RoyalMotion = {
