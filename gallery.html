@@ -3,20 +3,24 @@
 <header class="site-header"><div class="container nav"><a class="brand" href="index.html"><img class="brand-logo" src="assets/images/royal-hall-crest.webp" alt="The Royal Hall crest" width="145" height="98"></a><nav class="nav-links" aria-label="Main navigation"><a href="index.html">Home</a><a href="events.html">Events</a><a aria-current="page" href="gallery.html">Gallery</a><a href="experience.html">The Experience</a><a href="catering.html">Catering</a><a href="reviews.html">Reviews</a><a href="contact.html">Contact</a></nav><div class="nav-actions"><a class="btn btn-gold" href="booking.html">Check Your Date</a><button class="menu-toggle" aria-expanded="false" aria-label="Open menu">☰</button></div></div></header>
 <main><section class="page-hero page-hero-gallery"><div class="page-hero-media" aria-hidden="true"><img src="assets/images/photo-15.jpeg" alt="" fetchpriority="high"></div><div class="container"><div class="breadcrumb"><a href="index.html">Home</a> / Gallery</div><span class="eyebrow">A closer look</span><h1>Spaces, setups<br>& celebration details.</h1><p class="lede">Browse the venue by category. Photographs should show the real space and event setups; availability and any included services are confirmed directly with the venue.</p><div class="btn-row"><a class="btn btn-gold" href="booking.html">Enquire about a date ↗</a></div></div></section>
 <section class="section"><div class="container"><div class="section-head"><div><span class="eyebrow">Photographs</span><h2>Explore the gallery.</h2></div><p class="lede">Choose a category to narrow the photographs. Open any image to view it larger.</p></div>
-<div class="circle-gallery-showcase reveal">
-  <div class="circle-gallery-heading">
+<div class="gallery-carousel-showcase reveal" id="galleryCarouselShowcase">
+  <div class="gallery-carousel-heading">
     <span class="eyebrow">Featured moments</span>
-    <h2>Take a closer look.</h2>
-    <p>Move around the venue in a cinematic circle. Drag, swipe, or use the arrows to explore the photos.</p>
+    <h2>Discover the venue.</h2>
+    <p>Swipe through the spaces, details and celebrations. The photographs glide automatically, or use the arrows to explore at your own pace.</p>
   </div>
-  <div class="circle-gallery" id="circleGallery" aria-label="Interactive circular venue photo gallery">
-    <button class="circle-gallery-control circle-gallery-prev" type="button" data-circle-prev aria-label="Previous venue photo">‹</button>
-    <div class="circle-gallery-stage" id="circleGalleryStage" role="group" aria-roledescription="carousel" aria-label="Featured venue photos">
-      <div class="circle-gallery-ring" id="circleGalleryRing"></div>
+  <div class="gallery-carousel" id="galleryCarousel" role="region" aria-label="Featured venue photo carousel">
+    <button class="gallery-carousel-nav" type="button" data-gallery-prev aria-label="Previous photographs">‹</button>
+    <div class="gallery-carousel-viewport" id="galleryCarouselViewport" tabindex="0" role="group" aria-roledescription="carousel" aria-label="Royal Hall photographs">
+      <div class="gallery-carousel-stage" id="galleryCarouselStage"></div>
     </div>
-    <button class="circle-gallery-control circle-gallery-next" type="button" data-circle-next aria-label="Next venue photo">›</button>
+    <button class="gallery-carousel-nav" type="button" data-gallery-next aria-label="Next photographs">›</button>
   </div>
-  <div class="circle-gallery-status" id="circleGalleryStatus" aria-live="polite">Explore the venue</div>
+  <div class="gallery-carousel-info">
+    <p class="gallery-carousel-caption" id="galleryCarouselCaption">The Royal Hall</p>
+    <span class="gallery-carousel-counter" id="galleryCarouselCounter">01 / 35</span>
+  </div>
+  <div class="gallery-carousel-progress" id="galleryCarouselProgress" role="progressbar" aria-label="Time until next photograph" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="galleryCarouselProgressBar"></span></div>
 </div>
 <div class="gallery-filters" role="group" aria-label="Filter gallery"><button class="filter-btn" data-gallery-filter="all" aria-pressed="true">All photos</button><button class="filter-btn" data-gallery-filter="venue" aria-pressed="false">Venue & entrance</button><button class="filter-btn" data-gallery-filter="interior" aria-pressed="false">Hall & seating</button><button class="filter-btn" data-gallery-filter="stage" aria-pressed="false">Stage & décor</button><button class="filter-btn" data-gallery-filter="details" aria-pressed="false">Celebration details</button></div>
 <div class="gallery-grid" id="galleryGrid">
