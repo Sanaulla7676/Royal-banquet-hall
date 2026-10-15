@@ -1,0 +1,2203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Royal Studio | Visual Website Builder Admin Panel</title>
+<link rel="stylesheet" href="assets/css/royal-admin.css">
+<script src="assets/js/royal-cms-data.js"></script>
+</head>
+<body class="admin-app">
+
+  <!-- ====================================================================
+       TOP TOOLBAR (Blueprint Sections 02 & 03)
+       ==================================================================== -->
+  <header class="admin-header">
+    <div class="admin-header-left">
+      <a href="index.html" target="_blank" class="admin-brand">
+        <img src="assets/images/royal-hall-crest.webp" alt="Royal Crest" class="admin-brand-crest">
+        <div class="admin-brand-title">Royal <span>Studio</span></div>
+      </a>
+      <span class="admin-brand-badge">White & Gold Luxury</span>
+    </div>
+
+    <!-- Center: Page Selector, Undo/Redo & Save Status -->
+    <div class="admin-header-center">
+      <!-- Active Page Selector -->
+      <div class="admin-header-page-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <select id="top-page-select" class="admin-page-select-top" title="Select Page to Edit">
+          <option value="index.html">Home (index.html)</option>
+          <option value="events.html">Events (events.html)</option>
+          <option value="gallery.html">Gallery (gallery.html)</option>
+          <option value="experience.html">The Experience (experience.html)</option>
+          <option value="catering.html">Catering (catering.html)</option>
+          <option value="reviews.html">Reviews (reviews.html)</option>
+          <option value="contact.html">Contact (contact.html)</option>
+          <option value="booking.html">Booking (booking.html)</option>
+          <option value="packages.html">Packages (packages.html)</option>
+        </select>
+      </div>
+
+      <!-- Undo / Redo Group (AC-07) -->
+      <div class="admin-history-group">
+        <button type="button" id="btn-undo" class="btn-history" title="Undo change (Ctrl+Z)" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        </button>
+        <button type="button" id="btn-redo" class="btn-history" title="Redo change (Ctrl+Y)" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        </button>
+      </div>
+
+      <!-- Autosave Status -->
+      <div class="admin-save-indicator" id="save-status-indicator">
+        <span class="admin-save-pulse" id="save-pulse-dot"></span>
+        <span id="save-status-text">Draft Saved</span>
+      </div>
+    </div>
+
+    <!-- Right Actions: Preview Mode, Save Draft, Publish -->
+    <div class="admin-header-actions">
+      <button type="button" id="btn-toggle-preview-mode" class="btn-pill btn-pill-outline" title="Toggle Clean Preview Mode without outlines">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/></svg>
+        <span id="preview-mode-text">Preview Mode</span>
+      </button>
+
+      <button type="button" id="btn-save-draft" class="btn-pill btn-pill-outline" title="Save Draft to Browser & Disk">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        <span>Save Draft</span>
+      </button>
+
+      <!-- Publish with Explicit Confirmation (AC-09) -->
+      <button type="button" id="btn-open-publish" class="btn-pill btn-pill-gold" title="Publish Draft to Live Website">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg>
+        <span>Publish Live</span>
+      </button>
+
+      <a href="index.html" target="_blank" class="btn-icon-pill" title="View Public Website">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </a>
+
+      <button type="button" id="btn-admin-logout" class="btn-icon-pill" title="Logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ====================================================================
+       MAIN SPLIT WORKSPACE:
+       LEFT PANE = OPTIONS & INSPECTOR CONTROLS
+       RIGHT PANE = LIVE RESPONSIVE CANVAS WITH DIRECT MANIPULATION
+       ==================================================================== -->
+  <div class="admin-workspace">
+
+    <!-- ------------------------------------------------------------------
+         LEFT CONTROLS PANE (Options, Sliders, Element Properties)
+         ------------------------------------------------------------------ -->
+    <aside class="admin-controls-pane">
+      
+      <!-- Sticky Category Navigation Bar with Scroll Controls -->
+      <div class="admin-nav-tabs-container">
+        <button type="button" id="btn-tabs-left" class="admin-nav-scroll-btn" title="Scroll categories left" aria-label="Scroll categories left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <nav class="admin-nav-tabs-bar" id="admin-nav-tabs-bar">
+          <button type="button" class="admin-tab-btn active" data-tab="tab-properties">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+            <span>Properties</span>
+          </button>
+          <button type="button" class="admin-tab-btn" data-tab="tab-logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <span>Logo & Brand</span>
+          </button>
+          <button type="button" class="admin-tab-btn" data-tab="tab-hero">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Ballroom & Hero</span>
+          </button>
+          <button type="button" class="admin-tab-btn" data-tab="tab-colors">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="7" r="1.5"/><circle cx="7" cy="12" r="1.5"/><circle cx="17" cy="12" r="1.5"/></svg>
+            <span>Colors & Gold</span>
+          </button>
+          <button type="button" class="admin-tab-btn" data-tab="tab-buttons">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="6" width="20" height="12" rx="6"/><circle cx="8" cy="12" r="3"/></svg>
+            <span>Buttons</span>
+          </button>
+          <button type="button" class="admin-tab-btn" data-tab="tab-typography">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+            <span>Typography</span>
+          </button>
+          <button type="button" class="admin-tab-btn" data-tab="tab-assets">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>
+            <span>Assets (43)</span>
+          </button>
+          <button type="button" class="admin-tab-btn" data-tab="tab-photos">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/><line x1="12" y1="9" x2="12" y2="15"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
+            <span>Photo Manager</span>
+          </button>
+          <button type="button" class="admin-tab-btn" data-tab="tab-cloudinary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+            <span>Cloudinary</span>
+          </button>
+          <button type="button" class="admin-tab-btn" data-tab="tab-pages">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span>Pages & Nav</span>
+          </button>
+          <button type="button" class="admin-tab-btn" data-tab="tab-settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>Settings</span>
+          </button>
+        </nav>
+        <button type="button" id="btn-tabs-right" class="admin-nav-scroll-btn" title="Scroll categories right" aria-label="Scroll categories right">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+
+      <!-- Scrollable Tab Content Panels -->
+      <div class="admin-controls-scroll">
+        
+        <!-- ==============================================================
+             PANEL 1: CONTEXTUAL ELEMENT PROPERTIES (When element is clicked)
+             ============================================================== -->
+        <div id="tab-properties" class="admin-tab-content">
+          <!-- Selection Status Card -->
+          <div class="admin-selection-card">
+            <div class="admin-selection-head">
+              <span class="admin-selection-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span id="inspector-element-type">Selected Element</span>
+              </span>
+              <button type="button" id="btn-clear-selection" class="btn-pill btn-pill-outline" style="padding:2px 8px;font-size:0.68rem;">Deselect</button>
+            </div>
+            <h3 class="admin-selection-name" id="inspector-element-name">Header / Brand Logo</h3>
+            <div class="admin-selection-breadcrumb" id="inspector-breadcrumb">Home > Header > Brand Logo</div>
+            
+            <!-- Live Measured Dimensions HUD -->
+            <div class="admin-measured-box">
+              <span>Measured Dimensions</span>
+              <span class="val" id="inspector-measured-dims">145px × 98px</span>
+            </div>
+          </div>
+
+          <!-- Section: Size & Layout Controls -->
+          <div class="admin-card" style="margin-top:14px;">
+            <div class="admin-card-head">
+              <h4 class="admin-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="8 3 4 7 8 11"/><polyline points="16 21 20 17 16 13"/><line x1="4" y1="7" x2="20" y2="7"/><line x1="20" y1="17" x2="4" y2="17"/></svg>
+                <span>Size & Dimensions</span>
+              </h4>
+              <span style="font-size:0.7rem;font-weight:700;color:var(--admin-gold);">Live 60fps</span>
+            </div>
+
+            <!-- Width Control (Slider + Numeric Input Pair) -->
+            <div class="admin-control-pair">
+              <div class="admin-pair-label">
+                <span>Width (Max-Width)</span>
+                <span style="font-size:0.7rem;color:var(--admin-text-muted);">px</span>
+              </div>
+              <div class="admin-pair-inputs">
+                <input type="range" class="admin-range-slider" id="inspector-slider-width" min="40" max="1200" step="5" value="145">
+                <input type="number" class="admin-num-input" id="inspector-num-width" min="40" max="1200" value="145">
+              </div>
+            </div>
+
+            <!-- Height Control (Slider + Numeric Input Pair) -->
+            <div class="admin-control-pair">
+              <div class="admin-pair-label">
+                <span>Height (Min-Height)</span>
+                <span style="font-size:0.7rem;color:var(--admin-text-muted);">px</span>
+              </div>
+              <div class="admin-pair-inputs">
+                <input type="range" class="admin-range-slider" id="inspector-slider-height" min="30" max="800" step="5" value="98">
+                <input type="number" class="admin-num-input" id="inspector-num-height" min="30" max="800" value="98">
+              </div>
+            </div>
+
+            <!-- Padding Vertical -->
+            <div class="admin-control-pair">
+              <div class="admin-pair-label">
+                <span>Vertical Padding</span>
+                <span style="font-size:0.7rem;color:var(--admin-text-muted);">px</span>
+              </div>
+              <div class="admin-pair-inputs">
+                <input type="range" class="admin-range-slider" id="inspector-slider-padding" min="0" max="180" step="4" value="20">
+                <input type="number" class="admin-num-input" id="inspector-num-padding" min="0" max="180" value="20">
+              </div>
+            </div>
+
+            <!-- Margin Bottom -->
+            <div class="admin-control-pair">
+              <div class="admin-pair-label">
+                <span>Margin Bottom</span>
+                <span style="font-size:0.7rem;color:var(--admin-text-muted);">px</span>
+              </div>
+              <div class="admin-pair-inputs">
+                <input type="range" class="admin-range-slider" id="inspector-slider-margin" min="0" max="120" step="4" value="0">
+                <input type="number" class="admin-num-input" id="inspector-num-margin" min="0" max="120" value="0">
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Content & Text Inline -->
+          <div class="admin-card" style="margin-top:14px;">
+            <div class="admin-card-head">
+              <h4 class="admin-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+                <span>Content & Text</span>
+              </h4>
+            </div>
+
+            <div class="admin-form-group">
+              <label class="admin-form-label">Text Content</label>
+              <textarea id="inspector-text-input" class="admin-textarea" rows="2" placeholder="Text content of selected element"></textarea>
+            </div>
+
+            <div class="admin-form-group" id="inspector-link-group">
+              <label class="admin-form-label">Link Destination URL</label>
+              <input type="text" id="inspector-link-input" class="admin-input" placeholder="e.g. booking.html or https://...">
+            </div>
+          </div>
+        </div>
+
+        <!-- ==============================================================
+             PANEL 2: BRAND & LOGO (Requested by user)
+             ============================================================== -->
+        <div id="tab-logo" class="admin-tab-content" style="display:none;">
+          <div class="admin-card">
+            <div class="admin-card-head">
+              <h4 class="admin-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <span>Brand Crest Logo Sizing</span>
+              </h4>
+              <span style="font-size:0.7rem;font-weight:700;color:var(--admin-gold);">Live Right Canvas</span>
+            </div>
+
+            <!-- Logo Width Slider -->
+            <div class="admin-control-pair">
+              <div class="admin-pair-label">
+                <span>Logo Width</span>
+                <span id="lbl-logo-w-val" style="color:var(--admin-gold);font-weight:700;">145px</span>
+              </div>
+              <div class="admin-pair-inputs">
+                <input type="range" class="admin-range-slider" id="slider-logo-w" min="60" max="320" step="5" value="145">
+                <input type="number" class="admin-num-input" id="num-logo-w" min="60" max="320" value="145">
+              </div>
+            </div>
+
+            <!-- Logo Height Slider -->
+            <div class="admin-control-pair">
+              <div class="admin-pair-label">
+                <span>Logo Height</span>
+                <span id="lbl-logo-h-val" style="color:var(--admin-gold);font-weight:700;">98px</span>
+              </div>
+              <div class="admin-pair-inputs">
+                <input type="range" class="admin-range-slider" id="slider-logo-h" min="40" max="220" step="5" value="98">
+                <input type="number" class="admin-num-input" id="num-logo-h" min="40" max="220" value="98">
+              </div>
+            </div>
+
+            <!-- Logo Source URL -->
+            <div class="admin-form-group">
+              <label class="admin-form-label">Logo Image Path / URL</label>
+              <input type="text" id="input-logo-url" class="admin-input" value="assets/images/royal-hall-crest.webp">
+            </div>
+
+            <!-- Header CTA Button -->
+            <div class="admin-form-group">
+              <label class="admin-form-label">Header Action Button</label>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <input type="text" id="input-nav-cta-text" class="admin-input" value="Check Your Date">
+                <input type="text" id="input-nav-cta-link" class="admin-input" value="booking.html">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==============================================================
+             PANEL 3: BALLROOM & HERO BACKGROUND (Requested by user)
+             ============================================================== -->
+        <div id="tab-hero" class="admin-tab-content" style="display:none;">
+          <div class="admin-card">
+            <div class="admin-card-head">
+              <h4 class="admin-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <span>Website Ballroom Background</span>
+              </h4>
+              <span style="font-size:0.7rem;font-weight:700;color:var(--admin-gold);">1-Click Apply</span>
+            </div>
+
+            <p style="font-size:0.76rem;color:var(--admin-text-muted);margin:0 0 10px;">
+              Click any ballroom photograph to instantly set it as the website's hero background:
+            </p>
+
+            <div class="admin-ballroom-grid">
+              <div class="admin-ballroom-card active" data-src="assets/images/hero-venue.jpg">
+                <img src="assets/images/hero-venue.jpg" alt="Ballroom Grand Interior">
+                <div class="caption">Ballroom Grand Hall</div>
+              </div>
+              <div class="admin-ballroom-card" data-src="assets/images/hall-interior.jpg">
+                <img src="assets/images/hall-interior.jpg" alt="Interior Seating">
+                <div class="caption">Interior Banquet</div>
+              </div>
+              <div class="admin-ballroom-card" data-src="assets/images/stage-celebration.jpg">
+                <img src="assets/images/stage-celebration.jpg" alt="Themed Stage">
+                <div class="caption">Themed Stage</div>
+              </div>
+              <div class="admin-ballroom-card" data-src="assets/images/venue-entrance.jpg">
+                <img src="assets/images/venue-entrance.jpg" alt="Grand Entrance">
+                <div class="caption">Grand Entrance</div>
+              </div>
+            </div>
+
+            <div class="admin-form-group">
+              <label class="admin-form-label">Custom Background Image URL</label>
+              <input type="text" id="input-bg-image-custom" class="admin-input" value="assets/images/hero-venue.jpg">
+            </div>
+
+            <div class="admin-form-group">
+              <label class="admin-form-label">Hero Headline</label>
+              <input type="text" id="input-hero-headline" class="admin-input" value="Celebrations, beautifully hosted.">
+            </div>
+
+            <div class="admin-form-group">
+              <label class="admin-form-label">Hero Subtitle</label>
+              <textarea id="input-hero-subtitle" class="admin-textarea" rows="2">A welcoming setting for weddings, receptions, birthdays and family celebrations in Rajajinagar, Bengaluru.</textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==============================================================
+             PANEL 4: COLORS & ROYAL GOLD THEME (White Minimal Luxury)
+             ============================================================== -->
+        <div id="tab-colors" class="admin-tab-content" style="display:none;">
+          <div class="admin-card">
+            <div class="admin-card-head">
+              <h4 class="admin-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="7" r="1.5"/><circle cx="7" cy="12" r="1.5"/><circle cx="17" cy="12" r="1.5"/></svg>
+                <span>White Minimal Luxury & Gold</span>
+              </h4>
+            </div>
+
+            <!-- Color Tokens List -->
+            <div class="admin-color-row">
+              <div class="admin-color-info">
+                <span class="admin-color-name">24K Royal Gold</span>
+                <span class="admin-color-token">--gold</span>
+              </div>
+              <div class="admin-color-picker-wrap">
+                <input type="color" class="admin-color-swatch" id="color-pick-gold" value="#c6a15b">
+                <input type="text" class="admin-color-hex-box" id="color-hex-gold" value="#c6a15b">
+              </div>
+            </div>
+
+            <div class="admin-color-row">
+              <div class="admin-color-info">
+                <span class="admin-color-name">Accent Amber Gold</span>
+                <span class="admin-color-token">--gold2</span>
+              </div>
+              <div class="admin-color-picker-wrap">
+                <input type="color" class="admin-color-swatch" id="color-pick-gold2" value="#927039">
+                <input type="text" class="admin-color-hex-box" id="color-hex-gold2" value="#927039">
+              </div>
+            </div>
+
+            <div class="admin-color-row">
+              <div class="admin-color-info">
+                <span class="admin-color-name">Obsidian Dark Ink</span>
+                <span class="admin-color-token">--ink</span>
+              </div>
+              <div class="admin-color-picker-wrap">
+                <input type="color" class="admin-color-swatch" id="color-pick-ink" value="#171d19">
+                <input type="text" class="admin-color-hex-box" id="color-hex-ink" value="#171d19">
+              </div>
+            </div>
+
+            <div class="admin-color-row">
+              <div class="admin-color-info">
+                <span class="admin-color-name">Luxe Cream Page Tone</span>
+                <span class="admin-color-token">--cream</span>
+              </div>
+              <div class="admin-color-picker-wrap">
+                <input type="color" class="admin-color-swatch" id="color-pick-cream" value="#f5f0e7">
+                <input type="text" class="admin-color-hex-box" id="color-hex-cream" value="#f5f0e7">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==============================================================
+             PANEL 5: BUTTONS CUSTOMIZER (Donezo Pill Styling)
+             ============================================================== -->
+        <!-- ==============================================================
+             PANEL 5: BUTTONS CUSTOMIZER (Donezo Pill Styling & Measurements)
+             ============================================================== -->
+        <div id="tab-buttons" class="admin-tab-content" style="display:none;">
+          <div class="admin-card">
+            <div class="admin-card-head">
+              <h4 class="admin-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="6" width="20" height="12" rx="6"/><circle cx="8" cy="12" r="3"/></svg>
+                <span>Buttons Customizer & Sizing</span>
+              </h4>
+              <span style="font-size:0.7rem;font-weight:700;color:var(--admin-gold);">Live 60fps</span>
+            </div>
+
+            <!-- Button Height / Size Control Pair -->
+            <div class="admin-control-pair">
+              <div class="admin-pair-label">
+                <span>Button Height (Size)</span>
+                <span id="lbl-btn-h-val" style="color:var(--admin-gold);font-weight:700;">48px</span>
+              </div>
+              <div class="admin-pair-inputs">
+                <input type="range" class="admin-range-slider" id="slider-btn-h" min="30" max="84" step="2" value="48">
+                <input type="number" class="admin-num-input" id="num-btn-h" min="30" max="84" value="48">
+              </div>
+            </div>
+
+            <!-- Button Padding Control Pair -->
+            <div class="admin-control-pair">
+              <div class="admin-pair-label">
+                <span>Horizontal & Vertical Padding</span>
+                <span id="lbl-btn-pad-val" style="color:var(--admin-gold);font-weight:700;">22px</span>
+              </div>
+              <div class="admin-pair-inputs">
+                <input type="range" class="admin-range-slider" id="slider-btn-pad" min="8" max="50" step="2" value="22">
+                <input type="number" class="admin-num-input" id="num-btn-pad" min="8" max="50" value="22">
+              </div>
+            </div>
+
+            <!-- Button Font Size Control Pair -->
+            <div class="admin-control-pair">
+              <div class="admin-pair-label">
+                <span>Font Size</span>
+                <span id="lbl-btn-fs-val" style="color:var(--admin-gold);font-weight:700;">13px</span>
+              </div>
+              <div class="admin-pair-inputs">
+                <input type="range" class="admin-range-slider" id="slider-btn-fs" min="10" max="24" step="1" value="13">
+                <input type="number" class="admin-num-input" id="num-btn-fs" min="10" max="24" value="13">
+              </div>
+            </div>
+
+            <!-- Button Radius Control Pair -->
+            <div class="admin-control-pair">
+              <div class="admin-pair-label">
+                <span>Border Radius</span>
+                <span id="lbl-btn-radius-val" style="color:var(--admin-gold);font-weight:700;">999px (Pill)</span>
+              </div>
+              <div class="admin-pair-inputs">
+                <input type="range" class="admin-range-slider" id="slider-btn-rad" min="0" max="999" step="6" value="999">
+                <input type="number" class="admin-num-input" id="num-btn-rad" min="0" max="999" value="999">
+              </div>
+            </div>
+
+            <!-- Shape Quick Presets -->
+            <div style="margin:10px 0 14px;">
+              <label class="admin-form-label" style="margin-bottom:6px;">Shape Presets</label>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+                <button type="button" class="btn-pill btn-pill-outline" id="btn-shape-pill" style="padding:5px 6px;font-size:0.7rem;">Pill</button>
+                <button type="button" class="btn-pill btn-pill-outline" id="btn-shape-round" style="padding:5px 6px;font-size:0.7rem;">Round</button>
+                <button type="button" class="btn-pill btn-pill-outline" id="btn-shape-sleek" style="padding:5px 6px;font-size:0.7rem;">Sleek</button>
+                <button type="button" class="btn-pill btn-pill-outline" id="btn-shape-square" style="padding:5px 6px;font-size:0.7rem;">Sharp</button>
+              </div>
+            </div>
+
+            <!-- Style Presets -->
+            <div style="margin-bottom:14px;">
+              <label class="admin-form-label" style="margin-bottom:6px;">Button Style Presets</label>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                <button type="button" class="btn-pill btn-pill-gold" id="btn-preset-gold" style="font-size:0.7rem;padding:6px;">24K Gold</button>
+                <button type="button" class="btn-pill btn-pill-dark" id="btn-preset-dark" style="font-size:0.7rem;padding:6px;">Obsidian</button>
+                <button type="button" class="btn-pill btn-pill-outline" id="btn-preset-outline" style="font-size:0.7rem;padding:6px;">White Outline</button>
+                <button type="button" class="btn-pill btn-pill-outline" id="btn-preset-solid" style="font-size:0.7rem;padding:6px;background:var(--admin-gold);color:#fff;">Solid Gold</button>
+              </div>
+            </div>
+
+            <div class="admin-form-group">
+              <label class="admin-form-label">Custom Background (CSS Gradient / Color)</label>
+              <input type="text" id="input-btn-bg" class="admin-input" value="linear-gradient(135deg, #f0d99f, #c39b52)">
+            </div>
+
+            <div class="admin-form-group">
+              <label class="admin-form-label">Hover Animation Effect</label>
+              <select id="select-btn-effect" class="admin-select">
+                <option value="lift">Float Lift (-2px)</option>
+                <option value="glow">Royal Gold Glow</option>
+                <option value="zoom">Scale Zoom (1.04x)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==============================================================
+             PANEL 6: TYPOGRAPHY
+             ============================================================== -->
+        <div id="tab-typography" class="admin-tab-content" style="display:none;">
+          <div class="admin-card">
+            <div class="admin-card-head">
+              <h4 class="admin-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+                <span>Typography & Google Fonts</span>
+              </h4>
+            </div>
+
+            <div class="admin-form-group">
+              <label class="admin-form-label">Headings & Titles (Serif)</label>
+              <select id="select-heading-font" class="admin-select">
+                <option value="'Playfair Display', Georgia, serif">Playfair Display (Default Luxury)</option>
+                <option value="'Cinzel', serif">Cinzel (Regal Classical)</option>
+                <option value="'Cormorant Garamond', serif">Cormorant Garamond (Editorial Elegance)</option>
+                <option value="'Bodoni Moda', serif">Bodoni Moda (High Fashion)</option>
+                <option value="'Marcellus', serif">Marcellus (Roman Refined)</option>
+                <option value="'Prata', serif">Prata (Graceful Serif)</option>
+              </select>
+            </div>
+
+            <div class="admin-form-group">
+              <label class="admin-form-label">Body & Navigation Text (Sans)</label>
+              <select id="select-body-font" class="admin-select">
+                <option value="'Plus Jakarta Sans', sans-serif">Plus Jakarta Sans (Modern Clean)</option>
+                <option value="'DM Sans', Arial, sans-serif">DM Sans (Sharp Geometric)</option>
+                <option value="'Inter', sans-serif">Inter (High Legibility)</option>
+                <option value="'Outfit', sans-serif">Outfit (Geometric Friendly)</option>
+              </select>
+            </div>
+
+            <div class="admin-control-pair">
+              <div class="admin-pair-label">
+                <span>Heading Size Multiplier</span>
+                <span id="lbl-font-scale-val" style="color:var(--admin-gold);font-weight:700;">1.0x</span>
+              </div>
+              <div class="admin-pair-inputs">
+                <input type="range" class="admin-range-slider" id="slider-font-scale" min="0.8" max="1.4" step="0.05" value="1.0">
+                <input type="number" class="admin-num-input" id="num-font-scale" min="0.8" max="1.4" step="0.05" value="1.0">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==============================================================
+             PANEL 7: ASSETS (43 PHOTOS)
+             ============================================================== -->
+        <div id="tab-assets" class="admin-tab-content" style="display:none;">
+          <div class="admin-card">
+            <div class="admin-card-head">
+              <h4 class="admin-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>
+                <span>Venue Assets (43 Photos)</span>
+              </h4>
+            </div>
+
+            <div class="admin-ballroom-grid" id="assets-grid-box" style="grid-template-columns:repeat(2, 1fr);max-height:380px;overflow-y:auto;">
+              <!-- Populated via JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- ==============================================================
+             PANEL: PHOTO PLACEMENT & NAMING MANAGER
+             ============================================================== -->
+        <div id="tab-photos" class="admin-tab-content" style="display:none;">
+          <!-- Add Photo Card -->
+          <div class="admin-card">
+            <div class="admin-card-head">
+              <h4 class="admin-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/><line x1="12" y1="9" x2="12" y2="15"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
+                <span>Add Photo & Choose Placement</span>
+              </h4>
+              <span style="font-size:0.7rem;font-weight:700;color:var(--admin-gold);">Interactive</span>
+            </div>
+
+            <p style="font-size:0.78rem;color:var(--admin-text-muted);margin:0 0 14px;">
+              Choose or upload a photo, name it, and specify exactly which section and position on the website it appears in.
+            </p>
+
+            <!-- 1. Source Image Selection -->
+            <div class="admin-form-group">
+              <label class="admin-form-label">1. Choose Photo Image</label>
+              <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
+                <div id="photo-placement-preview-box" style="width:72px;height:54px;border-radius:6px;border:1px solid var(--admin-border);background:#f5f0e7;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+                  <img id="photo-placement-preview-img" src="assets/images/hero-venue.jpg" style="width:100%;height:100%;object-fit:cover;" alt="Preview">
+                </div>
+                <div style="flex:1;min-width:0;">
+                  <select id="select-placement-asset" class="admin-select" style="margin-bottom:6px;font-size:0.75rem;">
+                    <!-- Populated via JS with venue assets -->
+                  </select>
+                  <div style="display:flex;gap:6px;">
+                    <input type="text" id="input-placement-custom-url" class="admin-input" placeholder="Or paste image / Cloudinary URL" style="font-size:0.75rem;padding:5px 8px;">
+                    <label class="btn-pill btn-pill-outline" style="cursor:pointer;padding:4px 8px;font-size:0.7rem;white-space:nowrap;">
+                      Upload
+                      <input type="file" id="input-placement-file" accept="image/*" style="display:none;">
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. Naming the photo -->
+            <div class="admin-form-group">
+              <label class="admin-form-label">2. Photo Name / Caption</label>
+              <input type="text" id="input-placement-title" class="admin-input" placeholder="e.g. Royal VIP Stage Arch" value="Grand Celebration Stage">
+            </div>
+
+            <div class="admin-form-group">
+              <label class="admin-form-label">Photo Description / SEO Alt Text</label>
+              <input type="text" id="input-placement-alt" class="admin-input" placeholder="e.g. Beautiful banquet stage decoration with floral backdrop" value="Decorated event stage at The Royal Party Hall">
+            </div>
+
+            <!-- 3. Placement Target -->
+            <div class="admin-form-group">
+              <label class="admin-form-label">3. Website Placement Location</label>
+              <select id="select-placement-target" class="admin-select">
+                <option value="hero-slideshow">Hero Top Slideshow (Homepage Cover Banner)</option>
+                <option value="gallery-stage">Gallery Grid: Stage & Mandap Sets</option>
+                <option value="gallery-venue">Gallery Grid: Venue & Grand Entrance</option>
+                <option value="gallery-interior">Gallery Grid: Hall Interior & Seating</option>
+                <option value="gallery-dining">Gallery Grid: Dining & Feast Service</option>
+                <option value="gallery-details">Gallery Grid: Decor, Cakes & Details</option>
+                <option value="split-showcase">The Experience / Split Showcase Section</option>
+                <option value="catering-showcase">Catering Feasts Section Feature</option>
+              </select>
+            </div>
+
+            <!-- 4. Position in that section -->
+            <div class="admin-form-group">
+              <label class="admin-form-label">4. Position Order in Section</label>
+              <select id="select-placement-position" class="admin-select">
+                <option value="0">Position 1 (First / Cover Slot)</option>
+                <option value="1">Position 2 (Second Slot)</option>
+                <option value="2">Position 3 (Third Slot)</option>
+                <option value="3">Position 4 (Fourth Slot)</option>
+                <option value="999" selected>Add to End (Last Slot)</option>
+              </select>
+            </div>
+
+            <button type="button" id="btn-add-photo-placement" class="btn-pill btn-pill-gold" style="width:100%;margin-top:6px;">
+              + Insert Photo to Website
+            </button>
+          </div>
+
+          <!-- Active Placed Photos List -->
+          <div class="admin-card" style="margin-top:14px;">
+            <div class="admin-card-head">
+              <h4 class="admin-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                <span>Active Placed Photos</span>
+              </h4>
+              <span id="active-placements-count" style="font-size:0.72rem;font-weight:700;color:var(--admin-gold);">5 photos</span>
+            </div>
+
+            <p style="font-size:0.75rem;color:var(--admin-text-muted);margin:0 0 10px;">
+              Manage, reorder (Move Up/Down), or remove photos from each section.
+            </p>
+
+            <div id="active-photo-placements-list" style="display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto;padding-right:2px;">
+              <!-- Populated via JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- ==============================================================
+             PANEL 8: CLOUDINARY
+             ============================================================== -->
+        <div id="tab-cloudinary" class="admin-tab-content" style="display:none;">
+          <div class="admin-card" style="background:var(--admin-gold-subtle);border-color:var(--admin-gold-border);">
+            <div class="admin-card-head">
+              <h4 class="admin-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+                <span>Cloudinary Asset Transfer</span>
+              </h4>
+            </div>
+
+            <p style="font-size:0.78rem;color:var(--admin-text-body);margin:0 0 12px;">
+              Transfer all 43 images to your Cloudinary cloud (<code>pspn79yf</code>) for fast global CDN delivery.
+            </p>
+
+            <div class="admin-form-group">
+              <label class="admin-form-label">Cloudinary API Secret</label>
+              <input type="password" id="input-cloudinary-secret" class="admin-input" placeholder="Paste your API Secret here">
+            </div>
+
+            <button type="button" id="btn-batch-cloudinary" class="btn-pill btn-pill-gold" style="width:100%;justify-content:center;">
+              Transfer All 43 Images to Cloudinary
+            </button>
+
+            <div id="transfer-progress-wrap" style="display:none;margin-top:12px;">
+              <div style="display:flex;justify-content:space-between;font-size:0.75rem;font-weight:700;margin-bottom:6px;">
+                <span id="transfer-status-lbl">Uploading...</span>
+                <span id="transfer-percent-lbl" style="color:var(--admin-gold);">0%</span>
+              </div>
+              <div style="height:6px;background:#e5e7eb;border-radius:999px;overflow:hidden;">
+                <div id="transfer-bar-fill" style="height:100%;width:0%;background:var(--admin-gold);border-radius:999px;transition:width 0.3s ease;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==============================================================
+             PANEL 9: PAGES & NAVIGATION
+             ============================================================== -->
+        <div id="tab-pages" class="admin-tab-content" style="display:none;">
+          <div class="admin-card">
+            <div class="admin-card-head">
+              <h4 class="admin-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span>Menu Navigation Links</span>
+              </h4>
+            </div>
+
+            <div id="pages-nav-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+              <!-- Populated via JS -->
+            </div>
+
+            <div style="padding-top:12px;border-top:1px solid var(--admin-border);">
+              <label class="admin-form-label">Create New Page</label>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                <input type="text" id="new-page-name" class="admin-input" placeholder="Title (e.g. VIP)">
+                <input type="text" id="new-page-slug" class="admin-input" placeholder="Slug (vip.html)">
+              </div>
+              <button type="button" id="btn-add-page" class="btn-pill btn-pill-outline" style="width:100%;">
+                + Add Page
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==============================================================
+             PANEL 10: SETTINGS & VENUE
+             ============================================================== -->
+        <div id="tab-settings" class="admin-tab-content" style="display:none;">
+          <div class="admin-card">
+            <div class="admin-card-head">
+              <h4 class="admin-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <span>Venue Contact & Sync</span>
+              </h4>
+            </div>
+
+            <div class="admin-form-group">
+              <label class="admin-form-label">Venue Name</label>
+              <input type="text" id="cfg-v-name" class="admin-input" value="The Royal Party Hall">
+            </div>
+
+            <div class="admin-form-group">
+              <label class="admin-form-label">WhatsApp Number</label>
+              <input type="text" id="cfg-v-wa" class="admin-input" value="919591123456">
+            </div>
+
+            <div class="admin-form-group">
+              <label class="admin-form-label">Booking Email</label>
+              <input type="email" id="cfg-v-mail" class="admin-input" value="info@theroyalhall.in">
+            </div>
+
+            <button type="button" id="btn-save-v-settings" class="btn-pill btn-pill-gold" style="width:100%;">
+              Save Venue Details
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- ------------------------------------------------------------------
+         RIGHT CANVAS PANE: LIVE RESPONSIVE CANVAS WITH DIRECT SELECTION
+         ------------------------------------------------------------------ -->
+    <main class="admin-canvas-pane">
+      
+      <!-- Canvas Device & Dimension Toolbar -->
+      <div class="admin-canvas-topbar">
+        <div class="admin-canvas-meta">
+          <span style="font-size:0.82rem;font-weight:700;color:var(--admin-text-main);">Live Website Canvas</span>
+          <span class="admin-viewport-dimension-pill" id="viewport-dims-display">1280 × 820 px</span>
+        </div>
+
+        <!-- Viewport Switcher (Desktop, Tablet, Mobile) -->
+        <div class="admin-viewport-toggles">
+          <button type="button" class="btn-viewport-mode active" data-device="desktop" data-dims="1280 × 820 px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            <span>Desktop</span>
+          </button>
+          <button type="button" class="btn-viewport-mode" data-device="tablet" data-dims="768 × 1024 px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
+            <span>Tablet</span>
+          </button>
+          <button type="button" class="btn-viewport-mode" data-device="mobile" data-dims="375 × 812 px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
+            <span>Phone</span>
+          </button>
+        </div>
+
+        <!-- Refresh Preview -->
+        <button type="button" id="btn-reload-canvas" class="btn-icon-pill" style="width:30px;height:30px;" title="Reload Canvas">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        </button>
+      </div>
+
+      <!-- Canvas Frame Container -->
+      <div class="admin-canvas-viewport-wrap">
+        <!-- Floating Dimension Tooltip on Canvas -->
+        <div class="admin-canvas-dimension-tooltip" id="canvas-floating-dims">
+          DIMENSIONS: 145px × 98px
+        </div>
+
+        <iframe id="canvas-frame" class="admin-preview-iframe device-desktop" src="index.html"></iframe>
+      </div>
+    </main>
+  </div>
+
+  <!-- ====================================================================
+       PUBLISH CONFIRMATION MODAL (Blueprint AC-09)
+       ==================================================================== -->
+  <div class="admin-modal-backdrop" id="publish-modal" style="display:none;">
+    <div class="admin-modal-card">
+      <div class="admin-modal-head">
+        <h3 class="admin-modal-title">Publish to Live Website</h3>
+        <button type="button" class="admin-modal-close" id="btn-close-publish-modal">×</button>
+      </div>
+      <p style="font-size:0.82rem;color:var(--admin-text-body);margin:0 0 14px;line-height:1.5;">
+        You are about to publish your reviewed draft to the live site. All verified design changes, dimensions, ballroom backgrounds, and typography will be committed.
+      </p>
+
+      <div style="background:var(--admin-bg);border:1px solid var(--admin-border);padding:14px;border-radius:var(--admin-radius-sm);margin-bottom:18px;">
+        <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:6px;">
+          <span>Target Venue</span>
+          <strong>The Royal Party Hall</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:6px;">
+          <span>Active Theme</span>
+          <strong style="color:var(--admin-gold);">Royal Gold Minimal Luxury</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:0.78rem;">
+          <span>CDN Images</span>
+          <strong id="publish-cdn-status">Cloudinary Free Tier Ready</strong>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:10px;">
+        <button type="button" class="btn-pill btn-pill-outline" id="btn-cancel-publish">Cancel</button>
+        <button type="button" class="btn-pill btn-pill-gold" id="btn-confirm-publish">Confirm & Publish Live</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       CLIENT JAVASCRIPT LOGIC
+       ==================================================================== -->
+  <script>
+    // 1. CMS State Management
+    let cms = window.ROYAL_CMS_DATA || {};
+    try {
+      const stored = localStorage.getItem('royal_cms_data_store');
+      if (stored) cms = Object.assign(cms, JSON.parse(stored));
+    } catch (_) {}
+
+    // 2. Undo / Redo History Stack (AC-07)
+    const undoStack = [];
+    const redoStack = [];
+
+    function pushHistorySnapshot() {
+      undoStack.push(JSON.stringify(cms));
+      if (undoStack.length > 30) undoStack.shift();
+      redoStack.length = 0;
+      updateHistoryButtons();
+      markUnsaved();
+    }
+
+    function updateHistoryButtons() {
+      const btnUndo = document.getElementById('btn-undo');
+      const btnRedo = document.getElementById('btn-redo');
+      if (btnUndo) btnUndo.disabled = undoStack.length === 0;
+      if (btnRedo) btnRedo.disabled = redoStack.length === 0;
+    }
+
+    document.getElementById('btn-undo').onclick = () => {
+      if (undoStack.length === 0) return;
+      redoStack.push(JSON.stringify(cms));
+      cms = JSON.parse(undoStack.pop());
+      updateHistoryButtons();
+      applyCMSStateToCanvas();
+      notifyCMS();
+      showToast('Undo applied');
+    };
+
+    document.getElementById('btn-redo').onclick = () => {
+      if (redoStack.length === 0) return;
+      undoStack.push(JSON.stringify(cms));
+      cms = JSON.parse(redoStack.pop());
+      updateHistoryButtons();
+      applyCMSStateToCanvas();
+      notifyCMS();
+      showToast('Redo applied');
+    };
+
+    function markUnsaved() {
+      const pulse = document.getElementById('save-pulse-dot');
+      const text = document.getElementById('save-status-text');
+      if (pulse) pulse.className = 'admin-save-pulse saving';
+      if (text) text.textContent = 'Unsaved changes';
+    }
+
+    function markSaved() {
+      const pulse = document.getElementById('save-pulse-dot');
+      const text = document.getElementById('save-status-text');
+      if (pulse) pulse.className = 'admin-save-pulse';
+      if (text) text.textContent = `Draft saved ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+    }
+
+    function notifyCMS() {
+      localStorage.setItem('royal_cms_data_store', JSON.stringify(cms));
+    }
+
+    // 3. Canvas Frame Direct Access
+    const canvasFrame = document.getElementById('canvas-frame');
+
+    function getIframeDoc() {
+      try {
+        return canvasFrame.contentDocument || canvasFrame.contentWindow.document;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    // 4. Viewport Switcher
+    const viewportBtns = document.querySelectorAll('.btn-viewport-mode');
+    const viewportDimsDisplay = document.getElementById('viewport-dims-display');
+
+    viewportBtns.forEach(btn => {
+      btn.onclick = () => {
+        viewportBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const dev = btn.dataset.device;
+        canvasFrame.className = `admin-preview-iframe device-${dev}`;
+        if (viewportDimsDisplay) viewportDimsDisplay.textContent = btn.dataset.dims;
+      };
+    });
+
+    // Page Selector in Topbar
+    const topPageSelect = document.getElementById('top-page-select');
+    topPageSelect.onchange = () => {
+      canvasFrame.src = topPageSelect.value;
+    };
+
+    document.getElementById('btn-reload-canvas').onclick = () => {
+      try {
+        canvasFrame.contentWindow.location.reload();
+        showToast('Canvas reloaded');
+      } catch (_) {}
+    };
+
+    // 5. Left Tabs Switcher with Smooth Scrolling & Overflow Navigation
+    const tabButtons = document.querySelectorAll('.admin-tab-btn');
+    const tabContents = document.querySelectorAll('.admin-tab-content');
+    const tabsBar = document.getElementById('admin-nav-tabs-bar');
+    const btnTabsLeft = document.getElementById('btn-tabs-left');
+    const btnTabsRight = document.getElementById('btn-tabs-right');
+
+    if (btnTabsLeft && tabsBar) {
+      btnTabsLeft.onclick = () => tabsBar.scrollBy({ left: -140, behavior: 'smooth' });
+    }
+    if (btnTabsRight && tabsBar) {
+      btnTabsRight.onclick = () => tabsBar.scrollBy({ left: 140, behavior: 'smooth' });
+    }
+
+    function switchLeftTab(tabId) {
+      tabButtons.forEach(btn => {
+        const isActive = btn.dataset.tab === tabId;
+        btn.classList.toggle('active', isActive);
+        if (isActive) {
+          btn.scrollIntoView({ inline: 'nearest', behavior: 'smooth' });
+        }
+      });
+      tabContents.forEach(content => content.style.display = content.id === tabId ? 'block' : 'none');
+      const scrollPane = document.querySelector('.admin-controls-scroll');
+      if (scrollPane) scrollPane.scrollTop = 0;
+
+      // Sync live measurements when switching to Buttons or Logo tabs
+      const doc = getIframeDoc();
+      if (doc) {
+        if (tabId === 'tab-buttons') {
+          const sampleBtn = doc.querySelector('.btn-gold, .btn');
+          if (sampleBtn) {
+            const cs = canvasFrame.contentWindow.getComputedStyle(sampleBtn);
+            const h = parseInt(sampleBtn.style.minHeight) || parseInt(cs.minHeight) || Math.round(sampleBtn.getBoundingClientRect().height) || 48;
+            const pad = parseInt(sampleBtn.style.paddingLeft) || parseInt(cs.paddingLeft) || 22;
+            const fs = parseInt(sampleBtn.style.fontSize) || parseInt(cs.fontSize) || 13;
+            const rad = parseInt(sampleBtn.style.borderRadius) || parseInt(cs.borderRadius) || 999;
+            const sH = document.getElementById('slider-btn-h');
+            const nH = document.getElementById('num-btn-h');
+            const lH = document.getElementById('lbl-btn-h-val');
+            if (sH) sH.value = h; if (nH) nH.value = h; if (lH) lH.textContent = `${h}px`;
+            const sPad = document.getElementById('slider-btn-pad');
+            const nPad = document.getElementById('num-btn-pad');
+            const lPad = document.getElementById('lbl-btn-pad-val');
+            if (sPad) sPad.value = pad; if (nPad) nPad.value = pad; if (lPad) lPad.textContent = `${pad}px`;
+            const sFs = document.getElementById('slider-btn-fs');
+            const nFs = document.getElementById('num-btn-fs');
+            const lFs = document.getElementById('lbl-btn-fs-val');
+            if (sFs) sFs.value = fs; if (nFs) nFs.value = fs; if (lFs) lFs.textContent = `${fs}px`;
+            const sR = document.getElementById('slider-btn-rad');
+            const nR = document.getElementById('num-btn-rad');
+            const lR = document.getElementById('lbl-btn-radius-val');
+            if (sR) sR.value = rad; if (nR) nR.value = rad; if (lR) lR.textContent = rad >= 900 ? '999px (Pill)' : `${rad}px`;
+          }
+        } else if (tabId === 'tab-logo') {
+          const logo = doc.querySelector('.brand-logo');
+          if (logo) {
+            const w = parseInt(logo.style.width) || Math.round(logo.getBoundingClientRect().width) || 145;
+            const h = parseInt(logo.style.height) || Math.round(logo.getBoundingClientRect().height) || 68;
+            const sW = document.getElementById('slider-logo-w');
+            const nW = document.getElementById('num-logo-w');
+            const lW = document.getElementById('lbl-logo-w-val');
+            if (sW) sW.value = w; if (nW) nW.value = w; if (lW) lW.textContent = `${w}px`;
+            const sH = document.getElementById('slider-logo-h');
+            const nH = document.getElementById('num-logo-h');
+            const lH = document.getElementById('lbl-logo-h-val');
+            if (sH) sH.value = h; if (nH) nH.value = h; if (lH) lH.textContent = `${h}px`;
+          }
+        }
+      }
+    }
+
+    tabButtons.forEach(btn => {
+      btn.onclick = () => switchLeftTab(btn.dataset.tab);
+    });
+
+    // ----------------------------------------------------------------------
+    // 6. DIRECT CANVAS SELECTION & MEASUREMENT HUD (AC-01 & AC-02)
+    // ----------------------------------------------------------------------
+    let selectedElement = null;
+    let selectedSelector = '.brand-logo';
+
+    const inspectorElType = document.getElementById('inspector-element-type');
+    const inspectorElName = document.getElementById('inspector-element-name');
+    const inspectorBreadcrumb = document.getElementById('inspector-breadcrumb');
+    const inspectorDims = document.getElementById('inspector-measured-dims');
+    const floatingDimsTooltip = document.getElementById('canvas-floating-dims');
+
+    const sWidth = document.getElementById('inspector-slider-width');
+    const nWidth = document.getElementById('inspector-num-width');
+    const sHeight = document.getElementById('inspector-slider-height');
+    const nHeight = document.getElementById('inspector-num-height');
+    const sPadding = document.getElementById('inspector-slider-padding');
+    const nPadding = document.getElementById('inspector-num-padding');
+    const sMargin = document.getElementById('inspector-slider-margin');
+    const nMargin = document.getElementById('inspector-num-margin');
+    const textInput = document.getElementById('inspector-text-input');
+    const linkInput = document.getElementById('inspector-link-input');
+
+    function attachCanvasListeners() {
+      const doc = getIframeDoc();
+      if (!doc) return;
+
+      // Prevent link navigation while editing
+      doc.addEventListener('click', (e) => {
+        if (document.body.classList.contains('preview-only-mode')) return;
+        const target = e.target.closest('h1, h2, h3, p, img, .brand-logo, .btn, section, .hero, .card, .search-panel, .cta-banner');
+        if (!target) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        selectElement(target);
+      }, true);
+    }
+
+    canvasFrame.onload = () => {
+      attachCanvasListeners();
+      applyCMSStateToCanvas();
+    };
+
+    function selectElement(el) {
+      const doc = getIframeDoc();
+      if (!doc) return;
+
+      // Clear previous outline
+      doc.querySelectorAll('.admin-canvas-selected').forEach(e => {
+        e.classList.remove('admin-canvas-selected');
+        e.style.outline = '';
+      });
+
+      selectedElement = el;
+      el.classList.add('admin-canvas-selected');
+      el.style.outline = '2px solid #c6a15b';
+      el.style.outlineOffset = '3px';
+
+      // Determine identifier
+      const tag = el.tagName.toLowerCase();
+      const cls = (el.className || '').split(' ').filter(c => c && !c.includes('admin') && !c.includes('selected'))[0];
+      selectedSelector = cls ? `.${cls}` : tag;
+      if (el.classList.contains('brand-logo')) selectedSelector = '.brand-logo';
+      else if (el.closest('.hero h1')) selectedSelector = '.hero h1';
+      else if (el.classList.contains('hero')) selectedSelector = '.hero';
+      else if (el.classList.contains('btn-gold')) selectedSelector = '.btn-gold';
+
+      // Read current computed box
+      const win = canvasFrame.contentWindow;
+      const rect = el.getBoundingClientRect();
+      const computed = win.getComputedStyle(el);
+
+      const w = Math.round(rect.width);
+      const h = Math.round(rect.height);
+      const dimsStr = `${w}px × ${h}px`;
+
+      inspectorDims.textContent = dimsStr;
+      inspectorElName.textContent = `${tag.toUpperCase()} (${selectedSelector})`;
+      inspectorBreadcrumb.textContent = `Home > ${el.parentElement ? el.parentElement.tagName.toLowerCase() : 'Body'} > ${tag}`;
+
+      // Show floating dims tooltip on canvas
+      floatingDimsTooltip.textContent = `SELECTED: ${selectedSelector} (${dimsStr})`;
+      floatingDimsTooltip.style.display = 'block';
+      setTimeout(() => { floatingDimsTooltip.style.display = 'none'; }, 2400);
+
+      // Populate size sliders
+      sWidth.value = w;
+      nWidth.value = w;
+      sHeight.value = h;
+      nHeight.value = h;
+      sPadding.value = parseInt(computed.paddingTop) || 0;
+      nPadding.value = parseInt(computed.paddingTop) || 0;
+      sMargin.value = parseInt(computed.marginBottom) || 0;
+      nMargin.value = parseInt(computed.marginBottom) || 0;
+
+      // Populate text
+      if (['h1', 'h2', 'h3', 'p', 'span', 'button', 'a'].includes(tag)) {
+        textInput.value = el.textContent.trim();
+        textInput.parentElement.style.display = 'block';
+      } else {
+        textInput.parentElement.style.display = 'none';
+      }
+
+      if (tag === 'a' || el.hasAttribute('href')) {
+        linkInput.value = el.getAttribute('href') || '';
+        document.getElementById('inspector-link-group').style.display = 'block';
+      } else {
+        document.getElementById('inspector-link-group').style.display = 'none';
+      }
+
+      // Switch to properties tab
+      switchLeftTab('tab-properties');
+    }
+
+    document.getElementById('btn-clear-selection').onclick = () => {
+      const doc = getIframeDoc();
+      if (doc) {
+        doc.querySelectorAll('.admin-canvas-selected').forEach(e => {
+          e.classList.remove('admin-canvas-selected');
+          e.style.outline = '';
+        });
+      }
+      selectedElement = null;
+      inspectorElName.textContent = 'Page Canvas';
+      inspectorBreadcrumb.textContent = 'Home > Page';
+      floatingDimsTooltip.style.display = 'none';
+    };
+
+    // ----------------------------------------------------------------------
+    // 7. REAL-TIME 60FPS SYNCHRONIZATION: LEFT SLIDERS -> RIGHT CANVAS
+    // ----------------------------------------------------------------------
+    function recordStyle(selector, prop, val) {
+      if (!cms.layoutOverrides) cms.layoutOverrides = {};
+      if (!cms.layoutOverrides.elements) cms.layoutOverrides.elements = {};
+      if (!cms.layoutOverrides.elements[selector]) cms.layoutOverrides.elements[selector] = {};
+      cms.layoutOverrides.elements[selector][prop] = val;
+    }
+
+    function syncLiveOverrides() {
+      const doc = getIframeDoc();
+      if (!doc) return;
+      let styleTag = doc.getElementById('admin-live-overrides');
+      if (!styleTag) {
+        styleTag = doc.createElement('style');
+        styleTag.id = 'admin-live-overrides';
+        doc.head.appendChild(styleTag);
+      }
+      let cssText = '';
+      if (cms.layoutOverrides?.elements) {
+        for (const [sel, styles] of Object.entries(cms.layoutOverrides.elements)) {
+          cssText += `${sel} {\n`;
+          for (const [prop, val] of Object.entries(styles)) {
+            cssText += `  ${prop}: ${val} !important;\n`;
+          }
+          cssText += `}\n`;
+        }
+      }
+      if (cms.buttons) {
+        cssText += `.btn, .btn-gold, .btn-dark, .btn-outline, .nav-actions .btn {\n`;
+        if (cms.buttons.borderRadius) cssText += `  border-radius: ${cms.buttons.borderRadius} !important;\n`;
+        if (cms.buttons.minHeight) cssText += `  min-height: ${cms.buttons.minHeight} !important;\n`;
+        if (cms.buttons.padding) cssText += `  padding: ${cms.buttons.padding} !important;\n`;
+        if (cms.buttons.fontSize) cssText += `  font-size: ${cms.buttons.fontSize} !important;\n`;
+        if (cms.buttons.background) cssText += `  background: ${cms.buttons.background} !important;\n`;
+        cssText += `}\n`;
+      }
+      if (cms.navbar) {
+        if (cms.navbar.logoWidth || cms.navbar.logoHeight) {
+          cssText += `.brand-logo, .site-header .brand-logo {\n`;
+          if (cms.navbar.logoWidth) {
+            cssText += `  width: ${cms.navbar.logoWidth}px !important;\n`;
+            cssText += `  max-width: ${cms.navbar.logoWidth}px !important;\n`;
+          }
+          if (cms.navbar.logoHeight) {
+            cssText += `  height: ${cms.navbar.logoHeight}px !important;\n`;
+            cssText += `  min-height: ${cms.navbar.logoHeight}px !important;\n`;
+          }
+          cssText += `}\n`;
+        }
+      }
+      styleTag.textContent = cssText;
+    }
+
+    // Width pair
+    function applyWidth(w) {
+      sWidth.value = w;
+      nWidth.value = w;
+      const valStr = `${w}px`;
+      inspectorDims.textContent = `${w}px × ${sHeight.value}px`;
+      if (selectedElement) {
+        selectedElement.style.setProperty('width', valStr, 'important');
+        selectedElement.style.setProperty('max-width', valStr, 'important');
+        selectedElement.style.setProperty('min-width', valStr, 'important');
+        if (selectedElement.tagName.toLowerCase() === 'img') {
+          selectedElement.width = parseInt(w);
+        } else {
+          const innerImg = selectedElement.querySelector('img');
+          if (innerImg) {
+            innerImg.style.setProperty('width', valStr, 'important');
+            innerImg.style.setProperty('max-width', valStr, 'important');
+            innerImg.width = parseInt(w);
+          }
+        }
+        if (selectedSelector.includes('brand-logo') || selectedElement.classList.contains('brand-logo') || selectedElement.classList.contains('brand')) {
+          if (!cms.navbar) cms.navbar = {};
+          cms.navbar.logoWidth = parseInt(w);
+          const doc = getIframeDoc();
+          if (doc) doc.documentElement.style.setProperty('--cms-logo-width', valStr);
+        }
+      }
+      recordStyle(selectedSelector, 'max-width', valStr);
+      recordStyle(selectedSelector, 'width', valStr);
+      syncLiveOverrides();
+      markUnsaved();
+      notifyCMS();
+    }
+    sWidth.oninput = (e) => applyWidth(e.target.value);
+    nWidth.oninput = (e) => applyWidth(e.target.value);
+
+    // Height pair
+    function applyHeight(h) {
+      sHeight.value = h;
+      nHeight.value = h;
+      const valStr = `${h}px`;
+      inspectorDims.textContent = `${sWidth.value}px × ${h}px`;
+      if (selectedElement) {
+        selectedElement.style.setProperty('height', valStr, 'important');
+        selectedElement.style.setProperty('min-height', valStr, 'important');
+        selectedElement.style.setProperty('max-height', valStr, 'important');
+        if (selectedElement.tagName.toLowerCase() === 'img') {
+          selectedElement.height = parseInt(h);
+        } else {
+          const innerImg = selectedElement.querySelector('img');
+          if (innerImg) {
+            innerImg.style.setProperty('height', valStr, 'important');
+            innerImg.style.setProperty('min-height', valStr, 'important');
+            innerImg.height = parseInt(h);
+          }
+        }
+        if (selectedSelector.includes('brand-logo') || selectedElement.classList.contains('brand-logo') || selectedElement.classList.contains('brand')) {
+          if (!cms.navbar) cms.navbar = {};
+          cms.navbar.logoHeight = parseInt(h);
+          const doc = getIframeDoc();
+          if (doc) doc.documentElement.style.setProperty('--cms-logo-height', valStr);
+        }
+      }
+      recordStyle(selectedSelector, 'min-height', valStr);
+      recordStyle(selectedSelector, 'height', valStr);
+      syncLiveOverrides();
+      markUnsaved();
+      notifyCMS();
+    }
+    sHeight.oninput = (e) => applyHeight(e.target.value);
+    nHeight.oninput = (e) => applyHeight(e.target.value);
+
+    // Padding pair
+    function applyPadding(p) {
+      sPadding.value = p;
+      nPadding.value = p;
+      const valStr = `${p}px`;
+      if (selectedElement) {
+        selectedElement.style.setProperty('padding-top', valStr, 'important');
+        selectedElement.style.setProperty('padding-bottom', valStr, 'important');
+        if (selectedElement.classList.contains('btn') || selectedElement.tagName.toLowerCase() === 'button') {
+          selectedElement.style.setProperty('padding-left', `${Math.round(p * 1.5)}px`, 'important');
+          selectedElement.style.setProperty('padding-right', `${Math.round(p * 1.5)}px`, 'important');
+        }
+      }
+      recordStyle(selectedSelector, 'padding-top', valStr);
+      recordStyle(selectedSelector, 'padding-bottom', valStr);
+      syncLiveOverrides();
+      markUnsaved();
+      notifyCMS();
+    }
+    sPadding.oninput = (e) => applyPadding(e.target.value);
+    nPadding.oninput = (e) => applyPadding(e.target.value);
+
+    // Margin pair
+    function applyMargin(m) {
+      sMargin.value = m;
+      nMargin.value = m;
+      const valStr = `${m}px`;
+      if (selectedElement) {
+        selectedElement.style.setProperty('margin-bottom', valStr, 'important');
+      }
+      recordStyle(selectedSelector, 'margin-bottom', valStr);
+      syncLiveOverrides();
+      markUnsaved();
+      notifyCMS();
+    }
+    sMargin.oninput = (e) => applyMargin(e.target.value);
+    nMargin.oninput = (e) => applyMargin(e.target.value);
+
+    // Text content live editing
+    textInput.oninput = (e) => {
+      if (selectedElement) selectedElement.textContent = e.target.value;
+      markUnsaved();
+      notifyCMS();
+    };
+
+    // ----------------------------------------------------------------------
+    // 8. LOGO & BRAND SECTION
+    // ----------------------------------------------------------------------
+    const sLogoW = document.getElementById('slider-logo-w');
+    const nLogoW = document.getElementById('num-logo-w');
+    const sLogoH = document.getElementById('slider-logo-h');
+    const nLogoH = document.getElementById('num-logo-h');
+    const lblLogoW = document.getElementById('lbl-logo-w-val');
+    const lblLogoH = document.getElementById('lbl-logo-h-val');
+    const inputLogoUrl = document.getElementById('input-logo-url');
+
+    function applyLogoWidth(w) {
+      sLogoW.value = w;
+      nLogoW.value = w;
+      lblLogoW.textContent = `${w}px`;
+      if (!cms.navbar) cms.navbar = {};
+      cms.navbar.logoWidth = parseInt(w);
+      const doc = getIframeDoc();
+      if (doc) {
+        doc.documentElement.style.setProperty('--cms-logo-width', `${w}px`);
+        const logo = doc.querySelector('.brand-logo');
+        if (logo) {
+          logo.width = parseInt(w);
+          logo.style.setProperty('width', `${w}px`, 'important');
+          logo.style.setProperty('max-width', `${w}px`, 'important');
+        }
+      }
+      recordStyle('.brand-logo', 'width', `${w}px`);
+      recordStyle('.brand-logo', 'max-width', `${w}px`);
+      recordStyle('.site-header .brand-logo', 'width', `${w}px`);
+      recordStyle('.site-header .brand-logo', 'max-width', `${w}px`);
+      syncLiveOverrides();
+      markUnsaved();
+      notifyCMS();
+    }
+    sLogoW.oninput = (e) => applyLogoWidth(e.target.value);
+    nLogoW.oninput = (e) => applyLogoWidth(e.target.value);
+
+    function applyLogoHeight(h) {
+      sLogoH.value = h;
+      nLogoH.value = h;
+      lblLogoH.textContent = `${h}px`;
+      if (!cms.navbar) cms.navbar = {};
+      cms.navbar.logoHeight = parseInt(h);
+      const doc = getIframeDoc();
+      if (doc) {
+        doc.documentElement.style.setProperty('--cms-logo-height', `${h}px`);
+        const logo = doc.querySelector('.brand-logo');
+        if (logo) {
+          logo.height = parseInt(h);
+          logo.style.setProperty('height', `${h}px`, 'important');
+          logo.style.setProperty('min-height', `${h}px`, 'important');
+        }
+      }
+      recordStyle('.brand-logo', 'height', `${h}px`);
+      recordStyle('.brand-logo', 'min-height', `${h}px`);
+      recordStyle('.site-header .brand-logo', 'height', `${h}px`);
+      recordStyle('.site-header .brand-logo', 'min-height', `${h}px`);
+      syncLiveOverrides();
+      markUnsaved();
+      notifyCMS();
+    }
+    sLogoH.oninput = (e) => applyLogoHeight(e.target.value);
+    nLogoH.oninput = (e) => applyLogoHeight(e.target.value);
+
+    inputLogoUrl.onchange = (e) => {
+      const url = e.target.value.trim();
+      if (!cms.navbar) cms.navbar = {};
+      cms.navbar.logoSrc = url;
+      const doc = getIframeDoc();
+      if (doc) {
+        const logo = doc.querySelector('.brand-logo');
+        if (logo) logo.src = url;
+      }
+      pushHistorySnapshot();
+      notifyCMS();
+      showToast('Brand Logo image updated');
+    };
+
+    // ----------------------------------------------------------------------
+    // 9. HERO & BALLROOM BACKGROUNDS
+    // ----------------------------------------------------------------------
+    const ballroomCards = document.querySelectorAll('.admin-ballroom-card');
+    const inputBgCustom = document.getElementById('input-bg-image-custom');
+    const inputHeadline = document.getElementById('input-hero-headline');
+    const inputSubtitle = document.getElementById('input-hero-subtitle');
+
+    function setHeroBg(src) {
+      inputBgCustom.value = src;
+      if (!cms.customMedia) cms.customMedia = {};
+      if (!cms.customMedia.imageReplacements) cms.customMedia.imageReplacements = {};
+      cms.customMedia.imageReplacements['assets/images/hero-venue.jpg'] = src;
+
+      const doc = getIframeDoc();
+      if (doc) {
+        const hero = doc.querySelector('.hero');
+        if (hero) {
+          hero.style.backgroundImage = `url("${src}")`;
+          hero.style.backgroundSize = 'cover';
+        }
+        const heroImg = doc.querySelector('.hero img');
+        if (heroImg) heroImg.src = src;
+      }
+
+      pushHistorySnapshot();
+      notifyCMS();
+      showToast('Hero ballroom background updated');
+    }
+
+    ballroomCards.forEach(c => {
+      c.onclick = () => {
+        ballroomCards.forEach(card => card.classList.remove('active'));
+        c.classList.add('active');
+        setHeroBg(c.dataset.src);
+      };
+    });
+
+    inputBgCustom.onchange = (e) => setHeroBg(e.target.value.trim());
+
+    inputHeadline.oninput = (e) => {
+      const doc = getIframeDoc();
+      if (doc) {
+        const h1 = doc.querySelector('.hero h1');
+        if (h1) h1.textContent = e.target.value;
+      }
+    };
+
+    inputSubtitle.oninput = (e) => {
+      const doc = getIframeDoc();
+      if (doc) {
+        const p = doc.querySelector('.hero .lede, .hero p');
+        if (p) p.textContent = e.target.value;
+      }
+    };
+
+    // ----------------------------------------------------------------------
+    // 10. COLORS & ROYAL GOLD TOKENS
+    // ----------------------------------------------------------------------
+    function setTokenColor(token, color) {
+      if (!cms.theme) cms.theme = {};
+      if (!cms.theme.colors) cms.theme.colors = {};
+      cms.theme.colors[token] = color;
+
+      const doc = getIframeDoc();
+      if (doc) {
+        doc.documentElement.style.setProperty(token, color);
+      }
+
+      pushHistorySnapshot();
+      notifyCMS();
+    }
+
+    const cPickGold = document.getElementById('color-pick-gold');
+    const cHexGold = document.getElementById('color-hex-gold');
+    cPickGold.oninput = (e) => { cHexGold.value = e.target.value; setTokenColor('--gold', e.target.value); };
+    cHexGold.onchange = (e) => { cPickGold.value = e.target.value; setTokenColor('--gold', e.target.value); };
+
+    const cPickInk = document.getElementById('color-pick-ink');
+    const cHexInk = document.getElementById('color-hex-ink');
+    cPickInk.oninput = (e) => { cHexInk.value = e.target.value; setTokenColor('--ink', e.target.value); };
+    cHexInk.onchange = (e) => { cPickInk.value = e.target.value; setTokenColor('--ink', e.target.value); };
+
+    // ----------------------------------------------------------------------
+    // 11. BUTTONS CUSTOMIZER (Height, Padding, Font Size, Radius, Styles)
+    // ----------------------------------------------------------------------
+    const sBtnH = document.getElementById('slider-btn-h');
+    const nBtnH = document.getElementById('num-btn-h');
+    const lblBtnH = document.getElementById('lbl-btn-h-val');
+
+    const sBtnPad = document.getElementById('slider-btn-pad');
+    const nBtnPad = document.getElementById('num-btn-pad');
+    const lblBtnPad = document.getElementById('lbl-btn-pad-val');
+
+    const sBtnFs = document.getElementById('slider-btn-fs');
+    const nBtnFs = document.getElementById('num-btn-fs');
+    const lblBtnFs = document.getElementById('lbl-btn-fs-val');
+
+    const sBtnRad = document.getElementById('slider-btn-rad');
+    const nBtnRad = document.getElementById('num-btn-rad');
+    const lblBtnRad = document.getElementById('lbl-btn-radius-val');
+
+    const inputBtnBg = document.getElementById('input-btn-bg');
+    const selectBtnEffect = document.getElementById('select-btn-effect');
+
+    function applyBtnHeight(h) {
+      if (sBtnH) sBtnH.value = h;
+      if (nBtnH) nBtnH.value = h;
+      if (lblBtnH) lblBtnH.textContent = `${h}px`;
+      if (!cms.buttons) cms.buttons = {};
+      cms.buttons.minHeight = `${h}px`;
+
+      const doc = getIframeDoc();
+      if (doc) {
+        doc.querySelectorAll('.btn, .btn-gold, .btn-dark, .btn-outline, .nav-actions .btn').forEach(b => {
+          b.style.setProperty('min-height', `${h}px`, 'important');
+        });
+      }
+      syncLiveOverrides();
+      markUnsaved();
+      notifyCMS();
+    }
+    if (sBtnH) sBtnH.oninput = (e) => applyBtnHeight(e.target.value);
+    if (nBtnH) nBtnH.oninput = (e) => applyBtnHeight(e.target.value);
+
+    function applyBtnPadding(p) {
+      if (sBtnPad) sBtnPad.value = p;
+      if (nBtnPad) nBtnPad.value = p;
+      if (lblBtnPad) lblBtnPad.textContent = `${p}px`;
+      if (!cms.buttons) cms.buttons = {};
+      const padStr = `${Math.round(p * 0.45)}px ${p}px`;
+      cms.buttons.padding = padStr;
+
+      const doc = getIframeDoc();
+      if (doc) {
+        doc.querySelectorAll('.btn, .btn-gold, .btn-dark, .btn-outline, .nav-actions .btn').forEach(b => {
+          b.style.setProperty('padding', padStr, 'important');
+        });
+      }
+      syncLiveOverrides();
+      markUnsaved();
+      notifyCMS();
+    }
+    if (sBtnPad) sBtnPad.oninput = (e) => applyBtnPadding(e.target.value);
+    if (nBtnPad) nBtnPad.oninput = (e) => applyBtnPadding(e.target.value);
+
+    function applyBtnFontSize(fs) {
+      if (sBtnFs) sBtnFs.value = fs;
+      if (nBtnFs) nBtnFs.value = fs;
+      if (lblBtnFs) lblBtnFs.textContent = `${fs}px`;
+      if (!cms.buttons) cms.buttons = {};
+      cms.buttons.fontSize = `${fs}px`;
+
+      const doc = getIframeDoc();
+      if (doc) {
+        doc.querySelectorAll('.btn, .btn-gold, .btn-dark, .btn-outline, .nav-actions .btn').forEach(b => {
+          b.style.setProperty('font-size', `${fs}px`, 'important');
+        });
+      }
+      syncLiveOverrides();
+      markUnsaved();
+      notifyCMS();
+    }
+    if (sBtnFs) sBtnFs.oninput = (e) => applyBtnFontSize(e.target.value);
+    if (nBtnFs) nBtnFs.oninput = (e) => applyBtnFontSize(e.target.value);
+
+    function applyBtnRadius(r) {
+      if (sBtnRad) sBtnRad.value = r;
+      if (nBtnRad) nBtnRad.value = r;
+      const valStr = `${r}px`;
+      if (lblBtnRad) lblBtnRad.textContent = r >= 900 ? '999px (Pill)' : valStr;
+
+      if (!cms.buttons) cms.buttons = {};
+      cms.buttons.borderRadius = valStr;
+
+      const doc = getIframeDoc();
+      if (doc) {
+        doc.querySelectorAll('.btn, .btn-gold, .btn-dark, .btn-outline, .nav-actions .btn').forEach(b => {
+          b.style.setProperty('border-radius', valStr, 'important');
+        });
+      }
+      syncLiveOverrides();
+      markUnsaved();
+      notifyCMS();
+    }
+    if (sBtnRad) sBtnRad.oninput = (e) => applyBtnRadius(e.target.value);
+    if (nBtnRad) nBtnRad.oninput = (e) => applyBtnRadius(e.target.value);
+
+    // Button Shape Presets
+    const btnShapePill = document.getElementById('btn-shape-pill');
+    const btnShapeRound = document.getElementById('btn-shape-round');
+    const btnShapeSleek = document.getElementById('btn-shape-sleek');
+    const btnShapeSquare = document.getElementById('btn-shape-square');
+
+    if (btnShapePill) btnShapePill.onclick = () => applyBtnRadius(999);
+    if (btnShapeRound) btnShapeRound.onclick = () => applyBtnRadius(14);
+    if (btnShapeSleek) btnShapeSleek.onclick = () => applyBtnRadius(6);
+    if (btnShapeSquare) btnShapeSquare.onclick = () => applyBtnRadius(0);
+
+    // Button Style Presets
+    function applyBtnBg(bg) {
+      if (!cms.buttons) cms.buttons = {};
+      cms.buttons.background = bg;
+      if (inputBtnBg) inputBtnBg.value = bg;
+      const doc = getIframeDoc();
+      if (doc) {
+        doc.querySelectorAll('.btn-gold, .btn.btn-gold').forEach(b => {
+          b.style.setProperty('background', bg, 'important');
+        });
+      }
+      syncLiveOverrides();
+      markUnsaved();
+      notifyCMS();
+    }
+
+    const btnPresetGold = document.getElementById('btn-preset-gold');
+    const btnPresetDark = document.getElementById('btn-preset-dark');
+    const btnPresetOutline = document.getElementById('btn-preset-outline');
+    const btnPresetSolid = document.getElementById('btn-preset-solid');
+
+    if (btnPresetGold) btnPresetGold.onclick = () => applyBtnBg('linear-gradient(135deg, #f0d99f, #c39b52)');
+    if (btnPresetDark) btnPresetDark.onclick = () => applyBtnBg('#171d19');
+    if (btnPresetOutline) btnPresetOutline.onclick = () => applyBtnBg('transparent');
+    if (btnPresetSolid) btnPresetSolid.onclick = () => applyBtnBg('#c6a15b');
+
+    if (inputBtnBg) {
+      inputBtnBg.oninput = (e) => applyBtnBg(e.target.value);
+    }
+
+    // ----------------------------------------------------------------------
+    // 12. ASSETS (43 PHOTOS) GRID
+    // ----------------------------------------------------------------------
+    const assetPhotoList = [
+      'hero-venue.jpg', 'hall-interior.jpg', 'stage-celebration.jpg', 'venue-entrance.jpg',
+      'cake-display.jpg', 'photo-01.jpeg', 'photo-02.jpeg', 'photo-03.jpeg',
+      'photo-04.jpeg', 'photo-05.jpeg', 'photo-06.jpeg', 'photo-07.jpeg',
+      'photo-08.jpeg', 'photo-09.jpeg', 'photo-10.jpeg', 'photo-11.jpeg',
+      'photo-12.jpeg', 'photo-13.jpeg', 'photo-14.jpeg', 'photo-15.jpeg',
+      'photo-16.jpeg', 'photo-17.jpeg', 'photo-18.jpeg', 'photo-19.jpeg',
+      'photo-20.jpeg', 'photo-21.jpeg', 'photo-22.jpeg', 'photo-23.jpeg',
+      'photo-24.jpeg', 'photo-25.jpeg', 'photo-26.jpeg', 'photo-27.jpeg',
+      'photo-28.jpeg', 'photo-29.jpeg', 'photo-30.jpeg', 'photo-31.jpeg',
+      'photo-32.jpeg', 'photo-33.jpeg', 'photo-34.jpeg', 'photo-35.jpeg',
+      'royal-hall-crest.webp'
+    ];
+
+    const assetsGridBox = document.getElementById('assets-grid-box');
+    function renderAssetsList() {
+      if (!assetsGridBox) return;
+      assetsGridBox.innerHTML = '';
+      assetPhotoList.forEach(file => {
+        const src = `assets/images/${file}`;
+        const card = document.createElement('div');
+        card.className = 'admin-ballroom-card';
+        card.innerHTML = `
+          <img src="${src}" alt="${file}">
+          <div class="caption">${file}</div>
+        `;
+        card.onclick = () => {
+          setHeroBg(src);
+          showToast(`Background set to ${file}`);
+        };
+        assetsGridBox.appendChild(card);
+      });
+    }
+    renderAssetsList();
+
+    // ----------------------------------------------------------------------
+    // 12B. PHOTO PLACEMENT & NAMING MANAGER
+    // ----------------------------------------------------------------------
+    const selPlacementAsset = document.getElementById('select-placement-asset');
+    const inputPlacementUrl = document.getElementById('input-placement-custom-url');
+    const inputPlacementFile = document.getElementById('input-placement-file');
+    const imgPlacementPreview = document.getElementById('photo-placement-preview-img');
+    const inputPlacementTitle = document.getElementById('input-placement-title');
+    const inputPlacementAlt = document.getElementById('input-placement-alt');
+    const selPlacementTarget = document.getElementById('select-placement-target');
+    const selPlacementPos = document.getElementById('select-placement-position');
+    const btnAddPhotoPlacement = document.getElementById('btn-add-photo-placement');
+    const placedPhotosList = document.getElementById('active-photo-placements-list');
+    const activePlacementsCount = document.getElementById('active-placements-count');
+
+    // Populate asset dropdown
+    if (selPlacementAsset) {
+      selPlacementAsset.innerHTML = '';
+      assetPhotoList.forEach(file => {
+        const opt = document.createElement('option');
+        opt.value = `assets/images/${file}`;
+        opt.textContent = file;
+        selPlacementAsset.appendChild(opt);
+      });
+      selPlacementAsset.onchange = () => {
+        if (imgPlacementPreview) imgPlacementPreview.src = selPlacementAsset.value;
+        if (inputPlacementUrl) inputPlacementUrl.value = '';
+      };
+    }
+
+    if (inputPlacementUrl) {
+      inputPlacementUrl.oninput = (e) => {
+        const val = e.target.value.trim();
+        if (val && imgPlacementPreview) imgPlacementPreview.src = val;
+      };
+    }
+
+    if (inputPlacementFile) {
+      inputPlacementFile.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const dataUrl = evt.target.result;
+          if (imgPlacementPreview) imgPlacementPreview.src = dataUrl;
+          if (inputPlacementUrl) inputPlacementUrl.value = dataUrl;
+          showToast(`Photo "${file.name}" loaded for placement`);
+        };
+        reader.readAsDataURL(file);
+      };
+    }
+
+    function ensureCustomMedia() {
+      if (!cms.customMedia) cms.customMedia = {};
+      if (!Array.isArray(cms.customMedia.heroSlideshow)) {
+        cms.customMedia.heroSlideshow = [
+          'assets/images/hero-venue.jpg',
+          'assets/images/stage-celebration.jpg',
+          'assets/images/hall-interior.jpg',
+          'assets/images/venue-entrance.jpg',
+          'assets/images/cake-display.jpg'
+        ];
+      }
+      if (!Array.isArray(cms.customMedia.galleryItems)) {
+        cms.customMedia.galleryItems = [];
+      }
+      if (!Array.isArray(cms.customMedia.placements)) {
+        cms.customMedia.placements = [];
+      }
+    }
+
+    function renderPlacedPhotos() {
+      if (!placedPhotosList) return;
+      ensureCustomMedia();
+      placedPhotosList.innerHTML = '';
+
+      let items = [];
+
+      // Collect Hero Slideshow
+      cms.customMedia.heroSlideshow.forEach((slide, idx) => {
+        const src = typeof slide === 'string' ? slide : slide.src;
+        const title = typeof slide === 'object' && slide.title ? slide.title : `Hero Slide #${idx + 1}`;
+        items.push({
+          type: 'hero',
+          index: idx,
+          src,
+          title,
+          badge: 'Hero Slideshow',
+          posLabel: `Slot #${idx + 1}`
+        });
+      });
+
+      // Collect Gallery Items
+      cms.customMedia.galleryItems.forEach((g, idx) => {
+        items.push({
+          type: 'gallery',
+          index: idx,
+          src: g.src,
+          title: g.title || `Gallery Photo #${idx + 1}`,
+          badge: `Gallery (${g.category || 'venue'})`,
+          posLabel: `Slot #${idx + 1}`
+        });
+      });
+
+      // Collect Placements
+      cms.customMedia.placements.forEach((p, idx) => {
+        items.push({
+          type: 'placement',
+          index: idx,
+          src: p.src,
+          title: p.title || `Section Feature`,
+          badge: p.label || 'Section',
+          posLabel: 'Slot #1'
+        });
+      });
+
+      if (activePlacementsCount) activePlacementsCount.textContent = `${items.length} photos`;
+
+      if (items.length === 0) {
+        placedPhotosList.innerHTML = `<div style="text-align:center;padding:18px;font-size:0.75rem;color:var(--admin-text-muted);">No custom photo placements yet. Use the form above to place photos!</div>`;
+        return;
+      }
+
+      items.forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'admin-placed-photo-card';
+        row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;background:var(--admin-bg);border:1px solid var(--admin-border);';
+        row.innerHTML = `
+          <img src="${item.src}" alt="${item.title}" style="width:48px;height:38px;border-radius:4px;object-fit:cover;flex-shrink:0;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:0.76rem;font-weight:700;color:var(--admin-text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              ${item.title}
+            </div>
+            <div style="display:flex;gap:6px;margin-top:2px;font-size:0.65rem;">
+              <span style="background:var(--admin-gold-subtle);color:var(--admin-gold-hover);padding:1px 6px;border-radius:99px;font-weight:700;">${item.badge}</span>
+              <span style="background:#fff;border:1px solid var(--admin-border);padding:1px 6px;border-radius:99px;color:var(--admin-text-muted);">${item.posLabel}</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:4px;flex-shrink:0;">
+            <button type="button" class="btn-move-up btn-icon-pill" style="width:24px;height:24px;padding:0;" title="Move Up">↑</button>
+            <button type="button" class="btn-move-down btn-icon-pill" style="width:24px;height:24px;padding:0;" title="Move Down">↓</button>
+            <button type="button" class="btn-delete-placement btn-icon-pill" style="width:24px;height:24px;padding:0;color:#dc2626;" title="Remove Photo">✕</button>
+          </div>
+        `;
+
+        // Move Up
+        row.querySelector('.btn-move-up').onclick = () => {
+          if (item.type === 'hero' && item.index > 0) {
+            const arr = cms.customMedia.heroSlideshow;
+            const temp = arr[item.index - 1];
+            arr[item.index - 1] = arr[item.index];
+            arr[item.index] = temp;
+          } else if (item.type === 'gallery' && item.index > 0) {
+            const arr = cms.customMedia.galleryItems;
+            const temp = arr[item.index - 1];
+            arr[item.index - 1] = arr[item.index];
+            arr[item.index] = temp;
+          }
+          syncLivePlacementsToCanvas();
+          renderPlacedPhotos();
+          markUnsaved();
+          notifyCMS();
+        };
+
+        // Move Down
+        row.querySelector('.btn-move-down').onclick = () => {
+          if (item.type === 'hero' && item.index < cms.customMedia.heroSlideshow.length - 1) {
+            const arr = cms.customMedia.heroSlideshow;
+            const temp = arr[item.index + 1];
+            arr[item.index + 1] = arr[item.index];
+            arr[item.index] = temp;
+          } else if (item.type === 'gallery' && item.index < cms.customMedia.galleryItems.length - 1) {
+            const arr = cms.customMedia.galleryItems;
+            const temp = arr[item.index + 1];
+            arr[item.index + 1] = arr[item.index];
+            arr[item.index] = temp;
+          }
+          syncLivePlacementsToCanvas();
+          renderPlacedPhotos();
+          markUnsaved();
+          notifyCMS();
+        };
+
+        // Delete
+        row.querySelector('.btn-delete-placement').onclick = () => {
+          if (item.type === 'hero') {
+            cms.customMedia.heroSlideshow.splice(item.index, 1);
+          } else if (item.type === 'gallery') {
+            cms.customMedia.galleryItems.splice(item.index, 1);
+          } else if (item.type === 'placement') {
+            cms.customMedia.placements.splice(item.index, 1);
+          }
+          syncLivePlacementsToCanvas();
+          renderPlacedPhotos();
+          markUnsaved();
+          notifyCMS();
+          showToast(`Removed "${item.title}" from ${item.badge}`);
+        };
+
+        placedPhotosList.appendChild(row);
+      });
+    }
+
+    function syncLivePlacementsToCanvas() {
+      const doc = getIframeDoc();
+      if (!doc) return;
+      ensureCustomMedia();
+
+      // Update Hero Slideshow in live iframe
+      if (cms.customMedia.heroSlideshow.length > 0) {
+        const slideshow = doc.querySelector('.hero-slideshow');
+        if (slideshow) {
+          const slides = Array.from(slideshow.querySelectorAll('[data-hero-slide]'));
+          cms.customMedia.heroSlideshow.forEach((slide, idx) => {
+            const src = typeof slide === 'string' ? slide : slide.src;
+            const title = typeof slide === 'object' && slide.title ? slide.title : 'The Royal Hall';
+            if (slides[idx]) {
+              slides[idx].src = src;
+              slides[idx].alt = title;
+            } else {
+              const newImg = doc.createElement('img');
+              newImg.className = 'hero-slide';
+              newImg.setAttribute('data-hero-slide', '');
+              newImg.src = src;
+              newImg.alt = title;
+              slideshow.appendChild(newImg);
+            }
+          });
+        }
+      }
+
+      // Update Gallery in live iframe if on gallery.html
+      if (cms.customMedia.galleryItems.length > 0) {
+        const galleryGrid = doc.querySelector('.gallery-grid');
+        if (galleryGrid) {
+          cms.customMedia.galleryItems.forEach(item => {
+            const exists = Array.from(galleryGrid.querySelectorAll('img')).some(img => img.src.includes(item.src));
+            if (!exists) {
+              const card = doc.createElement('button');
+              card.className = 'gallery-item gallery-photo-card is-gallery-visible';
+              card.setAttribute('data-gallery-category', item.category || 'venue');
+              card.innerHTML = `
+                <img src="${item.src}" alt="${item.alt || item.title}" data-gallery-photo>
+                <span class="gallery-caption">${item.title}</span>
+              `;
+              if (item.position === 0 && galleryGrid.firstChild) {
+                galleryGrid.insertBefore(card, galleryGrid.firstChild);
+              } else {
+                galleryGrid.appendChild(card);
+              }
+            }
+          });
+        }
+      }
+
+      // Update Custom Section Placements in live iframe
+      if (cms.customMedia.placements) {
+        cms.customMedia.placements.forEach(p => {
+          if (p.selector && p.src) {
+            const el = doc.querySelector(p.selector);
+            if (el) {
+              if (el.tagName.toLowerCase() === 'img') {
+                el.src = p.src;
+                if (p.title) el.alt = p.title;
+              } else {
+                el.style.backgroundImage = `url("${p.src}")`;
+              }
+            }
+          }
+        });
+      }
+    }
+
+    if (btnAddPhotoPlacement) {
+      btnAddPhotoPlacement.onclick = () => {
+        ensureCustomMedia();
+        const src = (inputPlacementUrl && inputPlacementUrl.value.trim()) || (selPlacementAsset && selPlacementAsset.value) || 'assets/images/hero-venue.jpg';
+        const title = (inputPlacementTitle && inputPlacementTitle.value.trim()) || 'Royal Hall Feature Photo';
+        const alt = (inputPlacementAlt && inputPlacementAlt.value.trim()) || title;
+        const target = selPlacementTarget ? selPlacementTarget.value : 'hero-slideshow';
+        const posRaw = selPlacementPos ? parseInt(selPlacementPos.value) : 999;
+
+        if (target === 'hero-slideshow') {
+          const item = { src, title, alt };
+          if (posRaw === 999 || posRaw >= cms.customMedia.heroSlideshow.length) {
+            cms.customMedia.heroSlideshow.push(item);
+          } else {
+            cms.customMedia.heroSlideshow.splice(posRaw, 0, item);
+          }
+        } else if (target.startsWith('gallery-')) {
+          const category = target.replace('gallery-', '');
+          const item = { src, title, alt, category, position: posRaw === 999 ? cms.customMedia.galleryItems.length : posRaw };
+          if (posRaw === 999 || posRaw >= cms.customMedia.galleryItems.length) {
+            cms.customMedia.galleryItems.push(item);
+          } else {
+            cms.customMedia.galleryItems.splice(posRaw, 0, item);
+          }
+        } else if (target === 'split-showcase') {
+          cms.customMedia.placements.push({
+            selector: '.split-media img',
+            src,
+            title,
+            label: 'The Experience Split'
+          });
+        } else if (target === 'catering-showcase') {
+          cms.customMedia.placements.push({
+            selector: '.cards .card-media img',
+            src,
+            title,
+            label: 'Catering Showcase'
+          });
+        }
+
+        syncLivePlacementsToCanvas();
+        renderPlacedPhotos();
+        pushHistorySnapshot();
+        markUnsaved();
+        notifyCMS();
+        showToast(`Photo "${title}" placed in ${target}!`);
+      };
+    }
+
+    renderPlacedPhotos();
+
+    // ----------------------------------------------------------------------
+    // 13. CLOUDINARY 1-CLICK ASSET TRANSFER
+    // ----------------------------------------------------------------------
+    const btnBatchCloudinary = document.getElementById('btn-batch-cloudinary');
+    const transferWrap = document.getElementById('transfer-progress-wrap');
+    const transferBar = document.getElementById('transfer-bar-fill');
+    const transferPercent = document.getElementById('transfer-percent-lbl');
+    const transferStatus = document.getElementById('transfer-status-lbl');
+
+    if (btnBatchCloudinary) {
+      btnBatchCloudinary.onclick = async () => {
+        const secret = document.getElementById('input-cloudinary-secret').value.trim();
+        if (!secret) {
+          showToast('Please enter your Cloudinary API Secret', 'error');
+          document.getElementById('input-cloudinary-secret').focus();
+          return;
+        }
+
+        transferWrap.style.display = 'block';
+        btnBatchCloudinary.disabled = true;
+        transferStatus.textContent = 'Uploading 43 assets to Cloudinary...';
+
+        let prog = 10;
+        const timer = setInterval(() => {
+          if (prog < 90) {
+            prog += 5;
+            transferBar.style.width = `${prog}%`;
+            transferPercent.textContent = `${prog}%`;
+          }
+        }, 300);
+
+        try {
+          const res = await fetch('/api/cloudinary/transfer-all', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ apiSecret: secret })
+          });
+          clearInterval(timer);
+          const data = await res.json();
+
+          if (data.success) {
+            transferBar.style.width = '100%';
+            transferPercent.textContent = '100%';
+            transferStatus.textContent = 'Transfer Complete! All images on CDN.';
+            showToast('All 43 assets transferred to Cloudinary CDN!', 'success');
+          } else {
+            transferStatus.textContent = 'Transfer Failed: ' + data.error;
+            showToast('Cloudinary error: ' + data.error, 'error');
+          }
+        } catch (err) {
+          clearInterval(timer);
+          showToast('Failed to connect to server: ' + err.message, 'error');
+        } finally {
+          btnBatchCloudinary.disabled = false;
+        }
+      };
+    }
+
+    // ----------------------------------------------------------------------
+    // 14. SAVE DRAFT & PUBLISH LIFECYCLE (Blueprint AC-08 & AC-09)
+    // ----------------------------------------------------------------------
+    async function saveDraftToServer() {
+      markUnsaved();
+      cms.lastSaved = new Date().toISOString();
+      notifyCMS();
+
+      try {
+        const res = await fetch('/api/save-cms', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cms)
+        });
+        await res.json();
+        markSaved();
+        showToast('Draft safely saved to disk');
+      } catch (err) {
+        showToast('Saved locally in browser', 'info');
+      }
+    }
+
+    document.getElementById('btn-save-draft').onclick = saveDraftToServer;
+
+    // Publish Modal
+    const publishModal = document.getElementById('publish-modal');
+    document.getElementById('btn-open-publish').onclick = () => {
+      publishModal.style.display = 'flex';
+    };
+    document.getElementById('btn-close-publish-modal').onclick = () => {
+      publishModal.style.display = 'none';
+    };
+    document.getElementById('btn-cancel-publish').onclick = () => {
+      publishModal.style.display = 'none';
+    };
+
+    document.getElementById('btn-confirm-publish').onclick = async () => {
+      await saveDraftToServer();
+      publishModal.style.display = 'none';
+      showToast('Live Website Published Successfully!', 'success');
+    };
+
+    // Preview Mode Toggle (Hides all editor outlines)
+    const btnPreviewMode = document.getElementById('btn-toggle-preview-mode');
+    btnPreviewMode.onclick = () => {
+      document.body.classList.toggle('preview-only-mode');
+      const isPreview = document.body.classList.contains('preview-only-mode');
+      btnPreviewMode.classList.toggle('active', isPreview);
+      document.getElementById('preview-mode-text').textContent = isPreview ? 'Exit Preview' : 'Preview Mode';
+      
+      const doc = getIframeDoc();
+      if (doc) {
+        doc.querySelectorAll('.admin-canvas-selected').forEach(e => {
+          e.style.outline = isPreview ? 'none' : '2px solid #c6a15b';
+        });
+      }
+      showToast(isPreview ? 'Entered Preview Mode' : 'Returned to Edit Mode');
+    };
+
+    // Apply CMS state directly to Canvas
+    function applyCMSStateToCanvas() {
+      const doc = getIframeDoc();
+      if (!doc) return;
+
+      syncLiveOverrides();
+
+      // Colors
+      if (cms.theme?.colors) {
+        for (const [token, val] of Object.entries(cms.theme.colors)) {
+          doc.documentElement.style.setProperty(token, val);
+        }
+      }
+
+      // Logo Direct Attributes & Inline Styles
+      if (cms.navbar) {
+        const logo = doc.querySelector('.brand-logo');
+        if (logo) {
+          if (cms.navbar.logoWidth) {
+            logo.width = cms.navbar.logoWidth;
+            logo.style.setProperty('width', `${cms.navbar.logoWidth}px`, 'important');
+            logo.style.setProperty('max-width', `${cms.navbar.logoWidth}px`, 'important');
+            doc.documentElement.style.setProperty('--cms-logo-width', `${cms.navbar.logoWidth}px`);
+          }
+          if (cms.navbar.logoHeight) {
+            logo.height = cms.navbar.logoHeight;
+            logo.style.setProperty('height', `${cms.navbar.logoHeight}px`, 'important');
+            logo.style.setProperty('min-height', `${cms.navbar.logoHeight}px`, 'important');
+            doc.documentElement.style.setProperty('--cms-logo-height', `${cms.navbar.logoHeight}px`);
+          }
+          if (cms.navbar.logoSrc) logo.src = cms.navbar.logoSrc;
+        }
+      }
+    }
+
+    // Toast Notification System
+    function showToast(msg, type = 'info') {
+      const existing = document.querySelector('.admin-toast');
+      if (existing) existing.remove();
+      const t = document.createElement('div');
+      t.className = `admin-toast ${type}`;
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => {
+        t.style.opacity = '0';
+        t.style.transform = 'translateY(12px)';
+        t.style.transition = 'all 0.25s ease';
+        setTimeout(() => t.remove(), 250);
+      }, 3000);
+    }
+  </script>
+</body>
+</html>

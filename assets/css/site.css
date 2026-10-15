@@ -2003,8 +2003,8 @@ body.site-revealed .hero-slideshow [data-hero-slide].is-active{
 }
 .site-header .brand{flex:0 0 auto;margin-right:clamp(8px,1.4vw,24px);justify-content:flex-start}
 .site-header .brand-logo{
-  display:block;width:clamp(74px,7vw,106px)!important;
-  height:clamp(52px,5.4vw,68px)!important;max-width:none!important;
+  display:block;width:var(--cms-logo-width, clamp(74px,7vw,106px))!important;
+  height:var(--cms-logo-height, clamp(52px,5.4vw,68px))!important;max-width:none!important;
   object-fit:contain;object-position:left center;
 }
 .nav-links{

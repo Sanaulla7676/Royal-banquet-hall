@@ -1,0 +1,1117 @@
+/* ==========================================================================
+   Royal Banquet Hall - Admin Studio & Visual Website Builder
+   White Minimal Luxury & Royal Gold Design System
+   Architecture: Left Controls Panel | Right Live Responsive Canvas
+   Compliant with Visual Website Builder Blueprint (v1.0) & IQ200 Layout Spec
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap');
+
+:root {
+  --admin-font: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --admin-serif: "Playfair Display", Georgia, serif;
+  
+  /* White Minimal Luxury & 24K Royal Gold Palette */
+  --admin-gold: #c6a15b;
+  --admin-gold-hover: #b38f4a;
+  --admin-gold-dark: #8c6c2e;
+  --admin-gold-light: #f6ecd6;
+  --admin-gold-subtle: #fcf9f2;
+  --admin-gold-border: rgba(198, 161, 91, 0.35);
+  --admin-gold-glow: rgba(198, 161, 91, 0.22);
+  
+  --admin-dark: #171d19;
+  --admin-dark-hover: #242c26;
+  --admin-dark-subtle: #2d3630;
+  
+  --admin-bg: #f8f7f4;           /* Warm Alabaster / Ivory Canvas */
+  --admin-surface: #ffffff;      /* Pure Crisp White */
+  --admin-surface-hover: #faf9f6;
+  --admin-surface-elevated: #ffffff;
+  
+  --admin-border: #e9e6df;       /* Delicate Warm Gray */
+  --admin-border-subtle: #f2efe9;
+  --admin-border-focus: #c6a15b;
+  
+  --admin-text-main: #171d19;    /* Deep Charcoal Ink */
+  --admin-text-body: #3c4440;
+  --admin-text-muted: #747d77;
+  --admin-text-light: #9fa6a1;
+  
+  --admin-accent-success: #10b981;
+  --admin-accent-info: #0ea5e9;
+  --admin-accent-warning: #f59e0b;
+  --admin-accent-danger: #ef4444;
+  
+  --admin-radius-card: 18px;
+  --admin-radius-pill: 999px;
+  --admin-radius-md: 12px;
+  --admin-radius-sm: 8px;
+  
+  --admin-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.03);
+  --admin-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  --admin-shadow-lg: 0 14px 40px rgba(0, 0, 0, 0.08);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Base Body: Strictly locked to viewport height with no outer scrollbars */
+body.admin-app {
+  margin: 0;
+  padding: 0;
+  font-family: var(--admin-font);
+  background-color: var(--admin-bg);
+  color: var(--admin-text-main);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Important: prevents body scrolling so panels scroll independently */
+}
+
+/* --------------------------------------------------------------------------
+   1. TOP MASTER TOOLBAR (Fixed Height, Never Overlaps Panels)
+   -------------------------------------------------------------------------- */
+.admin-header {
+  flex: 0 0 auto;
+  height: 64px;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  background: var(--admin-surface);
+  border-bottom: 1px solid var(--admin-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  z-index: 100;
+  gap: 12px;
+}
+
+.admin-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+}
+
+.admin-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--admin-text-main);
+}
+
+.admin-brand-crest {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.admin-brand-title {
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--admin-text-main);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.admin-brand-title span {
+  color: var(--admin-gold);
+}
+
+.admin-brand-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: var(--admin-gold-subtle);
+  color: var(--admin-gold-hover);
+  border: 1px solid var(--admin-gold-border);
+  padding: 2px 8px;
+  border-radius: var(--admin-radius-pill);
+  white-space: nowrap;
+}
+
+.admin-header-center {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: center;
+}
+
+/* Page Selector Dropdown */
+.admin-header-page-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--admin-bg);
+  padding: 4px 10px;
+  border-radius: var(--admin-radius-pill);
+  border: 1px solid var(--admin-border);
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.admin-header-page-wrap svg {
+  width: 14px;
+  height: 14px;
+  stroke: var(--admin-gold);
+  flex-shrink: 0;
+}
+
+.admin-page-select-top {
+  border: none;
+  background: transparent;
+  font-family: var(--admin-font);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--admin-text-main);
+  outline: none;
+  cursor: pointer;
+  max-width: 170px;
+  text-overflow: ellipsis;
+}
+
+/* Undo / Redo Buttons */
+.admin-history-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--admin-bg);
+  padding: 2px;
+  border-radius: var(--admin-radius-pill);
+  border: 1px solid var(--admin-border);
+  flex-shrink: 0;
+}
+
+.btn-history {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--admin-radius-pill);
+  border: none;
+  background: transparent;
+  color: var(--admin-text-body);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-history:hover:not(:disabled) {
+  background: #ffffff;
+  color: var(--admin-gold);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.btn-history:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.btn-history svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Autosave Status Badge */
+.admin-save-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--admin-text-muted);
+  padding: 4px 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.admin-save-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+}
+
+.admin-save-pulse.saving {
+  background: #f59e0b;
+  animation: adminPulse 1s infinite;
+}
+
+@keyframes adminPulse {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.7; }
+}
+
+.admin-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+/* Donezo Pill Button System */
+.btn-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: var(--admin-radius-pill);
+  font-family: var(--admin-font);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.btn-pill svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.2;
+}
+
+.btn-pill-gold {
+  background: var(--admin-gold);
+  color: #ffffff;
+  box-shadow: 0 2px 8px var(--admin-gold-glow);
+}
+
+.btn-pill-gold:hover {
+  background: var(--admin-gold-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--admin-gold-glow);
+}
+
+.btn-pill-gold:active {
+  transform: translateY(0);
+}
+
+.btn-pill-dark {
+  background: var(--admin-dark);
+  color: #ffffff;
+}
+
+.btn-pill-dark:hover {
+  background: var(--admin-dark-hover);
+  transform: translateY(-1px);
+}
+
+.btn-pill-outline {
+  background: #ffffff;
+  border: 1px solid var(--admin-border);
+  color: var(--admin-text-body);
+}
+
+.btn-pill-outline:hover {
+  background: var(--admin-surface-hover);
+  border-color: var(--admin-border-focus);
+  color: var(--admin-text-main);
+}
+
+.btn-pill-outline.active {
+  background: var(--admin-gold-subtle);
+  border-color: var(--admin-gold);
+  color: var(--admin-gold-hover);
+}
+
+.btn-icon-pill {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--admin-radius-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border: 1px solid var(--admin-border);
+  color: var(--admin-text-body);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.btn-icon-pill:hover {
+  background: var(--admin-surface-hover);
+  border-color: var(--admin-border-focus);
+  color: var(--admin-gold);
+}
+
+.btn-icon-pill svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* --------------------------------------------------------------------------
+   2. MAIN WORKSPACE: RIGOROUS TWO-PANEL GRID WITH INDEPENDENT SCROLLING
+   -------------------------------------------------------------------------- */
+.admin-workspace {
+  display: grid;
+  grid-template-columns: minmax(360px, 460px) minmax(0, 1fr);
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--admin-bg);
+}
+
+/* --------------------------------------------------------------------------
+   LEFT CONTROLS PANE (Options, Sliders, Element Properties)
+   -------------------------------------------------------------------------- */
+.admin-controls-pane {
+  background: var(--admin-surface);
+  border-right: 1px solid var(--admin-border);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Sticky Category Navigation Strip with Scroll Arrows */
+.admin-nav-tabs-container {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  background: var(--admin-surface);
+  border-bottom: 1px solid var(--admin-border);
+  position: relative;
+  padding: 0 4px;
+  z-index: 10;
+}
+
+.admin-nav-scroll-btn {
+  flex: 0 0 24px;
+  height: 28px;
+  border-radius: var(--admin-radius-pill);
+  border: 1px solid var(--admin-border);
+  background: #ffffff;
+  color: var(--admin-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.admin-nav-scroll-btn:hover {
+  background: var(--admin-gold-subtle);
+  border-color: var(--admin-gold);
+  color: var(--admin-gold);
+}
+
+.admin-nav-scroll-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+.admin-nav-tabs-bar {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 4px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(198, 161, 91, 0.3) transparent;
+}
+
+.admin-nav-tabs-bar::-webkit-scrollbar {
+  height: 3px;
+}
+
+.admin-nav-tabs-bar::-webkit-scrollbar-thumb {
+  background: rgba(198, 161, 91, 0.35);
+  border-radius: 999px;
+}
+
+.admin-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border-radius: var(--admin-radius-pill);
+  font-family: var(--admin-font);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--admin-text-muted);
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.admin-tab-btn svg {
+  width: 13px;
+  height: 13px;
+  stroke: var(--admin-text-muted);
+}
+
+.admin-tab-btn:hover {
+  background: var(--admin-bg);
+  color: var(--admin-text-main);
+}
+
+.admin-tab-btn.active {
+  background: var(--admin-gold-subtle);
+  color: var(--admin-gold-hover);
+  border-color: var(--admin-gold-border);
+  font-weight: 700;
+}
+
+.admin-tab-btn.active svg {
+  stroke: var(--admin-gold);
+}
+
+/* Independent Scrollable Settings Form Area */
+.admin-controls-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  padding: 18px 20px 110px; /* Generous bottom padding so the final setting & button are NEVER cut off */
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Contextual Selection HUD Card (Shows currently selected element) */
+.admin-selection-card {
+  background: var(--admin-gold-subtle);
+  border: 1px solid var(--admin-gold-border);
+  border-radius: var(--admin-radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.admin-selection-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-selection-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--admin-gold-hover);
+  background: #ffffff;
+  padding: 2px 7px;
+  border-radius: var(--admin-radius-pill);
+  border: 1px solid var(--admin-gold-border);
+}
+
+.admin-selection-badge svg {
+  width: 11px;
+  height: 11px;
+  stroke: var(--admin-gold);
+}
+
+.admin-selection-name {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--admin-text-main);
+  margin: 0;
+}
+
+.admin-selection-breadcrumb {
+  font-size: 0.68rem;
+  color: var(--admin-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Live Measured Dimensions Box */
+.admin-measured-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border: 1px solid var(--admin-gold-border);
+  padding: 6px 10px;
+  border-radius: var(--admin-radius-sm);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--admin-text-main);
+}
+
+.admin-measured-box span.val {
+  color: var(--admin-gold-hover);
+  font-family: monospace;
+  font-size: 0.78rem;
+}
+
+/* Section Cards on the Left */
+.admin-card {
+  background: var(--admin-surface);
+  border-radius: var(--admin-radius-md);
+  border: 1px solid var(--admin-border);
+  padding: 16px 18px;
+  box-shadow: var(--admin-shadow-sm);
+}
+
+.admin-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--admin-border-subtle);
+}
+
+.admin-card-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--admin-text-main);
+}
+
+.admin-card-title svg {
+  width: 15px;
+  height: 15px;
+  stroke: var(--admin-gold);
+}
+
+/* Sliders with Numeric Box Pair (IQ200 Layout Spec) */
+.admin-control-pair {
+  margin-bottom: 12px;
+}
+
+.admin-control-pair:last-child {
+  margin-bottom: 0;
+}
+
+.admin-pair-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--admin-text-body);
+  margin-bottom: 5px;
+}
+
+.admin-pair-inputs {
+  display: grid;
+  grid-template-columns: 1fr 68px;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-range-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: #e7e5de;
+  outline: none;
+}
+
+.admin-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--admin-gold);
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.admin-range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  background: var(--admin-gold-hover);
+}
+
+.admin-num-input {
+  width: 100%;
+  padding: 5px 6px;
+  font-family: monospace;
+  font-size: 0.76rem;
+  font-weight: 600;
+  text-align: right;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-bg);
+  color: var(--admin-text-main);
+  outline: none;
+}
+
+.admin-num-input:focus {
+  border-color: var(--admin-gold);
+  background: #ffffff;
+}
+
+/* Form Groups & Inputs */
+.admin-form-group {
+  margin-bottom: 12px;
+}
+
+.admin-form-group:last-child {
+  margin-bottom: 0;
+}
+
+.admin-form-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--admin-text-body);
+  margin-bottom: 5px;
+}
+
+.admin-input, .admin-select, .admin-textarea {
+  width: 100%;
+  padding: 8px 11px;
+  border-radius: var(--admin-radius-sm);
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  font-family: var(--admin-font);
+  font-size: 0.8rem;
+  color: var(--admin-text-main);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.admin-input:focus, .admin-select:focus, .admin-textarea:focus {
+  border-color: var(--admin-gold);
+  box-shadow: 0 0 0 2px var(--admin-gold-glow);
+}
+
+/* Ballroom Presets Grid */
+.admin-ballroom-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.admin-ballroom-card {
+  position: relative;
+  height: 68px;
+  border-radius: var(--admin-radius-sm);
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.admin-ballroom-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-ballroom-card .caption {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 4px 6px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
+}
+
+.admin-ballroom-card.active {
+  border-color: var(--admin-gold);
+  box-shadow: 0 0 0 2px var(--admin-gold);
+}
+
+/* Color Tokens List */
+.admin-color-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-bg);
+  margin-bottom: 6px;
+}
+
+.admin-color-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-color-name {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--admin-text-main);
+}
+
+.admin-color-token {
+  font-size: 0.64rem;
+  color: var(--admin-text-muted);
+  font-family: monospace;
+}
+
+.admin-color-picker-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-color-swatch {
+  -webkit-appearance: none;
+  appearance: none;
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  background: transparent;
+}
+
+.admin-color-swatch::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.admin-color-swatch::-webkit-color-swatch {
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  border-radius: 50%;
+}
+
+.admin-color-hex-box {
+  width: 66px;
+  padding: 3px 5px;
+  font-size: 0.72rem;
+  font-family: monospace;
+  text-align: center;
+  border: 1px solid var(--admin-border);
+  border-radius: 4px;
+}
+
+/* --------------------------------------------------------------------------
+   RIGHT PANE: LIVE RESPONSIVE CANVAS (Independently Scrollable)
+   -------------------------------------------------------------------------- */
+.admin-canvas-pane {
+  background: var(--admin-bg);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  padding: 12px 18px 18px;
+  overflow: hidden;
+}
+
+/* Canvas Toolbar */
+.admin-canvas-topbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding: 6px 14px;
+  background: var(--admin-surface);
+  border-radius: var(--admin-radius-pill);
+  border: 1px solid var(--admin-border);
+  box-shadow: var(--admin-shadow-sm);
+  gap: 10px;
+}
+
+.admin-canvas-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.admin-viewport-dimension-pill {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--admin-gold-hover);
+  background: var(--admin-gold-subtle);
+  border: 1px solid var(--admin-gold-border);
+  padding: 2px 8px;
+  border-radius: var(--admin-radius-pill);
+  font-family: monospace;
+}
+
+.admin-viewport-toggles {
+  display: flex;
+  align-items: center;
+  background: var(--admin-bg);
+  padding: 2px;
+  border-radius: var(--admin-radius-pill);
+  border: 1px solid var(--admin-border);
+}
+
+.btn-viewport-mode {
+  border: none;
+  background: transparent;
+  padding: 4px 10px;
+  font-family: var(--admin-font);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--admin-text-muted);
+  border-radius: var(--admin-radius-pill);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+}
+
+.btn-viewport-mode svg {
+  width: 13px;
+  height: 13px;
+}
+
+.btn-viewport-mode.active {
+  background: #ffffff;
+  color: var(--admin-text-main);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  font-weight: 700;
+}
+
+/* Canvas Viewport Wrap (Independently Scrollable Container) */
+.admin-canvas-viewport-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  background: #ebe8e1;
+  border-radius: var(--admin-radius-card);
+  border: 1px solid var(--admin-border);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.04);
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  overflow: auto;
+  overscroll-behavior: contain;
+  position: relative;
+  padding: 6px;
+}
+
+.admin-preview-iframe {
+  border: none;
+  background: #ffffff;
+  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.25s ease;
+}
+
+.admin-preview-iframe.device-desktop {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+}
+
+.admin-preview-iframe.device-tablet {
+  width: 768px;
+  max-width: 768px;
+  height: 100%;
+  min-height: 850px;
+  margin: 0 auto;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.admin-preview-iframe.device-mobile {
+  width: 375px;
+  max-width: 375px;
+  height: 100%;
+  min-height: 750px;
+  margin: 0 auto;
+  border-radius: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Floating Live Measurement Tooltip on Canvas */
+.admin-canvas-dimension-tooltip {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--admin-dark);
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: monospace;
+  padding: 4px 10px;
+  border-radius: var(--admin-radius-pill);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  display: none;
+  z-index: 100;
+}
+
+/* --------------------------------------------------------------------------
+   3. MODALS (Publish Confirmation)
+   -------------------------------------------------------------------------- */
+.admin-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(23, 29, 25, 0.5);
+  backdrop-filter: blur(6px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: adminFadeIn 0.2s ease-out;
+}
+
+@keyframes adminFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.admin-modal-card {
+  background: #ffffff;
+  border-radius: var(--admin-radius-card);
+  border: 1px solid var(--admin-border);
+  box-shadow: var(--admin-shadow-lg);
+  width: 100%;
+  max-width: 500px;
+  padding: 24px;
+  animation: adminScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes adminScaleIn {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.admin-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.admin-modal-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--admin-text-main);
+}
+
+.admin-modal-close {
+  background: transparent;
+  border: none;
+  font-size: 1.3rem;
+  color: var(--admin-text-muted);
+  cursor: pointer;
+}
+
+/* Toast Notifications */
+.admin-toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: var(--admin-radius-pill);
+  background: var(--admin-dark);
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  animation: adminToastSlide 0.2s ease-out;
+}
+
+@keyframes adminToastSlide {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.admin-toast.success {
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.admin-toast.error {
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* --------------------------------------------------------------------------
+   4. RESPONSIVE BREAKPOINTS (1920, 1600, 1366, 1280, 1024)
+   -------------------------------------------------------------------------- */
+@media (max-width: 1280px) {
+  .admin-header {
+    padding: 0 14px;
+    height: 60px;
+    min-height: 60px;
+  }
+  .admin-workspace {
+    grid-template-columns: minmax(340px, 420px) minmax(0, 1fr);
+  }
+  .admin-brand-badge {
+    display: none;
+  }
+  .btn-pill {
+    padding: 6px 12px;
+  }
+}
+
+@media (max-width: 1080px) {
+  .admin-workspace {
+    grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
+  }
+  .admin-page-select-top {
+    max-width: 120px;
+  }
+  .admin-save-indicator span#save-status-text {
+    display: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .admin-workspace {
+    grid-template-columns: 1fr;
+  }
+  .admin-controls-pane {
+    height: 100%;
+  }
+  .admin-canvas-pane {
+    display: none;
+  }
+  .admin-workspace.view-canvas-only .admin-controls-pane {
+    display: none;
+  }
+  .admin-workspace.view-canvas-only .admin-canvas-pane {
+    display: flex;
+    height: 100%;
+  }
+}

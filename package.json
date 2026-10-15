@@ -5,7 +5,10 @@
   "description": "Multi-page website for The Royal Party Hall, Rajajinagar, Bengaluru",
   "scripts": {
     "serve": "npx serve .",
+    "admin": "node scripts/admin-server.mjs",
     "check": "node scripts/check-site.mjs"
   },
-  "devDependencies": {}
+  "dependencies": {
+    "cloudinary": "^2.11.0"
+  }
 }
