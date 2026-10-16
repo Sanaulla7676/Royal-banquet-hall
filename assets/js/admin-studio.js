@@ -2357,6 +2357,13 @@ function syncAllControls() {
   const lhn = document.getElementById('logo-num-h');
   const lhv = document.getElementById('logo-val-h');
   if (lh && c.logo?.height) { lh.value = c.logo.height; if (lhn) lhn.value = c.logo.height; if (lhv) lhv.textContent = `${c.logo.height}px`; }
+  const logoUrl = document.getElementById('logo-url-input');
+  if (logoUrl) logoUrl.value = c.logo?.src || 'assets/images/royal-hall-crest.webp';
+  const logoPreview = document.getElementById('logo-preview-img');
+  if (logoPreview && c.logo?.src && !/^(?:blob:)/i.test(c.logo.src)) logoPreview.src = c.logo.src;
+  const logoToggles = {'logo-mobile-scale-toggle':'mobileScale','logo-hide-xs-toggle':'hideOnSmall','logo-text-fallback-toggle':'textFallback'};
+  Object.entries(logoToggles).forEach(([id,key]) => document.getElementById(id)?.classList.toggle('on',
+    c.logo?.[key] !== false && (key !== 'hideOnSmall' || c.logo?.[key] === true)));
 
   // Navbar
   const nh = document.getElementById('navbar-slider-h');
@@ -2375,6 +2382,15 @@ function syncAllControls() {
   if (transpToggle && c.navbar) {
     transpToggle.classList.toggle('on', !!c.navbar.transparent);
   }
+  document.getElementById('navbar-sticky-toggle')?.classList.toggle('on',c.navbar?.sticky !== false);
+  document.getElementById('navbar-hamburger-toggle')?.classList.toggle('on',c.navbar?.hamburger !== false);
+  const syncPresetGroup = (selector,index) => {
+    document.querySelectorAll(selector + ' [data-index]').forEach(card => card.classList.toggle('active',Number(card.dataset.index) === Number(index || 0)));
+  };
+  syncPresetGroup('#navbar-designs-container',c.navbar?.design);
+  syncPresetGroup('#navbar-btn-styles',c.navbar?.buttonStyle);
+  syncPresetGroup('#navbar-anim-styles',c.navbar?.animation);
+  syncPresetGroup('#navbar-hover-styles',c.navbar?.hoverAnimation);
 
   // Hero
   const hs = document.getElementById('hero-slider-scale');
@@ -2434,6 +2450,12 @@ function syncAllControls() {
   if (uploadPresetInput) uploadPresetInput.value = cloudinary.uploadPreset || '';
 
   const background = c.background || {};
+  const bgUrl = document.getElementById('bg-url-input');
+  if (bgUrl) bgUrl.value = background.src || '';
+  const bgFixedToggle = document.getElementById('bg-fixed-toggle');
+  const bgGradientToggle = document.getElementById('bg-gradient-toggle');
+  if (bgFixedToggle) bgFixedToggle.classList.toggle('on',background.fixed !== false);
+  if (bgGradientToggle) bgGradientToggle.classList.toggle('on',background.gradient !== false);
   const bgPosX = document.getElementById('bg-slider-posx');
   const bgPosXNum = document.getElementById('bg-num-posx');
   const bgPosXVal = document.getElementById('bg-val-posx');
@@ -2558,6 +2580,23 @@ function syncAllControls() {
 
   document.querySelectorAll('#theme-grid .s-theme-card').forEach((card, index) => {
     card.classList.toggle('active', index === Number(c.theme?.active || 0));
+  });
+
+  const studioSettings = c.settings || {};
+  const settingsToggleMap = {
+    'setting-autosave-toggle':'autoSave',
+    'setting-live-preview-toggle':'livePreview',
+    'setting-shortcuts-toggle':'keyboardShortcuts',
+    'setting-animation-preview-toggle':'animationPreviews',
+    'setting-confirm-destructive-toggle':'confirmDestructive'
+  };
+  Object.entries(settingsToggleMap).forEach(([id,key]) => {
+    const toggle = document.getElementById(id);
+    if (toggle) {
+      const enabled = studioSettings[key] !== false;
+      toggle.classList.toggle('on',enabled);
+      toggle.setAttribute('aria-checked',String(enabled));
+    }
   });
 
   syncPreviewStyles();
