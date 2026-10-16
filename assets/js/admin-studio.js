@@ -274,6 +274,7 @@ function applyToPreview(fn) {
 function syncPreviewStyles() {
   const c = STUDIO.cms;
   if (!c) return;
+  if (c.settings && c.settings.livePreview === false) return;
 
   const logoW = c.logo?.width || 145;
   const logoH = c.logo?.height || 98;
@@ -1700,7 +1701,7 @@ function initImageLibraryPage() {
           }
         } else if (button.dataset.action === 'remove') {
           const message = 'Remove this item from the Admin Studio library? The underlying image file or Cloudinary asset will not be deleted, and existing page references are unchanged.';
-          if (!confirm(message)) return;
+          if (!askBeforeDestructive(message)) return;
           pushUndo('Remove media from library');
           if (record.builtin) {
             if (!cms.hiddenMediaAssets.includes(record.src)) cms.hiddenMediaAssets.push(record.src);
@@ -2665,7 +2666,7 @@ function resetCurrentPage(pageId) {
     toast('This page has no resettable CMS settings.', 'info');
     return;
   }
-  if (!confirm('Reset this section to its original defaults? This changes the draft only; the live site stays unchanged until you publish.')) return;
+  if (!askBeforeDestructive('Reset this section to its original defaults? This changes the draft only; the live site stays unchanged until you publish.')) return;
   keys.forEach(key => {
     STUDIO.cms[key] = copyCmsValue(STUDIO_RESET_DEFAULTS[key]);
   });
@@ -2689,6 +2690,104 @@ function initFooterActionButtons() {
       button.removeAttribute('onclick');
       button.addEventListener('click',() => reloadCurrentPageDraft(page.id));
     }
+  });
+}
+
+function askBeforeDestructive(message) {
+  return STUDIO.cms.settings?.confirmDestructive === false || confirm(message);
+}
+
+function exportStudioSettings() {
+  const payload = JSON.stringify(STUDIO.cms, null, 2);
+  const blob = new Blob([payload], {type:'application/json;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'royal-banquet-studio-settings-' + new Date().toISOString().slice(0,10) + '.json';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('Settings JSON exported. Keep the file somewhere safe.', 'success');
+}
+
+async function resetAllStudioSettings() {
+  if (!askBeforeDestructive('Reset every Studio setting to the factory defaults? The public website will stay unchanged until you publish the reset draft.')) return;
+  const cloudinary = copyCmsValue(STUDIO.cms.integrations?.cloudinary || {});
+  STUDIO.cms = copyCmsValue(STUDIO_RESET_DEFAULTS);
+  STUDIO.cms.integrations = { cloudinary };
+  STUDIO.cms.settings = { autoSave:true, livePreview:true, keyboardShortcuts:true, animationPreviews:true, confirmDestructive:true };
+  localStorage.setItem('rbh_studio_cms',JSON.stringify(STUDIO.cms));
+  syncAllControls();
+  window.refreshMediaLibrary?.();
+  syncPreviewStyles();
+  markDirty();
+  const saved = await saveDraft({silent:true});
+  if (saved) toast('Factory defaults saved as a draft. The public website has not been changed.', 'success');
+  else toast('Factory reset exists only in this browser until the shared draft can be saved.', 'error');
+}
+
+function initStudioSettingsControls() {
+  STUDIO.cms.settings = {
+    autoSave:true, livePreview:true, keyboardShortcuts:true,
+    animationPreviews:true, confirmDestructive:true,
+    ...(STUDIO.cms.settings || {})
+  };
+  const settingsToggleMap = {
+    'setting-autosave-toggle':'autoSave',
+    'setting-live-preview-toggle':'livePreview',
+    'setting-shortcuts-toggle':'keyboardShortcuts',
+    'setting-animation-preview-toggle':'animationPreviews',
+    'setting-confirm-destructive-toggle':'confirmDestructive'
+  };
+  Object.entries(settingsToggleMap).forEach(([id,key]) => {
+    const toggle = document.getElementById(id);
+    if (!toggle) return;
+    const set = value => {
+      toggle.classList.toggle('on',Boolean(value));
+      toggle.setAttribute('aria-checked',String(Boolean(value)));
+    };
+    set(STUDIO.cms.settings[key] !== false);
+    const flip = () => {
+      pushUndo('Studio setting: ' + key);
+      STUDIO.cms.settings[key] = !toggle.classList.contains('on');
+      set(STUDIO.cms.settings[key]);
+      markDirty();
+      if (key === 'livePreview' || key === 'animationPreviews') syncPreviewStyles();
+      if (key === 'autoSave') toast(STUDIO.cms.settings.autoSave ? 'Autosave enabled: the editor will save every two minutes.' : 'Autosave disabled. Use Save Draft manually.', 'gold');
+    };
+    toggle.addEventListener('click',flip);
+    toggle.addEventListener('keydown',event => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); flip(); }
+    });
+  });
+
+  document.getElementById('btn-export-settings')?.addEventListener('click',exportStudioSettings);
+  document.getElementById('btn-reset-all-settings')?.addEventListener('click',resetAllStudioSettings);
+
+  document.getElementById('btn-animations-clear')?.addEventListener('click',() => {
+    pushUndo('Clear animations');
+    STUDIO.cms.animations.activeItems = [];
+    document.querySelectorAll('#anim-lib-grid .s-anim-card').forEach(card => card.classList.remove('active'));
+    syncPreviewStyles();
+    markDirty();
+    toast('Section animations removed from the draft. Save Draft to keep this change.', 'gold');
+  });
+  document.getElementById('btn-effects-clear')?.addEventListener('click',() => {
+    pushUndo('Clear visual effects');
+    STUDIO.cms.effects.activeItems = [];
+    document.querySelectorAll('#effects-grid .s-effect-card').forEach(card => card.classList.remove('active'));
+    syncPreviewStyles();
+    markDirty();
+    toast('Visual effects removed from the draft. Save Draft to keep this change.', 'gold');
+  });
+  document.getElementById('btn-components-clear')?.addEventListener('click',() => {
+    pushUndo('Clear components');
+    STUDIO.cms.components.activeItems = [];
+    document.querySelectorAll('#components-grid .s-comp-card').forEach(card => card.classList.remove('active'));
+    syncPreviewStyles();
+    markDirty();
+    toast('Component styling removed from the draft. Save Draft to keep this change.', 'gold');
   });
 }
 
@@ -2738,6 +2837,7 @@ function initAll() {
   initComponentsPage();
   initFontAnimPage();
   initFooterActionButtons();
+  initStudioSettingsControls();
 
   // Inner tabs
   document.querySelectorAll('.s-inner-tab').forEach(tab => {
@@ -2759,13 +2859,21 @@ function initAll() {
 
   // Keyboard shortcuts
   document.addEventListener('keydown', e => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
-    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveDraft(); }
+    if (STUDIO.cms.settings?.keyboardShortcuts === false) return;
+    const command = e.ctrlKey || e.metaKey;
+    if (!command) return;
+    const key = e.key.toLowerCase();
+    const isEditable = e.target?.closest?.('input,textarea,select,[contenteditable="true"]');
+    if (isEditable && key !== 's') return;
+    if (key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+    if (key === 'y' || (key === 'z' && e.shiftKey)) { e.preventDefault(); redo(); }
+    if (key === 's') { e.preventDefault(); saveDraft(); }
   });
 
-  // Autosave every 2min without interrupting the editor with toast popups.
-  setInterval(() => saveDraft({ silent: true }), 120000);
+  // Auto-save only when the setting is enabled; do not interrupt the editor with toast popups.
+  setInterval(() => {
+    if (STUDIO.cms.settings?.autoSave !== false) saveDraft({ silent:true });
+  }, 120000);
 
   // ── Authentication Gate (server-validated session)
   initAuth();
