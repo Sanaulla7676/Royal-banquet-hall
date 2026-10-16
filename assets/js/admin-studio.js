@@ -1171,7 +1171,8 @@ function initBgPage() {
         const prev = document.getElementById('bg-preview-img');
         if (prev) { prev.src = ev.target.result; prev.style.display = 'block'; }
         markDirty();
-        toast('Background uploaded', 'success');
+        syncPreviewStyles();
+        toast('Background uploaded to the current draft. Save Draft to persist it.', 'gold');
       };
       reader.readAsDataURL(file);
     });
@@ -1179,9 +1180,9 @@ function initBgPage() {
 
   initPresetCards('#bg-anim-grid', (i) => { cms.animation = i; pushUndo('Background animation'); toast(`BG Animation ${i+1} applied`, 'gold'); });
 
-  initSlider('bg-slider-posx', 'bg-num-posx', 'bg-val-posx', v => { cms.posX = v; markDirty(); }, '%');
-  initSlider('bg-slider-posy', 'bg-num-posy', 'bg-val-posy', v => { cms.posY = v; markDirty(); }, '%');
-  initSlider('bg-slider-opacity', 'bg-num-opacity', 'bg-val-opacity', v => { cms.overlayOpacity = v; markDirty(); }, '%');
+  initSlider('bg-slider-posx', 'bg-num-posx', 'bg-val-posx', v => { cms.posX = v; syncPreviewStyles(); markDirty(); }, '%');
+  initSlider('bg-slider-posy', 'bg-num-posy', 'bg-val-posy', v => { cms.posY = v; syncPreviewStyles(); markDirty(); }, '%');
+  initSlider('bg-slider-opacity', 'bg-num-opacity', 'bg-val-opacity', v => { cms.overlayOpacity = v; syncPreviewStyles(); markDirty(); }, '%');
 
   initColorPair('bg-overlay-swatch', 'bg-overlay-hex', v => { cms.overlayColor = v; syncPreviewStyles(); markDirty(); });
 }
@@ -1954,6 +1955,23 @@ function syncAllControls() {
   const heroToggles = {'hero-ken-burns':'kenBurns','hero-parallax':'parallax','hero-gradient':'gradient','hero-decorative':'decorative'};
   Object.entries(heroToggles).forEach(([id,key]) => document.getElementById(id+'-toggle')?.classList.toggle('on', !!hero[key]));
 
+  const background = c.background || {};
+  const bgPosX = document.getElementById('bg-slider-posx');
+  const bgPosXNum = document.getElementById('bg-num-posx');
+  const bgPosXVal = document.getElementById('bg-val-posx');
+  if (bgPosX) { bgPosX.value = background.posX ?? 50; if (bgPosXNum) bgPosXNum.value = background.posX ?? 50; if (bgPosXVal) bgPosXVal.textContent = (background.posX ?? 50) + '%'; }
+  const bgPosY = document.getElementById('bg-slider-posy');
+  const bgPosYNum = document.getElementById('bg-num-posy');
+  const bgPosYVal = document.getElementById('bg-val-posy');
+  if (bgPosY) { bgPosY.value = background.posY ?? 50; if (bgPosYNum) bgPosYNum.value = background.posY ?? 50; if (bgPosYVal) bgPosYVal.textContent = (background.posY ?? 50) + '%'; }
+  setPair('bg-slider-opacity','bg-num-opacity','bg-val-opacity',background.overlayOpacity ?? 30,'%');
+  const bgColor = document.getElementById('bg-overlay-swatch');
+  const bgColorHex = document.getElementById('bg-overlay-hex');
+  if (bgColor && /^#[0-9a-f]{6}$/i.test(background.overlayColor || '')) bgColor.value = background.overlayColor;
+  if (bgColorHex) bgColorHex.value = background.overlayColor || '#000000';
+  const bgPreview = document.getElementById('bg-preview-img');
+  if (bgPreview && background.src) { bgPreview.src = background.src; bgPreview.style.display = 'block'; }
+
   const heading = c.heroHeading || {};
   setPair('heading-slider-size','heading-num-size','heading-val-size',heading.size ?? 56,'px');
   setPair('heading-slider-lh','heading-num-lh','heading-val-lh',Math.round((heading.lineHeight ?? 1.15)*100),'');
@@ -2030,6 +2048,27 @@ function syncAllControls() {
   const repeatToggle = document.getElementById('anim-repeat-toggle');
   if (scrollToggle) scrollToggle.classList.toggle('on', animation.scrollTrigger !== false);
   if (repeatToggle) repeatToggle.classList.toggle('on', animation.repeatEveryView === true);
+
+  const video = c.video || {};
+  const videoUrlInput = document.getElementById('video-source-url');
+  const videoPosterInput = document.getElementById('video-poster-url');
+  if (videoUrlInput && !String(video.src || '').startsWith('blob:') && !String(video.src || '').startsWith('data:')) {
+    videoUrlInput.value = video.src || '';
+  }
+  if (videoPosterInput) videoPosterInput.value = video.poster || 'assets/images/hero-venue.jpg';
+  const videoToggleMap = {
+    'video-autoplay':'autoplay','video-loop':'loop','video-muted':'muted',
+    'video-controls':'controls','video-inline':'playsInline'
+  };
+  Object.entries(videoToggleMap).forEach(([id,property]) => {
+    const toggle = document.getElementById(id+'-toggle');
+    if (toggle) toggle.classList.toggle('on', property === 'controls' ? video[property] === true : video[property] !== false);
+  });
+  document.querySelectorAll('#page-video .s-display-modes .s-mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === (video.objectFit || 'cover'));
+  });
+  setPair('video-slider-posx','video-num-posx','video-val-posx',video.posX ?? 50,'%');
+  setPair('video-slider-posy','video-num-posy','video-val-posy',video.posY ?? 50,'%');
 
   const fontTargets = Array.isArray(fontAnim.targets) ? fontAnim.targets : ['Hero Heading'];
   document.querySelectorAll('#fontanim-target-chips .s-chip').forEach(chip => {
