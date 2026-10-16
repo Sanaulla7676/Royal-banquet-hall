@@ -290,6 +290,22 @@
       39: '.floating-action,.floating-cta{position:fixed!important;right:18px!important;bottom:80px!important;z-index:101!important}'
     };
     componentItems.forEach(index => { if (componentCss[index]) styleTag.textContent += '\n' + componentCss[index]; });
+
+    const sizing = pub.imageSizing && typeof pub.imageSizing === 'object' ? pub.imageSizing : {};
+    const normalizedSizeMap = new Map();
+    Object.entries(sizing).forEach(([source, dimensions]) => {
+      if (!dimensions || typeof dimensions !== 'object') return;
+      try { normalizedSizeMap.set(new URL(source,window.location.href).href,dimensions); } catch {}
+    });
+    document.querySelectorAll('img').forEach(img => {
+      const dimensions = normalizedSizeMap.get(img.currentSrc || img.src);
+      if (!dimensions) return;
+      const width = Number(dimensions.width);
+      const height = Number(dimensions.height);
+      if (Number.isFinite(width) && width >= 100 && width <= 3000) img.style.maxWidth = width + 'px';
+      if (Number.isFinite(height) && height >= 100 && height <= 3000) img.style.maxHeight = height + 'px';
+      if (['cover','contain','fill','none','scale-down'].includes(dimensions.objectFit)) img.style.objectFit = dimensions.objectFit;
+    });
   }
 
   // Load published Studio customizations (only when published from studio!)
@@ -507,6 +523,18 @@
       cmsData.buttons = cmsData.buttons || {};
       cmsData.buttons.background = (pub.buttons && pub.buttons.gold && pub.buttons.gold.bgColor) || theme.gold;
       if (hero && !pub.hero?.src) hero.style.backgroundColor = theme.hero;
+    }
+
+    const customColors = pub.theme && pub.theme.customColors;
+    if (customColors && typeof customColors === 'object') {
+      const colorVariables = { gold:'--gold', background:'--paper', ink:'--ink', cream:'--cream' };
+      Object.entries(colorVariables).forEach(([key, variable]) => {
+        const value = customColors[key];
+        if (typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value)) {
+          document.documentElement.style.setProperty(variable,value);
+          if (key === 'background') document.documentElement.style.setProperty('--bg',value);
+        }
+      });
     }
 
     // Convert the Studio button controls to the existing public-site runtime format.
