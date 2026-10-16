@@ -1,6 +1,8 @@
 # The Royal Party Hall
 
-Responsive multi-page website for The Royal Party Hall in Rajajinagar, Bengaluru.
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Sanaulla7676/Royal-banquet-hall)
+
+Responsive multi-page website and Website Customization Studio for The Royal Party Hall in Rajajinagar, Bengaluru.
 
 ## Pages
 - `index.html` — homepage, photo preview and fast enquiry entry.

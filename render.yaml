@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: royal-banquet-backend
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /api/status
+    envVars:
+      - key: NODE_ENV
+        value: production
+    autoDeploy: true
