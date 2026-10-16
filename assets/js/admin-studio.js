@@ -966,6 +966,7 @@ function initLogoPage() {
 function initNavbarPage() {
   // Design selection
   initPresetCards('#navbar-designs-container', (i) => {
+    pushUndo('Navbar design');
     STUDIO.cms.navbar.design = i;
     const designColors = ['#0a0b0d', 'rgba(18,22,28,0.75)', '#ffffff', 'transparent', '#12151c', '#060708'];
     if (i === 3) {
@@ -985,28 +986,29 @@ function initNavbarPage() {
       }
     }
     syncPreviewStyles();
-    pushUndo('Navbar design');
+    markDirty();
     toast(`Navbar Design ${i+1} applied`, 'gold');
   });
 
   // Button styles
   initPresetCards('#navbar-btn-styles', (i) => {
+    pushUndo('Navbar button style');
     STUDIO.cms.navbar.buttonStyle = i;
     syncPreviewStyles();
-    pushUndo('Navbar button style');
     markDirty();
   });
 
   // Animations
   initPresetCards('#navbar-anim-grid', (i) => {
+    pushUndo('Navbar animation');
     STUDIO.cms.navbar.animation = i;
     syncPreviewStyles();
-    pushUndo('Navbar animation');
     markDirty();
   });
 
   // Hover animations
   initPresetCards('#navbar-hover-grid', (i) => {
+    pushUndo('Navbar hover animation');
     STUDIO.cms.navbar.hoverAnimation = i;
     syncPreviewStyles();
     markDirty();
@@ -1275,9 +1277,9 @@ function initHeroHeadingPage() {
     };
   }
 
-  initPresetCards('#heading-anim-grid', (i) => { cms.animation = i; pushUndo('Heading animation'); syncPreviewStyles(); toast(`Animation ${i+1} applied`, 'gold'); });
-  initPresetCards('#heading-font-grid', (i) => { cms.font = i; pushUndo('Heading font'); syncPreviewStyles(); markDirty(); });
-  initPresetCards('#heading-color-grid', (i) => { cms.colorCombo = i; pushUndo('Heading color'); syncPreviewStyles(); markDirty(); });
+  initPresetCards('#heading-anim-grid', (i) => { pushUndo('Heading animation'); cms.animation = i; syncPreviewStyles(); markDirty(); toast(`Animation ${i+1} applied`, 'gold'); });
+  initPresetCards('#heading-font-grid', (i) => { pushUndo('Heading font'); cms.font = i; syncPreviewStyles(); markDirty(); });
+  initPresetCards('#heading-color-grid', (i) => { pushUndo('Heading color'); cms.colorCombo = i; syncPreviewStyles(); markDirty(); });
 
   initSlider('heading-slider-size', 'heading-num-size', 'heading-val-size', v => {
     cms.size = v;
@@ -1338,7 +1340,7 @@ function initHeroSubPage() {
     };
   }
 
-  initPresetCards('#sub-preset-grid', (i) => { cms.preset = i; pushUndo('Sub preset'); syncPreviewStyles(); markDirty(); });
+  initPresetCards('#sub-preset-grid', (i) => { pushUndo('Sub preset'); cms.preset = i; syncPreviewStyles(); markDirty(); });
 
   initSlider('sub-slider-size', 'sub-num-size', 'sub-val-size', v => {
     cms.size = v;
