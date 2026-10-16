@@ -216,23 +216,14 @@ window.ROYAL_HALL_CONFIG = {
 
   // Helper: ensure Cloudinary is configured from CMS data or env
   function ensureCloudinaryConfig() {
-    const cms = loadCmsData();
-    const cfg = cms.integrations?.cloudinary || {};
-    const cloudName = cfg.cloudName || process.env.CLOUDINARY_CLOUD_NAME || 'pspn79yf';
-    const apiKey = cfg.apiKey || process.env.CLOUDINARY_API_KEY || '234231665841756';
-    const apiSecret = cfg.apiSecret || process.env.CLOUDINARY_API_SECRET || '';
-
-    if (!apiSecret) {
-      return { configured: false, reason: 'API Secret is not set. Add it in Admin Studio > Pro Options or set CLOUDINARY_API_SECRET env var.' };
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME || '';
+    const apiKey = process.env.CLOUDINARY_API_KEY || '';
+    const apiSecret = process.env.CLOUDINARY_API_SECRET || '';
+    if (!(cloudName && apiKey && apiSecret)) {
+      return { configured: false, reason: 'Configure Cloudinary environment variables on the server.' };
     }
-
-    cloudinary.config({
-      cloud_name: cloudName,
-      api_key: apiKey,
-      api_secret: apiSecret,
-      secure: true
-    });
-    return { configured: true, cloudName };
+    cloudinary.config({ cloud_name: cloudName, api_key: apiKey, api_secret: apiSecret, secure: true });
+    return { configured: true, cloudName, apiKey };
   }
 
   // POST /api/cloudinary/upload  — Upload an image via URL or base64
@@ -366,9 +357,8 @@ window.ROYAL_HALL_CONFIG = {
   // POST /api/cloudinary/transfer-all — Batch transfer all assets/images to Cloudinary
   if (pathname === '/api/cloudinary/transfer-all' && req.method === 'POST') {
     try {
-      const raw = await readBody(req);
-      const { apiSecret } = JSON.parse(raw || '{}');
-      const result = await transferAllImagesToCloudinary(apiSecret);
+      await readBody(req);
+      const result = await transferAllImagesToCloudinary();
       return sendJson(res, 200, result);
     } catch (err) {
       console.error('[API Error] cloudinary/transfer-all:', err);
