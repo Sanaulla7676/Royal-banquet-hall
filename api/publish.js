@@ -1,5 +1,5 @@
-const { authConfig, isAuthenticated, isSameOrigin } = require('./_lib/auth.js');
-const { writeStates, errorMessage } = require('./_lib/cms-db.js');
+const { authConfig, isAuthenticated, isSameOrigin } = require('../lib/admin-auth.js');
+const { writeStates, errorMessage } = require('../lib/cms-db.js');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store, max-age=0');
