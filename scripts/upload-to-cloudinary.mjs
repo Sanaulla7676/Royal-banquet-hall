@@ -39,23 +39,19 @@ window.ROYAL_CMS_DATA = ${JSON.stringify(data, null, 2)};
   fs.writeFileSync(CMS_DATA_FILE, content, 'utf-8');
 }
 
-export async function transferAllImagesToCloudinary(providedSecret, onProgress) {
+export async function transferAllImagesToCloudinary(onProgress) {
   const cms = loadCmsData();
-  const cfg = cms.integrations?.cloudinary || {};
-  const cloudName = cfg.cloudName || process.env.CLOUDINARY_CLOUD_NAME || 'pspn79yf';
-  const apiKey = cfg.apiKey || process.env.CLOUDINARY_API_KEY || '234231665841756';
-  const apiSecret = providedSecret || cfg.apiSecret || process.env.CLOUDINARY_API_SECRET;
-
-  if (!apiSecret) {
-    throw new Error('Cloudinary API Secret is required. Enter it in the Admin Studio or pass as argument.');
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME || '';
+  const apiKey = process.env.CLOUDINARY_API_KEY || '';
+  const apiSecret = process.env.CLOUDINARY_API_SECRET || '';
+  if (!cloudName || !apiKey || !apiSecret) {
+    throw new Error('Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET in the server environment first.');
   }
-
-  // Update secret in CMS data if provided
   if (!cms.integrations) cms.integrations = {};
   if (!cms.integrations.cloudinary) cms.integrations.cloudinary = {};
-  cms.integrations.cloudinary.apiSecret = apiSecret;
+  delete cms.integrations.cloudinary.apiSecret;
+  delete cms.integrations.cloudinary.apiKey;
   cms.integrations.cloudinary.cloudName = cloudName;
-  cms.integrations.cloudinary.apiKey = apiKey;
 
   cloudinary.config({
     cloud_name: cloudName,
