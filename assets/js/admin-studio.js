@@ -1315,87 +1315,265 @@ function initVideoPage() {
    PAGE 8: IMAGE LIBRARY
 ══════════════════════════════════════════════════ */
 function initImageLibraryPage() {
-  let selectedImg = null;
-  const images = [
-    'assets/images/hero-venue.jpg','assets/images/hall-interior.jpg',
-    'assets/images/stage-celebration.jpg','assets/images/venue-entrance.jpg',
-    'assets/images/photo-01.jpeg','assets/images/photo-02.jpeg',
-    'assets/images/photo-03.jpeg','assets/images/photo-04.jpeg',
-    'assets/images/photo-05.jpeg','assets/images/photo-06.jpeg',
-    'assets/images/photo-07.jpeg','assets/images/photo-08.jpeg',
-    'assets/images/photo-09.jpeg','assets/images/photo-10.jpeg',
-    'assets/images/photo-11.jpeg','assets/images/photo-12.jpeg',
-    'assets/images/photo-13.jpeg','assets/images/photo-14.jpeg',
-    'assets/images/photo-15.jpeg','assets/images/photo-16.jpeg',
-    'assets/images/photo-17.jpeg','assets/images/photo-18.jpeg',
-  ];
-
   const grid = document.getElementById('img-library-grid');
   if (!grid) return;
-  grid.innerHTML = '';
-  images.forEach((src, i) => {
-    const name = src.split('/').pop();
-    const item = document.createElement('div');
-    item.className = 's-img-item';
-    item.innerHTML = `
-      <img src="${src}" alt="${name}" loading="lazy">
-      <div class="s-img-overlay">
-        <button class="s-img-ob" data-action="set" title="Set as hero"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></button>
-        <button class="s-img-ob" data-action="rename" title="Rename"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-        <button class="s-img-ob" data-action="delete" title="Delete"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
-      </div>
-      <div class="s-img-name">${name}</div>
-    `;
-    item.addEventListener('click', e => {
-      const action = e.target.closest('[data-action]')?.dataset.action;
-      if (action === 'set') {
-        STUDIO.cms.hero.src = src;
-        applyToPreview(doc => {
-          const hero = doc.querySelector('.hero, .hero-section');
-          if (hero) hero.style.backgroundImage = `url(${src})`;
-        });
-        toast(`Hero set to ${name}`, 'success');
-      } else if (action === 'rename') {
-        const newName = prompt('New name for ' + name + ':', name);
-        if (newName) { item.querySelector('.s-img-name').textContent = newName; toast('Renamed', 'gold'); }
-      } else if (action === 'delete') {
-        if (confirm(`Delete ${name}? This cannot be undone.`)) { item.remove(); toast('Asset removed', 'error'); }
-      } else {
-        grid.querySelectorAll('.s-img-item').forEach(it => it.classList.remove('active'));
-        item.classList.add('active');
-        selectedImg = src;
-        const selName = document.getElementById('selected-img-name');
-        const selPreview = document.getElementById('selected-img-preview');
-        if (selName) selName.textContent = name;
-        if (selPreview) selPreview.src = src;
-      }
-    });
-    grid.appendChild(item);
+
+  const cms = STUDIO.cms;
+  cms.mediaLibrary = Array.isArray(cms.mediaLibrary) ? cms.mediaLibrary : [];
+  cms.mediaLabels = cms.mediaLabels && typeof cms.mediaLabels === 'object' ? cms.mediaLabels : {};
+  cms.hiddenMediaAssets = Array.isArray(cms.hiddenMediaAssets) ? cms.hiddenMediaAssets : [];
+  cms.imageSizing = cms.imageSizing && typeof cms.imageSizing === 'object' ? cms.imageSizing : {};
+  cms.integrations = cms.integrations && typeof cms.integrations === 'object' ? cms.integrations : {};
+  cms.integrations.cloudinary = cms.integrations.cloudinary && typeof cms.integrations.cloudinary === 'object'
+    ? cms.integrations.cloudinary : {};
+
+  const fallbackImages = [
+    'assets/images/hero-venue.jpg','assets/images/hall-interior.jpg',
+    'assets/images/stage-celebration.jpg','assets/images/venue-entrance.jpg',
+    'assets/images/cake-display.jpg',
+    ...Array.from({length:30},(_,i)=>'assets/images/photo-'+String(i+1).padStart(2,'0')+'.jpeg')
+  ];
+  const manifestImages = Array.isArray(window.ROYAL_HALL_MEDIA?.photos)
+    ? window.ROYAL_HALL_MEDIA.photos.map(photo => typeof photo === 'string' ? photo : photo.src).filter(Boolean)
+    : fallbackImages;
+  let selectedImg = null;
+
+  const cloudNameInput = document.getElementById('cloudinary-cloud-name');
+  const uploadPresetInput = document.getElementById('cloudinary-upload-preset');
+  const cloudCfg = cms.integrations.cloudinary;
+  if (cloudNameInput) cloudNameInput.value = cloudCfg.cloudName || '';
+  if (uploadPresetInput) uploadPresetInput.value = cloudCfg.uploadPreset || '';
+
+  document.getElementById('btn-cloudinary-config-save')?.addEventListener('click', () => {
+    const cloudName = (cloudNameInput?.value || '').trim();
+    const uploadPreset = (uploadPresetInput?.value || '').trim();
+    if (cloudName && !/^[a-z0-9_-]+$/i.test(cloudName)) {
+      toast('Cloud name must contain only letters, numbers, underscores or hyphens.', 'error');
+      return;
+    }
+    cms.integrations.cloudinary.cloudName = cloudName;
+    cms.integrations.cloudinary.uploadPreset = uploadPreset;
+    markDirty();
+    toast('Cloudinary settings stored in the current draft. Save Draft to persist them.', 'gold');
   });
 
-  // Upload more
+  function assetRecords() {
+    const builtIn = manifestImages
+      .filter(src => typeof src === 'string' && !cms.hiddenMediaAssets.includes(src))
+      .map(src => ({ id: 'builtin:' + src, src, name: cms.mediaLabels[src] || src.split('/').pop(), builtin: true }));
+    const custom = cms.mediaLibrary
+      .filter(asset => asset && typeof asset.src === 'string')
+      .map(asset => ({ ...asset, builtin: false }));
+    return [...builtIn, ...custom];
+  }
+
+  function updateCounts() {
+    const count = assetRecords().length;
+    const statValues = document.querySelectorAll('#page-image-library .s-stats .s-stat-val');
+    if (statValues[0]) statValues[0].textContent = String(count);
+    if (statValues[1]) statValues[1].textContent = selectedImg ? '1' : '0';
+    const toolbar = document.querySelector('#page-image-library .s-preview-toolbar .s-pt-label');
+    if (toolbar) toolbar.textContent = 'Image Library — ' + count + ' assets';
+  }
+
+  function selectImage(record, item) {
+    grid.querySelectorAll('.s-img-item').forEach(node => node.classList.remove('active'));
+    item.classList.add('active');
+    selectedImg = record.src;
+    const nameInput = document.getElementById('selected-img-name');
+    const preview = document.getElementById('selected-img-preview');
+    const placeholder = document.getElementById('selected-img-placeholder');
+    if (nameInput) nameInput.value = record.name || record.src.split('/').pop();
+    if (preview) {
+      preview.src = record.src;
+      preview.style.display = 'block';
+      const size = cms.imageSizing[selectedImg] || {};
+      preview.style.width = size.width ? 'min(100%,' + Number(size.width) + 'px)' : '100%';
+      preview.style.height = size.height ? 'min(100%,' + Number(size.height) + 'px)' : '100%';
+      preview.style.objectFit = size.objectFit || 'cover';
+    }
+    if (placeholder) placeholder.style.display = 'none';
+    updateCounts();
+  }
+
+  function renderLibrary() {
+    grid.innerHTML = '';
+    const records = assetRecords();
+    records.forEach(record => {
+      const item = document.createElement('div');
+      item.className = 's-img-item';
+      item.dataset.src = record.src;
+      const img = document.createElement('img');
+      img.src = record.src;
+      img.alt = record.name || 'Royal Banquet Hall asset';
+      img.loading = 'lazy';
+      const overlay = document.createElement('div');
+      overlay.className = 's-img-overlay';
+      const actions = [
+        ['set','Set as hero','✓'],
+        ['rename','Rename label','✎'],
+        ['remove','Remove from library','×']
+      ];
+      actions.forEach(([action,title,label]) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 's-img-ob';
+        button.dataset.action = action;
+        button.title = title;
+        button.setAttribute('aria-label',title);
+        button.textContent = label;
+        overlay.appendChild(button);
+      });
+      const name = document.createElement('div');
+      name.className = 's-img-name';
+      name.textContent = record.name || record.src.split('/').pop();
+      item.append(img,overlay,name);
+      item.addEventListener('click',event => {
+        const button = event.target.closest('[data-action]');
+        if (!button) {
+          selectImage(record,item);
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        if (button.dataset.action === 'set') {
+          pushUndo('Set hero image');
+          cms.hero.src = record.src;
+          syncPreviewStyles();
+          markDirty();
+          toast('Hero image changed in the draft. Save Draft, then Publish.', 'gold');
+        } else if (button.dataset.action === 'rename') {
+          const currentName = record.name || '';
+          const newName = prompt('New library label:',currentName);
+          if (newName && newName.trim()) {
+            pushUndo('Rename media label');
+            if (record.builtin) cms.mediaLabels[record.src] = newName.trim();
+            else {
+              const found = cms.mediaLibrary.find(asset => asset.src === record.src);
+              if (found) found.name = newName.trim();
+            }
+            markDirty();
+            renderLibrary();
+            toast('Library label updated in the draft.', 'gold');
+          }
+        } else if (button.dataset.action === 'remove') {
+          const message = 'Remove this item from the Admin Studio library? The underlying image file or Cloudinary asset will not be deleted, and existing page references are unchanged.';
+          if (!confirm(message)) return;
+          pushUndo('Remove media from library');
+          if (record.builtin) {
+            if (!cms.hiddenMediaAssets.includes(record.src)) cms.hiddenMediaAssets.push(record.src);
+          } else {
+            cms.mediaLibrary = cms.mediaLibrary.filter(asset => asset.src !== record.src);
+          }
+          if (selectedImg === record.src) selectedImg = null;
+          markDirty();
+          renderLibrary();
+          toast('Asset removed from the library list. Source file was not deleted.', 'gold');
+        }
+      });
+      grid.appendChild(item);
+      if (selectedImg && selectedImg === record.src) selectImage(record,item);
+    });
+    updateCounts();
+  }
+
+  renderLibrary();
+
   const upload = document.getElementById('img-lib-upload');
   if (upload) {
-    upload.addEventListener('change', e => {
-      [...e.target.files].forEach(file => {
-        const reader = new FileReader();
-        reader.onload = ev => {
-          const item = document.createElement('div');
-          item.className = 's-img-item';
-          const name = file.name;
-          item.innerHTML = `<img src="${ev.target.result}" alt="${name}"><div class="s-img-overlay"></div><div class="s-img-name">${name}</div>`;
-          grid.prepend(item);
-          toast(`${name} added to library`, 'success');
-        };
-        reader.readAsDataURL(file);
-      });
+    upload.addEventListener('change', async event => {
+      const files = Array.from(event.target.files || []);
+      if (!files.length) return;
+      const cloudName = (cms.integrations.cloudinary.cloudName || '').trim();
+      const uploadPreset = (cms.integrations.cloudinary.uploadPreset || '').trim();
+      const useCloudinary = /^[a-z0-9_-]+$/i.test(cloudName) && Boolean(uploadPreset);
+      for (const file of files) {
+        if (!file.type.startsWith('image/')) {
+          toast(file.name + ' is not an image and was skipped.', 'error');
+          continue;
+        }
+        try {
+          let src = '';
+          let name = file.name;
+          if (useCloudinary) {
+            const form = new FormData();
+            form.append('file',file);
+            form.append('upload_preset',uploadPreset);
+            form.append('folder','royal-banquet-hall');
+            const response = await fetch('https://api.cloudinary.com/v1_1/' + encodeURIComponent(cloudName) + '/image/upload', {
+              method:'POST',
+              body:form
+            });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok || !payload.secure_url) throw new Error(payload.error?.message || 'Cloudinary upload failed.');
+            src = payload.secure_url;
+            name = file.name;
+          } else {
+            if (file.size > 500 * 1024) {
+              toast(file.name + ' is over 500 KB. Configure Cloudinary above or upload a smaller optimized image.', 'error');
+              continue;
+            }
+            const currentSize = new Blob([JSON.stringify(cms.mediaLibrary)]).size;
+            if (currentSize > 1800000) {
+              toast('Browser fallback storage is nearly full. Configure Cloudinary for more images.', 'error');
+              continue;
+            }
+            src = await new Promise((resolve,reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(String(reader.result || ''));
+              reader.onerror = () => reject(new Error('Could not read the image file.'));
+              reader.readAsDataURL(file);
+            });
+          }
+          cms.mediaLibrary.push({
+            id:'custom-' + Date.now() + '-' + Math.random().toString(36).slice(2,8),
+            src,
+            name,
+            source:useCloudinary ? 'cloudinary' : 'browser',
+            createdAt:new Date().toISOString()
+          });
+          markDirty();
+          renderLibrary();
+          toast(name + ' added. Save Draft to keep the library change.', 'gold');
+        } catch (error) {
+          toast(file.name + ' upload failed: ' + (error.message || 'Unknown error.'), 'error');
+        }
+      }
+      upload.value = '';
     });
   }
 
-  // Resize / crop controls
-  initSlider('imglib-slider-w', 'imglib-num-w', 'imglib-val-w', v => { markDirty(); }, 'px');
-  initSlider('imglib-slider-h', 'imglib-num-h', 'imglib-val-h', v => { markDirty(); }, 'px');
+  // Apply display dimensions, without pretending that the source file was physically cropped/resized.
+  document.getElementById('btn-imglib-apply-size')?.addEventListener('click',() => {
+    if (!selectedImg) {
+      toast('Select an image first.', 'error');
+      return;
+    }
+    const width = Number(document.getElementById('imglib-num-w')?.value);
+    const height = Number(document.getElementById('imglib-num-h')?.value);
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width < 100 || height < 100 || width > 3000 || height > 3000) {
+      toast('Width and height must be between 100 and 3000 pixels.', 'error');
+      return;
+    }
+    pushUndo('Image display size');
+    cms.imageSizing[selectedImg] = { width, height, objectFit:'cover' };
+    const preview = document.getElementById('selected-img-preview');
+    if (preview) { preview.style.maxWidth = width + 'px'; preview.style.maxHeight = height + 'px'; }
+    markDirty();
+    syncPreviewStyles();
+    toast('Display size saved in the draft. The source file was not re-encoded.', 'gold');
+  });
+
+  initSlider('imglib-slider-w', 'imglib-num-w', 'imglib-val-w',v => {
+    const label = document.getElementById('imglib-val-w');
+    if(label) label.textContent = v + 'px';
+  },'px');
+  initSlider('imglib-slider-h', 'imglib-num-h', 'imglib-val-h',v => {
+    const label = document.getElementById('imglib-val-h');
+    if(label) label.textContent = v + 'px';
+  },'px');
 }
+
 
 /* ══════════════════════════════════════════════════
    PAGE 9: THEME LIBRARY
