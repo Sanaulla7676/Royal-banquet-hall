@@ -1289,6 +1289,20 @@
             <small>Multiple files supported • Click or drag &amp; drop</small>
           </div>
 
+          <div class="s-card" id="cloudinary-settings-card">
+            <div class="s-card-head"><div class="s-card-title">Cloudinary CDN storage</div></div>
+            <div class="s-fg">
+              <label class="s-label" for="cloudinary-cloud-name">Cloud name</label>
+              <input type="text" class="s-input" id="cloudinary-cloud-name" placeholder="your-cloud-name" autocomplete="off">
+            </div>
+            <div class="s-fg">
+              <label class="s-label" for="cloudinary-upload-preset">Unsigned upload preset</label>
+              <input type="text" class="s-input" id="cloudinary-upload-preset" placeholder="royal-banquet-unsigned" autocomplete="off">
+            </div>
+            <small style="display:block;color:var(--s-text-dim);line-height:1.5;margin-bottom:10px;">Upload settings are public by design. Never put a Cloudinary API secret in this browser panel.</small>
+            <button type="button" id="btn-cloudinary-config-save" class="s-btn s-btn-outline">Save CDN Settings</button>
+          </div>
+
           <!-- Filter -->
           <div class="s-chips" style="margin-bottom:12px;">
             <button class="s-chip active">All (43)</button>
@@ -1321,8 +1335,8 @@
             <div class="s-cp-row"><input type="range" class="s-range" id="imglib-slider-h" min="100" max="3000" step="10" value="1080"><input type="number" class="s-ni" id="imglib-num-h" value="1080"></div>
           </div>
           <div class="s-row" style="gap:8px;margin-bottom:14px;">
-            <button class="s-btn s-btn-gold s-btn-sm" style="flex:1" onclick="toast('Image resized','success')">Apply Resize</button>
-            <button class="s-btn s-btn-outline s-btn-sm" onclick="toast('Crop mode (coming soon)','gold')">Crop</button>
+            <button class="s-btn s-btn-gold s-btn-sm" style="flex:1" id="btn-imglib-apply-size">Apply Resize</button>
+            <button class="s-btn s-btn-outline s-btn-sm" onclick="toast('Crop-to-file is not supported in the browser editor. Replace the image with a cropped upload instead.','gold')">Crop</button>
           </div>
         </div>
         <div class="s-left-footer">
@@ -1688,6 +1702,7 @@
   </div>
 </div>
 
+<script src="assets/js/gallery-data.js"></script>
 <script src="assets/js/admin-studio.js?v=1.4"></script>
 </body>
 </html>
