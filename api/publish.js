@@ -21,6 +21,16 @@ module.exports = async function handler(req, res) {
       !cms.logo || !cms.navbar || !cms.hero || !cms.heroHeading) {
     return res.status(400).json({ success: false, message: 'Invalid Studio data. Open the full Admin Studio and publish again.' });
   }
+  if (cms.video && /^(?:blob:|data:)/i.test(String(cms.video.src || ''))) {
+    return res.status(400).json({
+      success: false,
+      message: 'The video source is temporary or embedded and cannot be published. Use a persistent HTTPS/CDN URL or a file path under assets/.'
+    });
+  }
+  if (cms.video && cms.video.src &&
+      !/^(?:https:\/\/|http:\/\/|\/|assets\/)/i.test(String(cms.video.src))) {
+    return res.status(400).json({ success: false, message: 'Video URL must use HTTPS or a site asset path.' });
+  }
   if (Buffer.byteLength(JSON.stringify(cms), 'utf8') > 4000000) {
     return res.status(413).json({ success: false, message: 'Published configuration is too large. Store media in Cloudinary and publish URLs instead of base64 data.' });
   }
