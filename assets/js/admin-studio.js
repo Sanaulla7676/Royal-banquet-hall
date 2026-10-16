@@ -291,6 +291,19 @@ function syncPreviewStyles() {
   const logoTextFallback = c.logo?.textFallback !== false;
   const bgFixed = c.background?.fixed !== false;
   const bgGradient = c.background?.gradient !== false;
+  const bgSource = typeof c.background?.src === 'string' ? c.background.src.trim() : '';
+  const bgOverlayHex = /^#[0-9a-f]{6}$/i.test(c.background?.overlayColor || '') ? c.background.overlayColor : '#000000';
+  const bgOverlayOpacity = Math.max(0,Math.min(100,Number(c.background?.overlayOpacity ?? 30))) / 100;
+  const bgOverlayRgb = [1,3,5].map(index => parseInt(bgOverlayHex.slice(index,index+2),16)).join(',');
+  const bgOverlayCss = 'rgba(' + bgOverlayRgb + ',' + bgOverlayOpacity + ')';
+  const bgSafeUrl = bgSource.replace(/["\\\r\n]/g, character => encodeURIComponent(character));
+  const bgImageCss = bgSource
+    ? (bgGradient
+      ? 'linear-gradient(135deg,' + bgOverlayCss + ',transparent 78%),url("' + bgSafeUrl + '")'
+      : (bgOverlayOpacity > 0
+        ? 'linear-gradient(' + bgOverlayCss + ',' + bgOverlayCss + '),url("' + bgSafeUrl + '")'
+        : 'url("' + bgSafeUrl + '")'))
+    : '';
   const customTheme = c.theme?.customColors || {};
   const themeGold = customTheme.gold || '#c6a15b';
   const themeBg = customTheme.background || navBg;
@@ -398,7 +411,10 @@ function syncPreviewStyles() {
     @media (max-width:420px) {
       .site-header .brand-logo { ${logoHideOnSmall ? 'display:none!important;' : ''} }
     }
-    body { background-attachment: ${bgFixed ? 'fixed' : 'scroll'} !important; }
+    body {
+      background-attachment: ${bgFixed ? 'fixed' : 'scroll'} !important;
+      ${bgImageCss ? 'background-image:' + bgImageCss + ' !important;background-position:' + Number(c.background.posX ?? 50) + '% ' + Number(c.background.posY ?? 50) + '% !important;background-size:cover !important;' : ''}
+    }
     .hero {
       min-height: ${heroH}vh !important;
     }
