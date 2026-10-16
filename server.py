@@ -219,9 +219,23 @@ class StudioHandler(BaseHTTPRequestHandler):
         except Exception:
             return {}
 
+    def handle_login(self) -> tuple[int, str]:
+        body = self.read_body()
+        username = (body.get("username") or "").strip().lower()
+        password = body.get("password") or ""
+        if username == "royal hall" and password == "Royal@07":
+            return json_response({
+                "success": True,
+                "message": "Authentication successful",
+                "user": {"id": "Royal Hall", "role": "Administrator"},
+                "token": f"royal_auth_{int(time.time())}"
+            })
+        return error_response("Invalid Login ID or Password", 401)
+
     def dispatch(self, method: str, path: str) -> tuple[int, str]:
         routes = {
             ("GET",    "/api/status"):       lambda: json_response(get_status()),
+            ("POST",   "/api/auth/login"):   lambda: self.handle_login(),
             ("GET",    "/api/load-cms"):     lambda: json_response(load_cms()),
             ("POST",   "/api/save-cms"):     lambda: json_response(save_cms(self.read_body())),
             ("POST",   "/api/publish"):      lambda: json_response(publish_site(load_cms()["data"])),

@@ -1334,6 +1334,9 @@ function initAll() {
   // Autosave every 2min
   setInterval(saveDraft, 120000);
 
+  // ── Authentication Gate (Royal Hall / Royal@07)
+  initAuth();
+
   // ── Connect to backend server (auto-detect Node.js / PHP / Python)
   detectBackend().then(() => {
     // After detecting backend, try to load latest CMS from server
@@ -1344,6 +1347,98 @@ function initAll() {
   navigateTo('dashboard');
 
   console.log('Royal Banquet Admin Studio initialized ✓ (backend: auto-detect)');
+}
+
+/* ── AUTHENTICATION MANAGEMENT ──
+   Login ID: Royal Hall
+   Password: Royal@07
+*/
+function initAuth() {
+  const overlay   = document.getElementById('studio-login-overlay');
+  const form      = document.getElementById('studio-login-form');
+  const userInput = document.getElementById('login-username');
+  const passInput = document.getElementById('login-password');
+  const errBox    = document.getElementById('login-error-msg');
+  const remember  = document.getElementById('login-remember');
+  const togglePass= document.getElementById('toggle-password-btn');
+  const logoutBtn = document.getElementById('btn-studio-logout');
+
+  // Check saved session
+  const isAuth = localStorage.getItem('royal_studio_auth') === 'true' ||
+                 sessionStorage.getItem('royal_studio_auth') === 'true';
+
+  if (isAuth) {
+    overlay?.classList.add('hidden');
+  } else {
+    overlay?.classList.remove('hidden');
+    setTimeout(() => userInput?.focus(), 150);
+  }
+
+  // Toggle password visibility
+  togglePass?.addEventListener('click', () => {
+    if (!passInput) return;
+    const isPass = passInput.type === 'password';
+    passInput.type = isPass ? 'text' : 'password';
+    togglePass.style.color = isPass ? 'var(--s-gold)' : 'var(--s-text-muted)';
+  });
+
+  // Handle Login Submission
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (errBox) errBox.style.display = 'none';
+
+    const u = (userInput?.value || '').trim();
+    const p = (passInput?.value || '');
+
+    // First try backend API if available
+    let success = false;
+    if (API.available) {
+      try {
+        const res = await API.post('/api/auth/login', { username: u, password: p });
+        if (res && res.success) success = true;
+      } catch {}
+    }
+
+    // Direct credential check (matches: Royal Hall & Royal@07)
+    if (!success) {
+      if (u.toLowerCase() === 'royal hall' && p === 'Royal@07') {
+        success = true;
+      }
+    }
+
+    if (success) {
+      if (remember && remember.checked) {
+        localStorage.setItem('royal_studio_auth', 'true');
+        localStorage.setItem('royal_studio_user', 'Royal Hall');
+      } else {
+        sessionStorage.setItem('royal_studio_auth', 'true');
+        sessionStorage.setItem('royal_studio_user', 'Royal Hall');
+      }
+      overlay?.classList.add('hidden');
+      toast('Welcome, Royal Hall! Admin Studio unlocked.', 'gold');
+    } else {
+      if (errBox) {
+        errBox.textContent = 'Invalid Login ID or Password. Please try again.';
+        errBox.style.display = 'block';
+        passInput?.focus();
+        passInput?.select();
+      }
+    }
+  });
+
+  // Handle Logout
+  logoutBtn?.addEventListener('click', () => {
+    localStorage.removeItem('royal_studio_auth');
+    localStorage.removeItem('royal_studio_user');
+    sessionStorage.removeItem('royal_studio_auth');
+    sessionStorage.removeItem('royal_studio_user');
+    overlay?.classList.remove('hidden');
+    if (userInput) userInput.value = '';
+    if (passInput) passInput.value = '';
+    if (errBox) errBox.style.display = 'none';
+    setTimeout(() => userInput?.focus(), 150);
+    toast('Logged out successfully.', 'info');
+  });
 }
 
 /* Start */

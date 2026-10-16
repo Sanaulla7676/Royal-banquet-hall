@@ -43,11 +43,28 @@ try {
         $method === 'GET'  && $action === 'backups'       => respondJson(listBackups()),
         $method === 'POST' && $action === 'restore'       => respondJson(restoreBackup()),
         $method === 'GET'  && $action === 'status'        => respondJson(getStatus()),
+        $method === 'POST' && ($action === 'login' || $action === 'auth') => respondJson(loginUser()),
         $method === 'POST' && $action === 'reset'         => respondJson(resetCMS()),
         default => respondError(404, 'Endpoint not found: ' . $action)
     };
 } catch (Throwable $e) {
     respondError(500, $e->getMessage());
+}
+
+// ── Auth ───────────────────────────────────────────────────────────────────
+function loginUser(): array {
+    $data = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $username = trim($data['username'] ?? '');
+    $password = $data['password'] ?? '';
+    if (strcasecmp($username, 'Royal Hall') === 0 && $password === 'Royal@07') {
+        return [
+            'success' => true,
+            'message' => 'Authentication successful',
+            'user' => ['id' => 'Royal Hall', 'role' => 'Administrator'],
+            'token' => 'royal_auth_' . time()
+        ];
+    }
+    respondError(401, 'Invalid Login ID or Password');
 }
 
 // ── CMS Load ───────────────────────────────────────────────────────────────

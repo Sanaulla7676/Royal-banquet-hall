@@ -124,6 +124,27 @@ function scanImages(dir) {
 
 // ── API Routes ────────────────────────────────────────────────────────────
 
+// POST /api/auth/login
+app.post('/api/auth/login', (req, res) => {
+  const { username, password } = req.body || {};
+  const validUser = (username || '').trim().toLowerCase() === 'royal hall';
+  const validPass = (password || '') === 'Royal@07';
+
+  if (validUser && validPass) {
+    return res.json({
+      success: true,
+      message: 'Authentication successful',
+      user: { id: 'Royal Hall', role: 'Administrator' },
+      token: 'royal_auth_' + Date.now()
+    });
+  }
+
+  return res.status(401).json({
+    success: false,
+    message: 'Invalid Login ID or Password'
+  });
+});
+
 // GET /api/status
 app.get('/api/status', async (req, res) => {
   const backups = fs.existsSync(BACKUP_DIR) ? fs.readdirSync(BACKUP_DIR).filter(f => f.endsWith('.json')).length : 0;
