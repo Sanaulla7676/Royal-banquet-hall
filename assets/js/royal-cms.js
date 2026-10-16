@@ -48,7 +48,7 @@
         node.style.removeProperty('animation');
         node.style.removeProperty('opacity');
       }
-      node.classList.remove('rbh-cms-motion-pending', 'rbh-cms-motion-active', 'rbh-cms-font-pending', 'rbh-cms-font-active');
+      node.classList.remove('rbh-cms-motion-pending', 'rbh-cms-motion-active', 'rbh-cms-font-pending', 'rbh-cms-font-active', 'rbh-cms-font-hover');
       node.removeAttribute('data-rbh-cms-motion');
       node.removeAttribute('data-rbh-cms-font-motion');
     });
@@ -203,6 +203,7 @@
     css += '[data-rbh-cms-motion].rbh-cms-motion-pending,[data-rbh-cms-font-motion].rbh-cms-font-pending{opacity:0!important;animation:none!important}\n';
     css += '[data-rbh-cms-motion].rbh-cms-motion-active{animation-name:var(--rbh-cms-anim)!important;animation-duration:var(--rbh-cms-duration)!important;animation-delay:var(--rbh-cms-delay)!important;animation-timing-function:cubic-bezier(.2,.7,.2,1)!important;animation-direction:var(--rbh-cms-direction)!important;animation-fill-mode:both!important;animation-iteration-count:var(--rbh-cms-iterations)!important}\n';
     css += '[data-rbh-cms-font-motion].rbh-cms-font-active{animation-name:var(--rbh-cms-font-anim)!important;animation-duration:var(--rbh-cms-font-duration)!important;animation-delay:var(--rbh-cms-font-delay)!important;animation-timing-function:ease!important;animation-fill-mode:both!important;animation-iteration-count:var(--rbh-cms-font-iterations)!important}\n';
+    css += '[data-rbh-cms-font-motion].rbh-cms-font-hover:hover{animation-name:var(--rbh-cms-font-anim)!important;animation-duration:var(--rbh-cms-font-duration)!important;animation-delay:var(--rbh-cms-font-delay)!important;animation-timing-function:ease!important;animation-fill-mode:both!important;animation-iteration-count:var(--rbh-cms-font-iterations)!important}\n';
     effectItems.forEach(index => { if (effectsCss[index]) css += effectsCss[index] + '\n'; });
     css += '@media (prefers-reduced-motion: reduce){[data-rbh-cms-motion].rbh-cms-motion-active,[data-rbh-cms-font-motion].rbh-cms-font-active{animation:none!important;transition:none!important}}\n';
     styleTag.textContent = css;
@@ -256,12 +257,16 @@
           let wait = fontDelay;
           if (fontRepeat === 'Loop') iterations = 'infinite';
           prepareNode(node,'data-rbh-cms-font-motion',fontAnimNames[fontAnimIndex],fontDuration,wait,'normal',iterations,'rbh-cms-font-pending','rbh-cms-font-active');
+          if (fontRepeat === 'On Hover') {
+            node.classList.remove('rbh-cms-font-pending','rbh-cms-font-active');
+            node.classList.add('rbh-cms-font-hover');
+          }
         });
       });
     }
 
     const scrollNodes = Array.from(document.querySelectorAll('[data-rbh-cms-motion].rbh-cms-motion-pending, [data-rbh-cms-font-motion].rbh-cms-font-pending'));
-    const shouldRevealOnScroll = triggerOnScroll && activeAnimations.length > 0;
+    const shouldRevealOnScroll = (triggerOnScroll && activeAnimations.length > 0) || fontRepeat === 'On Scroll';
     const activateNode = node => {
       node.classList.remove('rbh-cms-motion-pending', 'rbh-cms-font-pending');
       if (node.hasAttribute('data-rbh-cms-motion')) node.classList.add('rbh-cms-motion-active');
