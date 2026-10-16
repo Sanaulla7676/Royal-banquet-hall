@@ -228,8 +228,8 @@ app.get('/api/load-cms', async (req, res) => {
       return res.json({ success: true, data: snapshot.cms, source: 'published-file', updatedAt: snapshot.published_at || null });
     }
   } catch {}
-  const data = await readCMS();
-  return res.json({ success: true, data, source: 'defaults' });
+  // Do not fall back to the admin's unpublished draft on a public request.
+  return res.json({ success: true, data: DEFAULT_CMS, source: 'defaults' });
 });
 
 // POST /api/save-cms
