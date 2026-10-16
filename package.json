@@ -6,7 +6,7 @@
   "scripts": {
     "serve": "npx serve .",
     "admin": "node server.js",
-    "check": "node scripts/check-site.mjs",
+    "check": "node scripts/check-site.mjs && node scripts/check-admin.mjs",
     "studio": "node server.js",
     "dev": "node server.js",
     "python-api": "python server.py"
