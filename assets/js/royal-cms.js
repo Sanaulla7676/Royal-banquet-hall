@@ -25,6 +25,66 @@
   let advancedMotionObserver = null;
   const advancedMotionOriginals = new WeakMap();
 
+
+function buildStudioSelectionAnimationCss(settings) {
+  const heroAnimations = [
+    '',
+    '@keyframes rbhStudioHeroZoomIn{from{transform:scale(1.12)}to{transform:scale(1)}}.hero-slideshow [data-hero-slide].is-active{animation:rbhStudioHeroZoomIn 1.1s cubic-bezier(.2,.7,.2,1) both!important}',
+    '@keyframes rbhStudioHeroZoomOut{from{transform:scale(.9)}to{transform:scale(1)}}.hero-slideshow [data-hero-slide].is-active{animation:rbhStudioHeroZoomOut 1.1s cubic-bezier(.2,.7,.2,1) both!important}',
+    '@keyframes rbhStudioHeroFade{from{opacity:0}to{opacity:1}}.hero-slideshow [data-hero-slide].is-active{animation:rbhStudioHeroFade 1.1s ease both!important}',
+    '@keyframes rbhStudioHeroUp{from{opacity:.45;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}.hero-slideshow [data-hero-slide].is-active{animation:rbhStudioHeroUp 1.1s cubic-bezier(.2,.7,.2,1) both!important}',
+    '@keyframes rbhStudioHeroLeft{from{opacity:.5;transform:translateX(28px)}to{opacity:1;transform:translateX(0)}}.hero-slideshow [data-hero-slide].is-active{animation:rbhStudioHeroLeft 1.1s ease both!important}',
+    '@keyframes rbhStudioHeroRight{from{opacity:.5;transform:translateX(-28px)}to{opacity:1;transform:translateX(0)}}.hero-slideshow [data-hero-slide].is-active{animation:rbhStudioHeroRight 1.1s ease both!important}',
+    '@keyframes rbhStudioHeroParallax{from{transform:scale(1.04) translateY(1.3%)}to{transform:scale(1.04) translateY(-1.3%)}}.hero-slideshow [data-hero-slide].is-active{animation:rbhStudioHeroParallax 8s ease-in-out infinite alternate!important}',
+    '@keyframes rbhStudioHeroKenBurns{from{transform:scale(1)}to{transform:scale(1.13)}}.hero-slideshow [data-hero-slide].is-active{animation:rbhStudioHeroKenBurns 10s ease-in-out infinite alternate!important}',
+    '@keyframes rbhStudioHeroBlur{from{filter:blur(12px);opacity:.4}to{filter:blur(0);opacity:1}}.hero-slideshow [data-hero-slide].is-active{animation:rbhStudioHeroBlur 1.2s ease both!important}'
+  ];
+  const headingAnimations = [
+    '',
+    '@keyframes rbhStudioHeadingFadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}',
+    '@keyframes rbhStudioHeadingSlideDown{from{opacity:0;transform:translateY(-24px)}to{opacity:1;transform:translateY(0)}}',
+    '@keyframes rbhStudioHeadingTypewriter{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}',
+    '@keyframes rbhStudioHeadingWave{0%,100%{transform:translateY(0) skewX(0)}30%{transform:translateY(-5px) skewX(-1deg)}70%{transform:translateY(3px) skewX(1deg)}}',
+    '@keyframes rbhStudioHeadingExplode{from{opacity:0;transform:scale(.72) rotate(4deg);filter:blur(7px)}to{opacity:1;transform:scale(1) rotate(0);filter:blur(0)}}',
+    '@keyframes rbhStudioHeadingBlur{from{opacity:0;filter:blur(12px)}to{opacity:1;filter:blur(0)}}',
+    '@keyframes rbhStudioHeadingGlitch{0%,100%{transform:translate(0)}20%{transform:translate(-2px,1px)}40%{transform:translate(2px,-1px)}60%{transform:translate(-1px,-1px)}80%{transform:translate(1px,1px)}}',
+    '@keyframes rbhStudioHeadingBounce{0%{opacity:0;transform:scale(.3)}60%{opacity:1;transform:scale(1.08)}80%{transform:scale(.96)}100%{transform:scale(1)}}',
+    '@keyframes rbhStudioHeadingScatter{from{opacity:0;letter-spacing:.3em;filter:blur(5px)}to{opacity:1;letter-spacing:inherit;filter:blur(0)}}',
+    '@keyframes rbhStudioHeadingGold{0%,100%{filter:brightness(1)}50%{filter:brightness(1.28) drop-shadow(0 0 10px rgba(198,161,91,.4))}}',
+    '@keyframes rbhStudioHeadingMask{from{opacity:0;clip-path:inset(0 0 100% 0)}to{opacity:1;clip-path:inset(0 0 0 0)}}'
+  ];
+  const headingNames = ['', 'rbhStudioHeadingFadeUp','rbhStudioHeadingSlideDown','rbhStudioHeadingTypewriter','rbhStudioHeadingWave','rbhStudioHeadingExplode','rbhStudioHeadingBlur','rbhStudioHeadingGlitch','rbhStudioHeadingBounce','rbhStudioHeadingScatter','rbhStudioHeadingGold','rbhStudioHeadingMask'];
+  const backgroundAnimations = [
+    '',
+    '@keyframes rbhStudioBgGoldWave{from{background-position:200% 0}to{background-position:-200% 0}}body:after{background:linear-gradient(115deg,transparent 15%,rgba(198,161,91,.32) 48%,transparent 78%);background-size:220% 100%;animation:rbhStudioBgGoldWave 9s linear infinite}',
+    '@keyframes rbhStudioBgStars{from{background-position:0 0,20px 30px}to{background-position:70px 110px,-30px -60px}}body:after{background-image:radial-gradient(2px 2px at 20px 30px,rgba(255,244,208,.7),transparent 70%),radial-gradient(1px 1px at 70px 80px,rgba(255,255,255,.65),transparent 70%),radial-gradient(2px 2px at 130px 40px,rgba(198,161,91,.7),transparent 70%);background-size:170px 150px;animation:rbhStudioBgStars 15s linear infinite}',
+    '@keyframes rbhStudioBgRipple{from{background-size:220px 220px,280px 280px;background-position:0 0,70px 90px}to{background-size:340px 340px,400px 400px;background-position:110px 70px,-60px -30px}}body:after{background-image:radial-gradient(circle,transparent 40%,rgba(80,170,210,.24) 41%,transparent 43%),radial-gradient(circle,transparent 45%,rgba(198,161,91,.16) 46%,transparent 48%);background-size:220px 220px,280px 280px;animation:rbhStudioBgRipple 12s ease-in-out infinite alternate}',
+    '@keyframes rbhStudioBgRotate{to{transform:rotate(360deg)}}body:after{background:conic-gradient(from 0deg at 50% 50%,transparent,rgba(198,161,91,.22),transparent,rgba(42,76,130,.16),transparent);inset:-35%;animation:rbhStudioBgRotate 30s linear infinite}',
+    '@keyframes rbhStudioBgPulse{0%,100%{opacity:.08;transform:scale(.96)}50%{opacity:.24;transform:scale(1.04)}}body:after{background:radial-gradient(ellipse at 50% 50%,rgba(198,161,91,.32),transparent 65%);animation:rbhStudioBgPulse 5s ease-in-out infinite}',
+    '@keyframes rbhStudioBgAurora{from{background-position:0% 50%}to{background-position:200% 50%}}body:after{background:linear-gradient(120deg,transparent,rgba(36,190,160,.18),rgba(118,75,200,.22),rgba(198,161,91,.17),transparent);background-size:200% 100%;filter:blur(14px);animation:rbhStudioBgAurora 18s ease-in-out infinite alternate}',
+    '@keyframes rbhStudioBgLightning{0%,87%,90%,93%,100%{opacity:.04}88%,92%{opacity:.26}}body:after{background:linear-gradient(112deg,transparent 43%,rgba(170,198,255,.22) 44%,transparent 46%),linear-gradient(68deg,transparent 71%,rgba(255,255,255,.16) 72%,transparent 73%);animation:rbhStudioBgLightning 7s steps(1,end) infinite}',
+    '@keyframes rbhStudioBgGalaxy{from{background-position:0 0,70px 90px;background-size:170px 170px,240px 240px}to{background-position:120px -80px,-90px 140px;background-size:220px 220px,300px 300px}}body:after{background-image:radial-gradient(circle at 40% 50%,rgba(120,75,220,.2),transparent 42%),radial-gradient(1px 1px at 20px 30px,rgba(255,255,255,.85),transparent 70%),radial-gradient(2px 2px at 90px 60px,rgba(198,161,91,.6),transparent 70%);animation:rbhStudioBgGalaxy 24s linear infinite alternate}',
+    '@keyframes rbhStudioBgMatrix{from{background-position:0 0}to{background-position:0 180px}}body:after{background-image:repeating-linear-gradient(90deg,transparent 0 28px,rgba(58,230,130,.1) 29px 30px),repeating-linear-gradient(0deg,transparent 0 11px,rgba(58,230,130,.11) 12px 13px);background-size:60px 180px;animation:rbhStudioBgMatrix 4s linear infinite}',
+    '@keyframes rbhStudioBgFire{0%,100%{opacity:.12;background-position:0% 100%}50%{opacity:.22;background-position:100% 0%}}body:after{background:radial-gradient(ellipse at 20% 100%,rgba(255,90,20,.26),transparent 45%),radial-gradient(ellipse at 80% 100%,rgba(255,170,25,.24),transparent 40%);background-size:130% 150%;animation:rbhStudioBgFire 3s ease-in-out infinite}',
+    '@keyframes rbhStudioBgSnow{from{background-position:0 -120px,40px -200px}to{background-position:120px 900px,-90px 1000px}}body:after{background-image:radial-gradient(2px 2px at 30px 40px,rgba(255,255,255,.75),transparent 70%),radial-gradient(1px 1px at 80px 90px,rgba(255,255,255,.6),transparent 70%);background-size:130px 150px,170px 190px;animation:rbhStudioBgSnow 14s linear infinite}',
+    '@keyframes rbhStudioBgBokeh{from{background-position:0 0}to{background-position:120px -140px}}body:after{background-image:radial-gradient(circle at 15% 30%,rgba(198,161,91,.2) 0 12px,transparent 14px),radial-gradient(circle at 72% 54%,rgba(255,255,255,.12) 0 18px,transparent 21px),radial-gradient(circle at 44% 78%,rgba(120,170,255,.12) 0 10px,transparent 13px);background-size:240px 250px;animation:rbhStudioBgBokeh 18s ease-in-out infinite alternate}',
+    '@keyframes rbhStudioBgConfetti{from{background-position:0 0}to{background-position:100px 160px}}body:after{background-image:repeating-linear-gradient(35deg,transparent 0 38px,rgba(198,161,91,.19) 39px 41px,transparent 42px 83px),repeating-linear-gradient(125deg,transparent 0 54px,rgba(230,120,150,.1) 55px 57px,transparent 58px 100px);background-size:180px 180px;animation:rbhStudioBgConfetti 12s linear infinite}',
+    '@keyframes rbhStudioBgGrid{from{background-position:0 0}to{background-position:36px 36px}}body:after{background-image:linear-gradient(rgba(198,161,91,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(198,161,91,.12) 1px,transparent 1px);background-size:36px 36px;animation:rbhStudioBgGrid 10s linear infinite}'
+  ];
+  const heroIndex = Math.max(0, Math.min(heroAnimations.length - 1, Number(settings && settings.hero && settings.hero.animation) || 0));
+  const headingIndex = Math.max(0, Math.min(headingNames.length - 1, Number(settings && settings.heroHeading && settings.heroHeading.animation) || 0));
+  const backgroundIndex = Math.max(0, Math.min(backgroundAnimations.length - 1, Number(settings && settings.background && settings.background.animation) || 0));
+  const heroCss = heroIndex ? heroAnimations[heroIndex] : '';
+  const headingCss = headingIndex
+    ? headingAnimations[headingIndex] + 'body.site-revealed .hero-content h1,body.site-revealed .hero-title-primary,body.site-revealed .hero-title-accent{animation:' + headingNames[headingIndex] + ' 1.1s cubic-bezier(.2,.7,.2,1) both!important}'
+    : '';
+  const backgroundCss = backgroundIndex
+    ? '@keyframes rbhStudioBgBase{from{opacity:.1}to{opacity:.1}}body:after{content:"";display:block!important;position:fixed;inset:0;pointer-events:none;z-index:-1;opacity:.18;mix-blend-mode:screen;' + backgroundAnimations[backgroundIndex] + '}'
+    : 'body:after{content:none!important}';
+  const css = [heroCss,headingCss,backgroundCss].filter(Boolean).join('\n');
+  return css + '\n@media(prefers-reduced-motion:reduce){body:after{animation:none!important} .hero-slideshow [data-hero-slide].is-active,body.site-revealed .hero-content h1,body.site-revealed .hero-title-primary,body.site-revealed .hero-title-accent{animation:none!important}}';
+}
+
   function applyStudioAdvancedStyles(pub) {
     if (!pub || typeof pub !== 'object') return;
     const navSettings = pub.navbar && typeof pub.navbar === 'object' ? pub.navbar : {};
@@ -248,7 +308,7 @@
     css += '[data-rbh-cms-font-motion].rbh-cms-font-hover:hover{animation-name:var(--rbh-cms-font-anim)!important;animation-duration:var(--rbh-cms-font-duration)!important;animation-delay:var(--rbh-cms-font-delay)!important;animation-timing-function:ease!important;animation-fill-mode:both!important;animation-iteration-count:var(--rbh-cms-font-iterations)!important}\n';
     effectItems.forEach(index => { if (effectsCss[index]) css += effectsCss[index] + '\n'; });
     css += '@media (prefers-reduced-motion: reduce){[data-rbh-cms-motion].rbh-cms-motion-active,[data-rbh-cms-font-motion].rbh-cms-font-active{animation:none!important;transition:none!important}}\n';
-    styleTag.textContent = css;
+    styleTag.textContent = css + '\n' + buildStudioSelectionAnimationCss(pub);
 
     function prepareNode(node, attr, keyframe, seconds, waitMs, directionValue, iterations, pendingClass, activeClass) {
       if (!advancedMotionOriginals.has(node)) {
