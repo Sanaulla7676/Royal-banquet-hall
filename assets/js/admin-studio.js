@@ -162,6 +162,27 @@ STUDIO.cms.hero = {
 if (!Array.isArray(STUDIO.cms.animations.targets)) STUDIO.cms.animations.targets = ['Headings'];
 if (!Array.isArray(STUDIO.cms.fontAnimations.targets)) STUDIO.cms.fontAnimations.targets = ['Hero Heading'];
 
+// Canonical values used by per-page Reset actions. Reset never deletes source files.
+const STUDIO_RESET_DEFAULTS = {
+  logo: { src:'assets/images/royal-hall-crest.webp', width:145, height:98, position:'left' },
+  navbar: { design:0, buttonStyle:0, animation:0, hoverAnimation:0, height:72, bgColor:'#0a0b0d', transparent:true },
+  hero: { src:'assets/images/hero-venue.jpg', scale:100, posX:50, posY:50, height:70, animation:0, displayMode:'cover', overlayColor:'#000000', overlayOpacity:40, brightness:100, contrast:100, animationSpeed:10, animationDelay:3, blur:0, kenBurns:false, parallax:false, gradient:false, decorative:false },
+  heroHeading: { text:'A Royal Celebration Awaits', animation:0, font:0, colorCombo:0, size:56, weight:800, lineHeight:1.15, letterSpacing:-1, align:'center' },
+  heroSub: { text:'The Perfect Venue for Weddings, Receptions, Birthdays, Corporate Events & More.', preset:0, size:18, weight:400, lineHeight:1.6, color:'#e8eaf0', align:'center' },
+  background: { src:'', animation:0, posX:50, posY:50, overlayOpacity:30, overlayColor:'#000000' },
+  video: { src:'', autoplay:true, loop:true, muted:true, controls:false, playsInline:true, objectFit:'cover', poster:'assets/images/hero-venue.jpg', posX:50, posY:50 },
+  theme: { active:0, customColors:{ gold:'#c6a15b', background:'#0a0b0d', ink:'#171d19', cream:'#f5f0e7' } },
+  buttons: { gold:{ bgType:'solid', bgColor:'#c6a15b', textColor:'#171d19', borderRadius:'999px', paddingY:'14px', paddingX:'24px', fontSize:'0.82rem', fontWeight:'700', shadow:'none', borderWidth:'1px', borderColor:'transparent', hoverEffect:'lift' } },
+  animations: { activeItems:[], speed:10, delay:0, duration:500, targets:['Headings'], direction:'Normal', scrollTrigger:true, repeatEveryView:false },
+  effects: { activeItems:[], intensity:100 },
+  components: { activeItems:[] },
+  fontAnimations: { active:0, targets:['Hero Heading'], speed:10, delay:0, duration:500, repeat:'Once' },
+  mediaLibrary:[],
+  mediaLabels:{},
+  hiddenMediaAssets:[],
+  imageSizing:{}
+};
+
 /* ── DOM HELPERS ── */
 const $ = (s, ctx = document) => ctx.querySelector(s);
 const $$ = (s, ctx = document) => [...ctx.querySelectorAll(s)];
@@ -1508,6 +1529,7 @@ function initImageLibraryPage() {
   }
 
   renderLibrary();
+  window.refreshMediaLibrary = renderLibrary;
   document.querySelectorAll('#page-image-library .s-panel-scroll .s-chips .s-chip').forEach(chip => {
     const text = chip.textContent.trim().toLowerCase();
     const filter = text.startsWith('all') ? 'all' : text;
@@ -2337,6 +2359,93 @@ function syncAllControls() {
 /* ══════════════════════════════════════════════════
    INIT ALL
 ══════════════════════════════════════════════════ */
+function copyCmsValue(value) {
+  return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
+}
+
+function pageResetKeys(pageId) {
+  const map = {
+    'page-logo':['logo'],
+    'page-navbar':['navbar'],
+    'page-hero-image':['hero'],
+    'page-hero-heading':['heroHeading'],
+    'page-hero-sub':['heroSub'],
+    'page-background':['background'],
+    'page-video':['video'],
+    'page-image-library':['mediaLibrary','mediaLabels','hiddenMediaAssets','imageSizing'],
+    'page-themes':['theme','navbar','buttons'],
+    'page-animations':['animations'],
+    'page-effects':['effects'],
+    'page-components':['components'],
+    'page-font-animations':['fontAnimations']
+  };
+  return map[pageId] || [];
+}
+
+async function reloadCurrentPageDraft(pageId) {
+  if (!studioAuthenticated || !API.available) {
+    toast('Cannot discard changes while the shared draft service is unavailable.', 'error');
+    return false;
+  }
+  const result = await API.get('/api/admin/load-cms');
+  if (!result?.success || !result.data || typeof result.data !== 'object') {
+    toast('Could not reload the saved draft: ' + (result?.message || 'server unavailable'), 'error');
+    return false;
+  }
+  const saved = result.data;
+  const keys = pageResetKeys(pageId);
+  keys.forEach(key => {
+    STUDIO.cms[key] = Object.prototype.hasOwnProperty.call(saved,key)
+      ? copyCmsValue(saved[key])
+      : copyCmsValue(STUDIO_RESET_DEFAULTS[key]);
+  });
+  if (pageId === 'page-image-library') {
+    const source = saved.integrations && saved.integrations.cloudinary;
+    STUDIO.cms.integrations = STUDIO.cms.integrations || {};
+    STUDIO.cms.integrations.cloudinary = copyCmsValue(source || {});
+  }
+  localStorage.setItem('rbh_studio_cms',JSON.stringify(STUDIO.cms));
+  syncAllControls();
+  window.refreshMediaLibrary?.();
+  syncPreviewStyles();
+  markSaved();
+  toast('Saved draft restored for this section.', 'success');
+  return true;
+}
+
+function resetCurrentPage(pageId) {
+  const keys = pageResetKeys(pageId);
+  if (!keys.length) {
+    toast('This page has no resettable CMS settings.', 'info');
+    return;
+  }
+  if (!confirm('Reset this section to its original defaults? This changes the draft only; the live site stays unchanged until you publish.')) return;
+  keys.forEach(key => {
+    STUDIO.cms[key] = copyCmsValue(STUDIO_RESET_DEFAULTS[key]);
+  });
+  localStorage.setItem('rbh_studio_cms',JSON.stringify(STUDIO.cms));
+  syncAllControls();
+  window.refreshMediaLibrary?.();
+  syncPreviewStyles();
+  markDirty();
+  toast('Section reset in draft. Save Draft, then Publish when reviewed.', 'gold');
+}
+
+function initFooterActionButtons() {
+  document.querySelectorAll('.s-page .s-left-footer .s-btn-outline').forEach(button => {
+    const label = button.textContent.trim().toLowerCase();
+    const page = button.closest('.s-page');
+    if (!page || button.id === 'btn-cancel-publish') return;
+    if (label === 'reset') {
+      button.removeAttribute('onclick');
+      button.addEventListener('click',() => resetCurrentPage(page.id));
+    } else if (label === 'cancel') {
+      button.removeAttribute('onclick');
+      button.addEventListener('click',() => reloadCurrentPageDraft(page.id));
+    }
+  });
+}
+
 function initAll() {
   // Sidebar navigation
   document.querySelectorAll('.s-nav-item[data-page]').forEach(item => {
@@ -2382,6 +2491,7 @@ function initAll() {
   initEffectsPage();
   initComponentsPage();
   initFontAnimPage();
+  initFooterActionButtons();
 
   // Inner tabs
   document.querySelectorAll('.s-inner-tab').forEach(tab => {
