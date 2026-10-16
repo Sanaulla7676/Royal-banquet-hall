@@ -241,10 +241,27 @@ function syncPreviewStyles() {
       font-weight: ${subWeight} !important;
       line-height: ${subLH} !important;
     }
+    #site-intro, .site-intro {
+      display: none !important;
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+    body.intro-pending > :not(#site-intro) {
+      visibility: visible !important;
+    }
+    body.intro-pending {
+      visibility: visible !important;
+    }
   `;
 
-  getAllIframeDocs().forEach(({ doc }) => {
+  getAllIframeDocs().forEach(({ doc, win }) => {
     try {
+      // Remove any lingering site-intro elements in iframe preview
+      const intro = doc.getElementById('site-intro');
+      if (intro) intro.remove();
+      if (doc.body) doc.body.classList.remove('intro-pending');
+
       let tag = doc.getElementById('studio-live-styles');
       if (!tag) {
         tag = doc.createElement('style');
@@ -253,11 +270,30 @@ function syncPreviewStyles() {
       }
       tag.textContent = css;
 
-      // Update DOM nodes directly for instant visual feedback
-      if (logoSrc) {
-        const logo = doc.querySelector('.site-header .brand-logo, .brand img, .site-logo');
-        if (logo && logo.src !== logoSrc) logo.src = logoSrc;
-      }
+      // Update Header elements directly
+      const headers = doc.querySelectorAll('.site-header');
+      headers.forEach(h => {
+        h.style.setProperty('background', isTransparent ? 'transparent' : navBg, 'important');
+        h.style.setProperty('min-height', navH + 'px', 'important');
+        if (isTransparent) {
+          h.style.setProperty('border-bottom', '1px solid rgba(255,255,255,0.12)', 'important');
+        } else {
+          h.style.setProperty('border-bottom', '1px solid rgba(198,161,91,0.25)', 'important');
+        }
+      });
+
+      // Update Logo elements directly
+      const logos = doc.querySelectorAll('.site-header .brand-logo, .brand img, .site-logo');
+      logos.forEach(logo => {
+        if (logoSrc && logo.src !== logoSrc) logo.src = logoSrc;
+        logo.style.setProperty('width', logoW + 'px', 'important');
+        logo.style.setProperty('height', logoH + 'px', 'important');
+        logo.style.setProperty('max-width', logoW + 'px', 'important');
+        logo.style.setProperty('max-height', logoH + 'px', 'important');
+        logo.width = logoW;
+        logo.height = logoH;
+      });
+
       if (c.hero?.src) {
         const slides = doc.querySelectorAll('.hero-slide, .hero-media img');
         if (slides.length && slides[0].src !== c.hero.src) slides[0].src = c.hero.src;
@@ -274,8 +310,20 @@ function syncPreviewStyles() {
       // Ignored
     }
   });
+
+  // Also postMessage to all iframes
+  getAllIframes().forEach(iframe => {
+    try {
+      iframe.contentWindow?.postMessage({ type: 'STUDIO_PREVIEW_SYNC', cms: c }, '*');
+    } catch (e) {}
+  });
 }
+window.STUDIO = STUDIO;
 window.syncPreviewStyles = syncPreviewStyles;
+window.saveDraft = saveDraft;
+window.publishLive = publishLive;
+window.pushUndo = pushUndo;
+window.toast = toast;
 
 /* ── UNDO / REDO ── */
 function pushUndo(label) {
@@ -285,11 +333,24 @@ function pushUndo(label) {
   updateHistoryBtns();
   markDirty();
 }
+
+function mergeIntoCMS(source) {
+  if (!source) return;
+  for (const k of Object.keys(source)) {
+    if (typeof source[k] === 'object' && source[k] !== null && !Array.isArray(source[k])) {
+      STUDIO.cms[k] = STUDIO.cms[k] || {};
+      Object.assign(STUDIO.cms[k], source[k]);
+    } else {
+      STUDIO.cms[k] = source[k];
+    }
+  }
+}
+
 function undo() {
   if (!STUDIO.undoStack.length) return;
   STUDIO.redoStack.push({ state: JSON.stringify(STUDIO.cms) });
   const prev = STUDIO.undoStack.pop();
-  STUDIO.cms = JSON.parse(prev.state);
+  mergeIntoCMS(JSON.parse(prev.state));
   syncAllControls();
   updateHistoryBtns();
   toast('Undo: ' + (prev.label || 'change'), 'gold');
@@ -298,7 +359,7 @@ function redo() {
   if (!STUDIO.redoStack.length) return;
   STUDIO.undoStack.push({ state: JSON.stringify(STUDIO.cms) });
   const next = STUDIO.redoStack.pop();
-  STUDIO.cms = JSON.parse(next.state);
+  mergeIntoCMS(JSON.parse(next.state));
   syncAllControls();
   updateHistoryBtns();
   toast('Redo applied', 'gold');
@@ -385,7 +446,7 @@ async function loadFromBackend() {
   const res = await API.get('/api/load-cms');
   if (res?.success && res.data) {
     // Merge backend CMS into current state
-    STUDIO.cms = { ...STUDIO.cms, ...res.data };
+    mergeIntoCMS(res.data);
     localStorage.setItem('rbh_studio_cms', JSON.stringify(STUDIO.cms));
     syncAllControls();
     console.log('✓ CMS loaded from backend');
@@ -430,14 +491,16 @@ function initSlider(sliderId, numId, valLabelId, onchange, unit = '') {
   const lbl = valLabelId ? document.getElementById(valLabelId) : null;
   if (!slider || !num) return;
   function sync(v) {
-    v = Math.min(slider.max, Math.max(slider.min, +v));
+    v = Math.min(+slider.max, Math.max(+slider.min, +v));
     slider.value = v;
     num.value = v;
     if (lbl) lbl.textContent = v + unit;
     onchange(v);
   }
-  slider.oninput = () => sync(slider.value);
-  num.oninput = () => sync(num.value);
+  slider.addEventListener('input', () => sync(slider.value));
+  slider.addEventListener('change', () => sync(slider.value));
+  num.addEventListener('input', () => sync(num.value));
+  num.addEventListener('change', () => sync(num.value));
 }
 
 /* ── TOGGLE SWITCH ── */
@@ -469,24 +532,26 @@ function initColorPair(swatchId, hexId, onchange) {
   const swatch = document.getElementById(swatchId);
   const hex = document.getElementById(hexId);
   if (!swatch || !hex) return;
-  swatch.oninput = () => { hex.value = swatch.value; onchange(swatch.value); };
-  hex.oninput = () => { if (/^#[0-9a-f]{6}$/i.test(hex.value)) { swatch.value = hex.value; onchange(hex.value); } };
+  const handleSwatch = () => { hex.value = swatch.value; onchange(swatch.value); };
+  const handleHex = () => { if (/^#[0-9a-f]{6}$/i.test(hex.value)) { swatch.value = hex.value; onchange(hex.value); } };
+  swatch.addEventListener('input', handleSwatch);
+  swatch.addEventListener('change', handleSwatch);
+  hex.addEventListener('input', handleHex);
+  hex.addEventListener('change', handleHex);
 }
 
 /* ══════════════════════════════════════════════════
    PAGE 1: LOGO MANAGEMENT
 ══════════════════════════════════════════════════ */
 function initLogoPage() {
-  const cms = STUDIO.cms.logo;
-
   initSlider('logo-slider-w', 'logo-num-w', 'logo-val-w', v => {
-    cms.width = v;
+    STUDIO.cms.logo.width = v;
     syncPreviewStyles();
     markDirty();
   }, 'px');
 
   initSlider('logo-slider-h', 'logo-num-h', 'logo-val-h', v => {
-    cms.height = v;
+    STUDIO.cms.logo.height = v;
     syncPreviewStyles();
     markDirty();
   }, 'px');
@@ -499,7 +564,7 @@ function initLogoPage() {
       if (!file) return;
       const reader = new FileReader();
       reader.onload = ev => {
-        cms.src = ev.target.result;
+        STUDIO.cms.logo.src = ev.target.result;
         const preview = document.getElementById('logo-preview-img');
         if (preview) preview.src = ev.target.result;
         syncPreviewStyles();
@@ -515,7 +580,7 @@ function initLogoPage() {
     chip.addEventListener('click', () => {
       document.querySelectorAll('#logo-position-chips .s-chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
-      cms.position = chip.dataset.val;
+      STUDIO.cms.logo.position = chip.dataset.val;
       syncPreviewStyles();
       markDirty();
     });
@@ -526,11 +591,26 @@ function initLogoPage() {
    PAGE 2: NAVBAR CUSTOMIZATION
 ══════════════════════════════════════════════════ */
 function initNavbarPage() {
-  const cms = STUDIO.cms.navbar;
-
   // Design selection
   initPresetCards('#navbar-designs-container', (i) => {
-    cms.design = i;
+    STUDIO.cms.navbar.design = i;
+    const designColors = ['#0a0b0d', 'rgba(18,22,28,0.75)', '#ffffff', 'transparent', '#12151c', '#060708'];
+    if (i === 3) {
+      STUDIO.cms.navbar.transparent = true;
+      const transpToggle = document.getElementById('navbar-transparent-toggle');
+      if (transpToggle) transpToggle.classList.add('on');
+    } else {
+      STUDIO.cms.navbar.transparent = false;
+      STUDIO.cms.navbar.bgColor = designColors[i] || '#0a0b0d';
+      const transpToggle = document.getElementById('navbar-transparent-toggle');
+      if (transpToggle) transpToggle.classList.remove('on');
+      const swatch = document.getElementById('navbar-color-swatch');
+      const hex = document.getElementById('navbar-color-hex');
+      if (swatch && hex && designColors[i].startsWith('#')) {
+        swatch.value = designColors[i];
+        hex.value = designColors[i];
+      }
+    }
     syncPreviewStyles();
     pushUndo('Navbar design');
     toast(`Navbar Design ${i+1} applied`, 'gold');
@@ -538,7 +618,7 @@ function initNavbarPage() {
 
   // Button styles
   initPresetCards('#navbar-btn-styles', (i) => {
-    cms.buttonStyle = i;
+    STUDIO.cms.navbar.buttonStyle = i;
     syncPreviewStyles();
     pushUndo('Navbar button style');
     markDirty();
@@ -546,7 +626,7 @@ function initNavbarPage() {
 
   // Animations
   initPresetCards('#navbar-anim-grid', (i) => {
-    cms.animation = i;
+    STUDIO.cms.navbar.animation = i;
     syncPreviewStyles();
     pushUndo('Navbar animation');
     markDirty();
@@ -554,22 +634,22 @@ function initNavbarPage() {
 
   // Hover animations
   initPresetCards('#navbar-hover-grid', (i) => {
-    cms.hoverAnimation = i;
+    STUDIO.cms.navbar.hoverAnimation = i;
     syncPreviewStyles();
     markDirty();
   });
 
   // Height
   initSlider('navbar-slider-h', 'navbar-num-h', 'navbar-val-h', v => {
-    cms.height = v;
+    STUDIO.cms.navbar.height = v;
     syncPreviewStyles();
     markDirty();
   }, 'px');
 
   // Bg color
   initColorPair('navbar-color-swatch', 'navbar-color-hex', v => {
-    cms.bgColor = v;
-    cms.transparent = false; // User picked a custom color; disable transparent so it displays immediately
+    STUDIO.cms.navbar.bgColor = v;
+    STUDIO.cms.navbar.transparent = false; // User picked a custom color; disable transparent so it displays immediately
     const transpToggle = document.getElementById('navbar-transparent-toggle');
     if (transpToggle) transpToggle.classList.remove('on');
     syncPreviewStyles();
@@ -581,7 +661,7 @@ function initNavbarPage() {
   if (transpToggle) {
     transpToggle.addEventListener('click', () => {
       transpToggle.classList.toggle('on');
-      cms.transparent = transpToggle.classList.contains('on');
+      STUDIO.cms.navbar.transparent = transpToggle.classList.contains('on');
       syncPreviewStyles();
       markDirty();
     });
@@ -1410,12 +1490,51 @@ function previewFontAnim(name, i) {
    SYNC CONTROLS FROM STATE
 ══════════════════════════════════════════════════ */
 function syncAllControls() {
+  const c = STUDIO.cms;
+  if (!c) return;
+
   // Logo
   const lw = document.getElementById('logo-slider-w');
+  const lwn = document.getElementById('logo-num-w');
+  const lwv = document.getElementById('logo-val-w');
+  if (lw && c.logo?.width) { lw.value = c.logo.width; if (lwn) lwn.value = c.logo.width; if (lwv) lwv.textContent = `${c.logo.width}px`; }
+
   const lh = document.getElementById('logo-slider-h');
-  if (lw) { lw.value = STUDIO.cms.logo.width; document.getElementById('logo-num-w').value = STUDIO.cms.logo.width; }
-  if (lh) { lh.value = STUDIO.cms.logo.height; document.getElementById('logo-num-h').value = STUDIO.cms.logo.height; }
-  // More sync as needed
+  const lhn = document.getElementById('logo-num-h');
+  const lhv = document.getElementById('logo-val-h');
+  if (lh && c.logo?.height) { lh.value = c.logo.height; if (lhn) lhn.value = c.logo.height; if (lhv) lhv.textContent = `${c.logo.height}px`; }
+
+  // Navbar
+  const nh = document.getElementById('navbar-slider-h');
+  const nhn = document.getElementById('navbar-num-h');
+  const nhv = document.getElementById('navbar-val-h');
+  if (nh && c.navbar?.height) { nh.value = c.navbar.height; if (nhn) nhn.value = c.navbar.height; if (nhv) nhv.textContent = `${c.navbar.height}px`; }
+
+  const nColorSwatch = document.getElementById('navbar-color-swatch');
+  const nColorHex = document.getElementById('navbar-color-hex');
+  if (c.navbar?.bgColor) {
+    if (nColorSwatch && c.navbar.bgColor.startsWith('#')) nColorSwatch.value = c.navbar.bgColor;
+    if (nColorHex) nColorHex.value = c.navbar.bgColor;
+  }
+
+  const transpToggle = document.getElementById('navbar-transparent-toggle');
+  if (transpToggle && c.navbar) {
+    transpToggle.classList.toggle('on', !!c.navbar.transparent);
+  }
+
+  // Hero
+  const hs = document.getElementById('hero-slider-scale');
+  const hsn = document.getElementById('hero-num-scale');
+  const hsv = document.getElementById('hero-val-scale');
+  if (hs && c.hero?.scale) { hs.value = c.hero.scale; if (hsn) hsn.value = c.hero.scale; if (hsv) hsv.textContent = `${c.hero.scale}%`; }
+
+  const hh = document.getElementById('hero-heading-text');
+  if (hh && c.heroHeading?.text) hh.value = c.heroHeading.text;
+
+  const hsub = document.getElementById('hero-sub-text');
+  if (hsub && c.heroSub?.text) hsub.value = c.heroSub.text;
+
+  syncPreviewStyles();
 }
 
 /* ══════════════════════════════════════════════════

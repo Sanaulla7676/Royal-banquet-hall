@@ -1,0 +1,83 @@
+{
+  "logo": {
+    "src": "assets/images/royal-hall-crest.webp",
+    "width": 145,
+    "height": 98,
+    "position": "left"
+  },
+  "navbar": {
+    "design": 0,
+    "buttonStyle": 0,
+    "animation": 0,
+    "hoverAnimation": 0,
+    "height": 72,
+    "bgColor": "#0a0b0d",
+    "transparent": true
+  },
+  "hero": {
+    "src": "assets/images/hero-venue.jpg",
+    "scale": 100,
+    "posX": 50,
+    "posY": 50,
+    "height": 70,
+    "animation": 0,
+    "displayMode": "cover",
+    "overlayColor": "#000000",
+    "overlayOpacity": 40,
+    "brightness": 100,
+    "contrast": 100
+  },
+  "heroHeading": {
+    "text": "A Royal Celebration Awaits",
+    "animation": 0,
+    "font": 0,
+    "colorCombo": 0,
+    "size": 56,
+    "weight": 800,
+    "lineHeight": 1.15,
+    "letterSpacing": -1
+  },
+  "heroSub": {
+    "text": "The Perfect Venue for Weddings, Receptions, Birthdays, Corporate Events & More.",
+    "preset": 0,
+    "size": 18,
+    "weight": 400,
+    "lineHeight": 1.6
+  },
+  "background": {
+    "src": "",
+    "animation": 0,
+    "posX": 50,
+    "posY": 50,
+    "overlayOpacity": 30
+  },
+  "video": {
+    "src": "",
+    "autoplay": true,
+    "loop": true,
+    "muted": true,
+    "posX": 50,
+    "posY": 50
+  },
+  "theme": {
+    "active": 0
+  },
+  "animations": {
+    "activeItems": []
+  },
+  "effects": {
+    "activeItems": []
+  },
+  "components": {
+    "activeItems": []
+  },
+  "fontAnimations": {
+    "active": 0,
+    "targets": {}
+  },
+  "_meta": {
+    "saved_at": "2026-10-16T06:22:02.507Z",
+    "version": "1.0",
+    "server": "node"
+  }
+}

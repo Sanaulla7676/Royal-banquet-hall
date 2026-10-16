@@ -22,24 +22,57 @@
   }
 
   // Load published Studio customizations (only when published from studio!)
+  function applyStudioPublished(pub) {
+    if (!pub) return;
+    cmsData.studioPublished = pub;
+    cmsData.navbar = cmsData.navbar || {};
+    if (pub.logo) {
+      if (pub.logo.width) cmsData.navbar.logoWidth = pub.logo.width;
+      if (pub.logo.height) cmsData.navbar.logoHeight = pub.logo.height;
+      if (pub.logo.src) cmsData.navbar.logoSrc = pub.logo.src;
+    }
+    if (pub.navbar) {
+      if (pub.navbar.bgColor) cmsData.navbar.bgColor = pub.navbar.bgColor;
+      if (pub.navbar.height) cmsData.navbar.height = pub.navbar.height;
+      cmsData.navbar.transparent = !!pub.navbar.transparent;
+    }
+    applyNavbar();
+    applyThemeAndStyles();
+  }
+
   try {
     const pubStr = localStorage.getItem('royal_cms_published');
     if (pubStr) {
       const pub = JSON.parse(pubStr);
-      cmsData.studioPublished = pub;
-      cmsData.navbar = cmsData.navbar || {};
-      if (pub.logo) {
-        if (pub.logo.width) cmsData.navbar.logoWidth = pub.logo.width;
-        if (pub.logo.height) cmsData.navbar.logoHeight = pub.logo.height;
-        if (pub.logo.src) cmsData.navbar.logoSrc = pub.logo.src;
-      }
-      if (pub.navbar) {
-        if (pub.navbar.bgColor) cmsData.navbar.bgColor = pub.navbar.bgColor;
-        if (pub.navbar.height) cmsData.navbar.height = pub.navbar.height;
-        cmsData.navbar.transparent = !!pub.navbar.transparent;
-      }
+      applyStudioPublished(pub);
     }
   } catch (err) {}
+
+  // Fetch published CMS from server if available (e.g. for external / public visitors)
+  (async function fetchPublishedFromServer() {
+    try {
+      let res = await fetch('/api/load-cms').catch(() => null);
+      if (!res || !res.ok) {
+        res = await fetch('data/cms-settings.json').catch(() => null);
+      }
+      if (res && res.ok) {
+        const json = await res.json();
+        const pub = json.data || json;
+        if (pub && (pub.logo || pub.navbar)) {
+          if (!localStorage.getItem('royal_cms_published')) {
+            applyStudioPublished(pub);
+          }
+        }
+      }
+    } catch (e) {}
+  })();
+
+  // Listen for studio preview postMessage
+  window.addEventListener('message', ev => {
+    if (ev.data && ev.data.type === 'STUDIO_PREVIEW_SYNC') {
+      applyStudioPublished(ev.data.cms);
+    }
+  });
 
   function deepMerge(target, source) {
     if (!source) return target;
@@ -161,6 +194,26 @@
       css += `\n/* Custom Admin CSS */\n${cmsData.customCss}\n`;
     }
 
+    // Apply header & logo styles from published CMS
+    if (cmsData.navbar) {
+      const nw = cmsData.navbar.logoWidth;
+      const nh = cmsData.navbar.logoHeight;
+      const nbg = cmsData.navbar.transparent ? 'transparent' : (cmsData.navbar.bgColor || '#0a0b0d');
+      const nH = cmsData.navbar.height;
+      if (nw) {
+        css += `\n.site-header .brand-logo, .brand img { width: ${nw}px !important; max-width: ${nw}px !important; }\n`;
+      }
+      if (nh) {
+        css += `\n.site-header .brand-logo, .brand img { height: ${nh}px !important; max-height: ${nh}px !important; }\n`;
+      }
+      if (nbg) {
+        css += `\n.site-header { background: ${nbg} !important; }\n`;
+      }
+      if (nH) {
+        css += `\n.site-header, .site-header .nav { min-height: ${nH}px !important; }\n`;
+      }
+    }
+
     dynamicStyleTag.textContent = css;
 
     // Load Google fonts if specified
@@ -205,8 +258,8 @@
     }
 
     // Logo update
-    const brandLogo = document.querySelector('.brand-logo');
-    if (brandLogo) {
+    const brandLogos = document.querySelectorAll('.site-header .brand-logo, .brand img');
+    brandLogos.forEach(brandLogo => {
       if (navConfig.logoSrc) brandLogo.src = navConfig.logoSrc;
       if (navConfig.logoWidth) {
         brandLogo.width = navConfig.logoWidth;
@@ -221,7 +274,7 @@
         document.documentElement.style.setProperty('--cms-logo-height', `${navConfig.logoHeight}px`);
       }
       if (navConfig.logoAlt) brandLogo.alt = navConfig.logoAlt;
-    }
+    });
 
     // CTA Button
     const headerCta = document.querySelector('.nav-actions .btn-gold');

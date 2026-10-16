@@ -61,7 +61,11 @@
     const video = intro.querySelector('video');
     const sessionKey = 'royalHallIntroPlayed_v1';
     let alreadyPlayed = false;
-    try { alreadyPlayed = sessionStorage.getItem(sessionKey) === '1'; } catch (_) {}
+    try {
+      alreadyPlayed = sessionStorage.getItem(sessionKey) === '1' || (window.self !== window.top);
+    } catch (_) {
+      if (window.self !== window.top) alreadyPlayed = true;
+    }
 
     const finishIntro = (completed) => {
       if (completed) {
