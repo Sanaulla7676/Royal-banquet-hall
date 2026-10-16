@@ -58,7 +58,6 @@ const API = {
 
 
 async function uploadMediaToCloudinary(file) {
-  if (!studioAuthenticated) throw new Error('Sign in to upload media.');
   if (!API.available) throw new Error('The shared backend is unavailable.');
   const resourceType = file && file.type && file.type.startsWith('video/') ? 'video' : 'image';
   const response = await fetch('/api/cloudinary/signature?resource_type=' + encodeURIComponent(resourceType), { credentials: 'same-origin', cache: 'no-store' });
