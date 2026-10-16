@@ -1467,7 +1467,7 @@
         </div>
         <div class="s-left-footer">
           <button class="s-btn s-btn-gold" onclick="saveSection('Animations')">Save Animations</button>
-          <button class="s-btn s-btn-outline">Clear All</button>
+          <button class="s-btn s-btn-outline" id="btn-animations-clear">Clear All</button>
         </div>
       </div>
       <div class="s-right-panel">
@@ -1515,7 +1515,7 @@
         </div>
         <div class="s-left-footer">
           <button class="s-btn s-btn-gold" onclick="saveSection('Visual effects')">Save Effects</button>
-          <button class="s-btn s-btn-outline" onclick="toast('All effects cleared','gold')">Clear All</button>
+          <button class="s-btn s-btn-outline" id="btn-effects-clear">Clear All</button>
         </div>
       </div>
       <div class="s-right-panel">
@@ -1551,7 +1551,7 @@
         </div>
         <div class="s-left-footer">
           <button class="s-btn s-btn-gold" onclick="saveSection('Components')">Save Layout</button>
-          <button class="s-btn s-btn-outline">Clear</button>
+          <button class="s-btn s-btn-outline" id="btn-components-clear">Clear</button>
         </div>
       </div>
       <div class="s-right-panel">
@@ -1584,7 +1584,7 @@
             </div>
           </div>
 
-          <!-- 50 Font Animations -->
+          <!-- 40 Font Animations -->
           <div class="s-card">
             <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>40 Font Animation Presets</div><span class="s-card-badge">40</span></div>
             <div class="s-fa-list" id="font-anim-list"><!-- Populated by JS --></div>
@@ -1642,11 +1642,11 @@
         <div class="s-panel-scroll">
           <div class="s-card">
             <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg>General Settings</div></div>
-            <div class="s-toggle-row"><span class="s-toggle-label">Auto-save every 2 minutes</span><div class="s-toggle on"></div></div>
-            <div class="s-toggle-row"><span class="s-toggle-label">Show live preview updates</span><div class="s-toggle on"></div></div>
-            <div class="s-toggle-row"><span class="s-toggle-label">Keyboard shortcuts enabled</span><div class="s-toggle on"></div></div>
-            <div class="s-toggle-row"><span class="s-toggle-label">Animation previews in library</span><div class="s-toggle on"></div></div>
-            <div class="s-toggle-row"><span class="s-toggle-label">Confirm before destructive actions</span><div class="s-toggle on"></div></div>
+            <div class="s-toggle-row"><span class="s-toggle-label">Auto-save every 2 minutes</span><div class="s-toggle on" id="setting-autosave-toggle" role="switch" aria-checked="true" tabindex="0"></div></div>
+            <div class="s-toggle-row"><span class="s-toggle-label">Show live preview updates</span><div class="s-toggle on" id="setting-live-preview-toggle" role="switch" aria-checked="true" tabindex="0"></div></div>
+            <div class="s-toggle-row"><span class="s-toggle-label">Keyboard shortcuts enabled</span><div class="s-toggle on" id="setting-shortcuts-toggle" role="switch" aria-checked="true" tabindex="0"></div></div>
+            <div class="s-toggle-row"><span class="s-toggle-label">Animation previews in library</span><div class="s-toggle on" id="setting-animation-preview-toggle" role="switch" aria-checked="true" tabindex="0"></div></div>
+            <div class="s-toggle-row"><span class="s-toggle-label">Confirm before destructive actions</span><div class="s-toggle on" id="setting-confirm-destructive-toggle" role="switch" aria-checked="true" tabindex="0"></div></div>
           </div>
           <div class="s-card">
             <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/></svg>Keyboard Shortcuts</div></div>
@@ -1658,8 +1658,8 @@
           </div>
           <div class="s-card">
             <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>Danger Zone</div></div>
-            <button class="s-btn s-btn-danger" style="width:100%;margin-bottom:8px;" onclick="if(confirm('Reset ALL customizations? This cannot be undone.')){localStorage.removeItem('rbh_studio_cms');location.reload();}">Reset All Studio Settings</button>
-            <button class="s-btn s-btn-outline" style="width:100%;" onclick="toast('Export feature coming soon','gold')">Export Settings</button>
+            <button class="s-btn s-btn-danger" id="btn-reset-all-settings" style="width:100%;margin-bottom:8px;">Reset All Studio Settings</button>
+            <button class="s-btn s-btn-outline" id="btn-export-settings" style="width:100%;">Export Settings</button>
           </div>
         </div>
       </div>
