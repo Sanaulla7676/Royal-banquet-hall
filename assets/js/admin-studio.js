@@ -90,6 +90,8 @@ function updateServerBadge(serverName, data) {
 }
 
 /* ── STATE ── */
+let studioAuthenticated = false;
+
 const STUDIO = {
   currentPage: 'dashboard',
   viewport: 'desktop',
@@ -405,6 +407,14 @@ async function saveDraft(options = {}) {
   // Keep a local recovery copy, but never call it a server save.
   localStorage.setItem('rbh_studio_cms', JSON.stringify(STUDIO.cms));
 
+  if (!studioAuthenticated) {
+    markSaved();
+    const signedOutText = $('#save-status-text');
+    if (signedOutText) signedOutText.textContent = 'Sign in to save';
+    if (!silent) toast('Sign in before saving a shared draft.', 'error');
+    return false;
+  }
+
   if (!API.available) {
     markSaved();
     const txt = $('#save-status-text');
@@ -431,6 +441,11 @@ async function saveDraft(options = {}) {
 async function publishLive() {
   // Save a browser recovery copy, but do not label it published yet.
   localStorage.setItem('rbh_studio_cms', JSON.stringify(STUDIO.cms));
+
+  if (!studioAuthenticated) {
+    toast('Sign in before publishing live changes.', 'error');
+    return false;
+  }
 
   if (!API.available) {
     markDirty();
@@ -1690,14 +1705,17 @@ function initAuth() {
       });
       const result = await response.json().catch(() => ({}));
       if (response.ok && result.success) {
+        studioAuthenticated = true;
         overlay?.classList.add('hidden');
         loadFromBackend();
       } else {
+        studioAuthenticated = false;
         overlay?.classList.remove('hidden');
         if (response.status === 503) showError(result.message || 'Admin authentication is not configured on this deployment.');
         setTimeout(() => userInput?.focus(), 150);
       }
     } catch {
+      studioAuthenticated = false;
       overlay?.classList.remove('hidden');
       showError('Cannot reach the sign-in service. Open the deployed Admin Studio URL and try again.');
     }
@@ -1737,10 +1755,12 @@ function initAuth() {
         return;
       }
 
+      studioAuthenticated = true;
       overlay?.classList.add('hidden');
       await loadFromBackend();
       toast('Admin session verified. Welcome to Royal Studio.', 'gold');
     } catch {
+      studioAuthenticated = false;
       showError('Sign-in service is unavailable. No login was accepted.');
     } finally {
       if (submitBtn) submitBtn.disabled = false;
@@ -1756,6 +1776,7 @@ function initAuth() {
         body: '{}'
       });
     } catch {}
+    studioAuthenticated = false;
     overlay?.classList.remove('hidden');
     if (userInput) userInput.value = '';
     if (passInput) passInput.value = '';
