@@ -1833,6 +1833,60 @@ function syncAllControls() {
   const hsub = document.getElementById('hero-sub-text');
   if (hsub && c.heroSub?.text) hsub.value = c.heroSub.text;
 
+  // Restore all controls when the server draft loads or Undo/Redo changes state.
+  const setPair = (sliderId, numberId, labelId, value, unit = '') => {
+    if (!Number.isFinite(Number(value))) return;
+    const slider = document.getElementById(sliderId);
+    const number = document.getElementById(numberId);
+    const label = document.getElementById(labelId);
+    if (slider) slider.value = Number(value);
+    if (number) number.value = Number(value);
+    if (label) label.textContent = String(value) + unit;
+  };
+  const hero = c.hero || {};
+  setPair('hero-slider-scale','hero-num-scale','hero-val-scale',hero.scale ?? 100,'%');
+  setPair('hero-slider-posx','hero-num-posx','hero-val-posx',hero.posX ?? 50,'%');
+  setPair('hero-slider-posy','hero-num-posy','hero-val-posy',hero.posY ?? 50,'%');
+  setPair('hero-slider-height','hero-num-height','hero-val-height',hero.height ?? 70,'vh');
+  setPair('hero-slider-opacity','hero-num-opacity','hero-val-opacity',hero.overlayOpacity ?? 40,'%');
+  setPair('hero-slider-brightness','hero-num-brightness','hero-val-brightness',hero.brightness ?? 100,'%');
+  setPair('hero-slider-contrast','hero-num-contrast','hero-val-contrast',hero.contrast ?? 100,'%');
+  setPair('hero-slider-animspeed','hero-num-animspeed','hero-val-animspeed',hero.animationSpeed ?? 10,'s');
+  setPair('hero-slider-animdelay','hero-num-animdelay','hero-val-animdelay',hero.animationDelay ?? 3,'s');
+  setPair('hero-slider-blur','hero-num-blur','hero-val-blur',hero.blur ?? 0,'px');
+  const overlaySwatch = document.getElementById('hero-overlay-swatch');
+  const overlayHex = document.getElementById('hero-overlay-hex');
+  if (overlaySwatch && /^#[0-9a-f]{6}$/i.test(hero.overlayColor || '')) overlaySwatch.value = hero.overlayColor;
+  if (overlayHex) overlayHex.value = hero.overlayColor || '#000000';
+  document.querySelectorAll('#hero-display-modes .s-mode-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.mode === (hero.displayMode || 'cover')));
+  const heroToggles = {'hero-ken-burns':'kenBurns','hero-parallax':'parallax','hero-gradient':'gradient','hero-decorative':'decorative'};
+  Object.entries(heroToggles).forEach(([id,key]) => document.getElementById(id+'-toggle')?.classList.toggle('on', !!hero[key]));
+
+  const heading = c.heroHeading || {};
+  setPair('heading-slider-size','heading-num-size','heading-val-size',heading.size ?? 56,'px');
+  setPair('heading-slider-lh','heading-num-lh','heading-val-lh',Math.round((heading.lineHeight ?? 1.15)*100),'');
+  setPair('heading-slider-ls','heading-num-ls','heading-val-ls',heading.letterSpacing ?? -1,'px');
+  const sub = c.heroSub || {};
+  setPair('sub-slider-size','sub-num-size','sub-val-size',sub.size ?? 18,'px');
+  setPair('sub-slider-lh','sub-num-lh','sub-val-lh',Math.round((sub.lineHeight ?? 1.6)*100),'');
+  const subSwatch = document.getElementById('sub-color-swatch');
+  const subHex = document.getElementById('sub-color-hex');
+  if (subSwatch && /^#[0-9a-f]{6}$/i.test(sub.color || '')) subSwatch.value = sub.color;
+  if (subHex) subHex.value = sub.color || '#e8eaf0';
+
+  const syncGrid = (selector, index) => {
+    document.querySelectorAll(selector + ' [data-index]').forEach(card => card.classList.toggle('active', Number(card.dataset.index) === Number(index || 0)));
+  };
+  syncGrid('#hero-anim-grid', hero.animation);
+  syncGrid('#heading-anim-grid', heading.animation);
+  syncGrid('#heading-font-grid', heading.font);
+  syncGrid('#heading-color-grid', heading.colorCombo);
+  syncGrid('#sub-preset-grid', sub.preset);
+  syncGrid('#bg-anim-grid', c.background?.animation);
+
+  document.querySelectorAll('#heading-align-chips .s-chip').forEach(chip => chip.classList.toggle('active', chip.dataset.val === (heading.align || 'center')));
+  document.querySelectorAll('#sub-align-chips .s-chip').forEach(chip => chip.classList.toggle('active', chip.dataset.val === (sub.align || 'center')));
+
   // Sync every advanced control from the stored CMS after backend load / undo / redo.
   const setExplicitPair = (sliderId, numberId, labelId, value, unit) => {
     const slider = document.getElementById(sliderId);
