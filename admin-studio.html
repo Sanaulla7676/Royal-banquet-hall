@@ -1216,6 +1216,11 @@
               <p>Upload Video File</p>
               <small>MP4, WebM recommended • Max 50MB for web</small>
             </div>
+            <div class="s-fg" style="margin-top:12px;">
+              <label class="s-label" for="video-source-url">Persistent video URL</label>
+              <input type="url" class="s-input" id="video-source-url" placeholder="https://res.cloudinary.com/…/video/upload/…mp4" autocomplete="url">
+              <small class="s-muted">The file picker is for local preview only. Paste a public HTTPS/CDN URL to save a video that works for every visitor.</small>
+            </div>
           </div>
 
           <div class="s-card">
@@ -1227,7 +1232,7 @@
             <div class="s-toggle-row"><span class="s-toggle-label">Play inline (mobile)</span><div class="s-toggle on" id="video-inline-toggle"></div></div>
             <div class="s-fg" style="margin-top:12px;">
               <label class="s-label">Poster Image (fallback)</label>
-              <input type="text" class="s-input" placeholder="assets/images/hero-venue.jpg" value="assets/images/hero-venue.jpg">
+              <input type="text" class="s-input" id="video-poster-url" placeholder="assets/images/hero-venue.jpg" value="assets/images/hero-venue.jpg">
             </div>
           </div>
 
