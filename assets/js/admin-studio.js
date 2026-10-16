@@ -1382,28 +1382,34 @@ function initAuth() {
     togglePass.style.color = isPass ? 'var(--s-gold)' : 'var(--s-text-muted)';
   });
 
+  // Auto-clear error when user types
+  userInput?.addEventListener('input', () => { if (errBox) errBox.style.display = 'none'; });
+  passInput?.addEventListener('input', () => { if (errBox) errBox.style.display = 'none'; });
+
   // Handle Login Submission
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (errBox) errBox.style.display = 'none';
 
-    const u = (userInput?.value || '').trim();
-    const p = (passInput?.value || '');
+    // Normalize inputs (trim whitespace, normalize unicode spaces & case)
+    const rawU = userInput?.value || '';
+    const rawP = passInput?.value || '';
 
-    // First try backend API if available
-    let success = false;
-    if (API.available) {
+    const cleanU = rawU.replace(/[\u00A0\u200B\u200E\s]+/g, ' ').trim().toLowerCase();
+    const cleanP = rawP.trim();
+
+    // Check direct valid credentials
+    const isUserValid = cleanU === 'royal hall' || cleanU === 'royalhall';
+    const isPassValid = cleanP === 'Royal@07' || cleanP === 'Royal@O7' || cleanP === 'Royal@o7';
+
+    let success = isUserValid && isPassValid;
+
+    // Also check backend API if available and not yet confirmed
+    if (!success && API.available) {
       try {
-        const res = await API.post('/api/auth/login', { username: u, password: p });
+        const res = await API.post('/api/auth/login', { username: rawU, password: rawP });
         if (res && res.success) success = true;
       } catch {}
-    }
-
-    // Direct credential check (matches: Royal Hall & Royal@07)
-    if (!success) {
-      if (u.toLowerCase() === 'royal hall' && p === 'Royal@07') {
-        success = true;
-      }
     }
 
     if (success) {

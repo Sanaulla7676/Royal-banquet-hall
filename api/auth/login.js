@@ -12,8 +12,11 @@ export default function handler(req, res) {
   }
 
   const { username, password } = req.body || {};
-  const validUser = (username || '').trim().toLowerCase() === 'royal hall';
-  const validPass = (password || '') === 'Royal@07';
+  const cleanUser = (username || '').replace(/[\u00A0\u200B\u200E\s]+/g, ' ').trim().toLowerCase();
+  const cleanPass = (password || '').trim();
+
+  const validUser = cleanUser === 'royal hall' || cleanUser === 'royalhall';
+  const validPass = cleanPass === 'Royal@07' || cleanPass === 'Royal@O7' || cleanPass === 'Royal@o7';
 
   if (validUser && validPass) {
     return res.status(200).json({
