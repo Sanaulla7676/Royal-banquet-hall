@@ -31,6 +31,7 @@
       if (pub.logo.width) cmsData.navbar.logoWidth = pub.logo.width;
       if (pub.logo.height) cmsData.navbar.logoHeight = pub.logo.height;
       if (pub.logo.src) cmsData.navbar.logoSrc = pub.logo.src;
+      if (pub.logo.position) cmsData.navbar.logoPosition = pub.logo.position;
     }
     if (pub.navbar) {
       if (pub.navbar.bgColor) cmsData.navbar.bgColor = pub.navbar.bgColor;
@@ -68,7 +69,18 @@
     if (pub.heroHeading) {
       const heading = document.querySelector('.hero-content h1') ||
         document.querySelector('.hero-title-primary');
-      if (heading && typeof pub.heroHeading.text === 'string') heading.textContent = pub.heroHeading.text;
+      if (heading && typeof pub.heroHeading.text === 'string') {
+        const completeTitle = pub.heroHeading.text.trim();
+        const primary = heading.querySelector('.hero-title-primary');
+        const accent = heading.querySelector('.hero-title-accent');
+        if (primary && accent && completeTitle) {
+          const words = completeTitle.split(/\s+/);
+          accent.textContent = words.pop() || '';
+          primary.textContent = words.join(' ') + (words.length ? ' ' : '');
+        } else {
+          heading.textContent = completeTitle;
+        }
+      }
       if (heading && Number.isFinite(Number(pub.heroHeading.size))) {
         heading.style.fontSize = Number(pub.heroHeading.size) + 'px';
       }
@@ -129,7 +141,13 @@
     if (Number.isInteger(activeTheme) && themePresets[activeTheme]) {
       const theme = themePresets[activeTheme];
       document.documentElement.style.setProperty('--gold', theme.gold);
-      if (!pub.navbar || !pub.navbar.bgColor) document.documentElement.style.setProperty('--ink', theme.nav);
+      document.documentElement.style.setProperty('--ink', theme.nav);
+      cmsData.navbar = cmsData.navbar || {};
+      cmsData.navbar.bgColor = (pub.navbar && pub.navbar.bgColor) || theme.nav;
+      cmsData.navbar.transparent = pub.navbar && typeof pub.navbar.transparent === 'boolean' ?
+        pub.navbar.transparent : false;
+      cmsData.buttons = cmsData.buttons || {};
+      cmsData.buttons.background = (pub.buttons && pub.buttons.gold && pub.buttons.gold.bgColor) || theme.gold;
       if (hero && !pub.hero?.src) hero.style.backgroundColor = theme.hero;
     }
 
@@ -145,12 +163,20 @@
     }
 
     applyNavbar();
+    if (pub.logo && pub.logo.position) {
+      const brand = document.querySelector('.site-header .brand, .site-header .brand-lockup');
+      if (brand) {
+        const positions = { left: 'flex-start', center: 'center', right: 'flex-end' };
+        brand.style.setProperty('justify-content', positions[pub.logo.position] || 'flex-start', 'important');
+      }
+    }
     applyThemeAndStyles();
     applyButtons();
     applyLayoutOverrides();
     applyMediaReplacements();
     applyVenueDetails();
     applySectionOrdering();
+    applyStudioAdvancedStyles(pub);
   }
 
   try {
@@ -560,6 +586,7 @@
     if (cmsData.buttons.padding) cssText += `  padding: ${cmsData.buttons.padding} !important;\n`;
     if (cmsData.buttons.fontSize) cssText += `  font-size: ${cmsData.buttons.fontSize} !important;\n`;
     if (cmsData.buttons.background) cssText += `  background: ${cmsData.buttons.background} !important;\n`;
+    if (cmsData.buttons.textColor) cssText += `  color: ${cmsData.buttons.textColor} !important;\n`;
     cssText += `}\n`;
     styleTag.textContent = cssText;
   }
