@@ -476,6 +476,11 @@
         document.body.style.backgroundImage = 'linear-gradient(' + overlay + ',' + overlay + '),url("' + String(pub.background.src).replace(/"/g, '%22') + '")';
         document.body.style.backgroundPosition = Number(pub.background.posX ?? 50) + '% ' + Number(pub.background.posY ?? 50) + '%';
         document.body.style.backgroundSize = 'cover';
+      } else {
+        // An empty background in a published reset must clear the previous inline override.
+        document.body.style.removeProperty('background-image');
+        document.body.style.removeProperty('background-position');
+        document.body.style.removeProperty('background-size');
       }
     }
 
