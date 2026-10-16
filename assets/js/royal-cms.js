@@ -463,13 +463,19 @@
       }
     }
 
-    if (pub.video && pub.video.src) {
+    if (pub.video && pub.video.src && !/^(?:blob:|data:)/i.test(String(pub.video.src))) {
       document.querySelectorAll('#site-intro video, .site-intro-video, .site-intro video').forEach(video => {
         if (video.tagName.toLowerCase() === 'video') {
-          if (video.src !== new URL(pub.video.src, window.location.href).href) video.src = pub.video.src;
+          const resolvedSrc = new URL(pub.video.src, window.location.href).href;
+          if (video.src !== resolvedSrc) video.src = pub.video.src;
           video.autoplay = pub.video.autoplay !== false;
           video.loop = pub.video.loop !== false;
           video.muted = pub.video.muted !== false;
+          video.controls = pub.video.controls === true;
+          video.playsInline = pub.video.playsInline !== false;
+          video.style.objectFit = ['cover','contain','fill','none','scale-down'].includes(pub.video.objectFit) ? pub.video.objectFit : 'cover';
+          video.style.objectPosition = Number(pub.video.posX ?? 50) + '% ' + Number(pub.video.posY ?? 50) + '%';
+          if (pub.video.poster) video.poster = pub.video.poster;
         } else {
           video.dataset.src = pub.video.src;
         }
