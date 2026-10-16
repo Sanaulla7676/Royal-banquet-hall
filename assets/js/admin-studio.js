@@ -239,6 +239,11 @@ function syncPreviewStyles() {
   const navH = c.navbar?.height || 72;
   const navBg = c.navbar?.bgColor || '#0a0b0d';
   const isTransparent = !!c.navbar?.transparent;
+  const customTheme = c.theme?.customColors || {};
+  const themeGold = customTheme.gold || '#c6a15b';
+  const themeBg = customTheme.background || navBg;
+  const themeInk = customTheme.ink || '#171d19';
+  const themeCream = customTheme.cream || '#f5f0e7';
 
   const heroH = c.hero?.height || 70;
   const heroScale = c.hero?.scale || 100;
@@ -283,6 +288,15 @@ function syncPreviewStyles() {
   // Injected CSS with maximum specificity
   const css = `
     /* ── STUDIO LIVE PREVIEW STYLES ── */
+    :root {
+      --gold: ${themeGold} !important;
+      --gold2: ${themeGold} !important;
+      --ink: ${themeInk} !important;
+      --ink2: ${themeBg} !important;
+      --cream: ${themeCream} !important;
+      --paper: ${themeBg} !important;
+      --bg: ${themeBg} !important;
+    }
     .site-header .brand-logo,
     .brand img,
     .site-logo,
@@ -1622,6 +1636,32 @@ const THEMES = [
 ];
 
 function initThemePage() {
+  const custom = STUDIO.cms.theme.customColors = {
+    gold: '#c6a15b',
+    background: '#0a0b0d',
+    ink: '#171d19',
+    cream: '#f5f0e7',
+    ...(STUDIO.cms.theme.customColors || {})
+  };
+  document.querySelectorAll('#page-themes .s-color-row[data-theme-token]').forEach(row => {
+    const token = row.dataset.themeToken;
+    const swatch = row.querySelector('input[type="color"]');
+    const hex = row.querySelector('input[type="text"]');
+    if (swatch && /^#[0-9a-f]{6}$/i.test(custom[token] || '')) swatch.value = custom[token];
+    if (hex) hex.value = custom[token] || '';
+    const onValue = value => {
+      if (!/^#[0-9a-f]{6}$/i.test(value || '')) return;
+      pushUndo('Custom theme color');
+      custom[token] = value;
+      if (swatch && swatch.value !== value) swatch.value = value;
+      if (hex && hex.value !== value) hex.value = value;
+      markDirty();
+      syncPreviewStyles();
+    };
+    swatch?.addEventListener('input', () => onValue(swatch.value));
+    hex?.addEventListener('change', () => onValue(hex.value.trim()));
+  });
+
   const grid = document.getElementById('theme-grid');
   if (!grid) return;
   grid.innerHTML = '';
@@ -1664,7 +1704,8 @@ function applyTheme(i) {
   STUDIO.cms.buttons.gold = STUDIO.cms.buttons.gold || {};
   STUDIO.cms.buttons.gold.bgType = 'solid';
   STUDIO.cms.buttons.gold.bgColor = theme.btn;
-  STUDIO.cms.buttons.gold.textColor = ['#f5f0ea', '#f8fafc', '#0a0b0d'].includes(theme.btn.toLowerCase()) ? '#171d19' : '#171d19';
+  STUDIO.cms.buttons.gold.textColor = '#171d19';
+  STUDIO.cms.theme.customColors = { gold: theme.btn, background: theme.nav, ink: theme.nav, cream: theme.hero };
   document.getElementById('theme-grid')?.querySelectorAll('.s-theme-card').forEach((c, idx) => c.classList.toggle('active', idx === i));
   applyToPreview(doc => {
     doc.documentElement.style.setProperty('--gold', theme.btn);
