@@ -1295,16 +1295,11 @@
 
           <div class="s-card" id="cloudinary-settings-card">
             <div class="s-card-head"><div class="s-card-title">Cloudinary CDN storage</div></div>
-            <div class="s-fg">
-              <label class="s-label" for="cloudinary-cloud-name">Cloud name</label>
-              <input type="text" class="s-input" id="cloudinary-cloud-name" placeholder="your-cloud-name" autocomplete="off">
-            </div>
-            <div class="s-fg">
-              <label class="s-label" for="cloudinary-upload-preset">Unsigned upload preset</label>
-              <input type="text" class="s-input" id="cloudinary-upload-preset" placeholder="royal-banquet-unsigned" autocomplete="off">
-            </div>
-            <small style="display:block;color:var(--s-text-dim);line-height:1.5;margin-bottom:10px;">Upload settings are public by design. Never put a Cloudinary API secret in this browser panel.</small>
-            <button type="button" id="btn-cloudinary-config-save" class="s-btn s-btn-outline">Save CDN Settings</button>
+            <p style="color:var(--s-text-dim);line-height:1.6;margin:8px 0 12px;">
+              Uploads use short-lived signed requests from the backend. Configure Cloudinary cloud name, API key, and API secret in Render Environment. No unsigned preset or secret is stored in this browser.
+            </p>
+            <button type="button" id="btn-cloudinary-config-save" class="s-btn s-btn-outline">Test Cloudinary Connection</button>
+            <div id="cloudinary-connection-status" role="status" aria-live="polite" style="margin-top:10px;color:var(--s-text-dim);font-size:0.78rem;">Connection has not been checked.</div>
           </div>
 
           <!-- Filter -->
