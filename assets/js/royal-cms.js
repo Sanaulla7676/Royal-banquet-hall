@@ -461,20 +461,29 @@
   // Fetch published CMS from server if available (e.g. for external / public visitors)
   (async function fetchPublishedFromServer() {
     try {
-      let res = await fetch('/api/load-cms').catch(() => null);
-      if (!res || !res.ok) {
-        res = await fetch('data/cms-settings.json').catch(() => null);
+      let res = null;
+      try {
+        res = await fetch('/api/load-cms', { cache: 'no-store' });
+      } catch {
+        // A static fallback is only considered if the API could not be reached at all.
+        res = null;
       }
+      if (!res) {
+        try { res = await fetch('data/cms-settings.json', { cache: 'no-store' }); } catch {}
+      }
+      // If the API replied with an error (for example, storage is misconfigured),
+      // do not apply an old static snapshot over the site or announce a false publish.
       if (res && res.ok) {
         const json = await res.json();
         const pub = json.data || json;
         if (pub && (pub.logo || pub.navbar || pub.hero || pub.heroHeading)) {
-          // Server-published content is authoritative; localStorage must never pin a stale live version.
           applyStudioPublished(pub);
           try { localStorage.setItem('royal_cms_published', JSON.stringify(pub)); } catch {}
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Royal CMS] Published settings could not be loaded:', e);
+    }
   })();
 
   // Listen for studio preview postMessage
