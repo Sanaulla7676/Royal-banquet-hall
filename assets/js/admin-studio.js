@@ -1019,16 +1019,27 @@ function initHeroHeadingPage() {
     textInput.oninput = () => {
       cms.text = textInput.value;
       applyToPreview(doc => {
-        const h = doc.querySelector('.hero h1, .hero-title, [class*=hero-heading], [class*=hero-title]');
-        if (h) h.textContent = cms.text;
+        const h = doc.querySelector('.hero-content h1') || doc.querySelector('.hero h1, .hero-title, [class*=hero-heading], [class*=hero-title]');
+        if (h) {
+          const primary = h.querySelector('.hero-title-primary');
+          const accent = h.querySelector('.hero-title-accent');
+          const words = String(cms.text).trim().split(/\s+/);
+          if (primary && accent && words.length) {
+            accent.textContent = words.pop() || '';
+            primary.textContent = words.join(' ') + (words.length ? ' ' : '');
+          } else {
+            h.textContent = cms.text;
+          }
+        }
       });
+      syncPreviewStyles();
       markDirty();
     };
   }
 
-  initPresetCards('#heading-anim-grid', (i) => { cms.animation = i; pushUndo('Heading animation'); toast(`Animation ${i+1} applied`, 'gold'); });
-  initPresetCards('#heading-font-grid', (i) => { cms.font = i; pushUndo('Heading font'); markDirty(); });
-  initPresetCards('#heading-color-grid', (i) => { cms.colorCombo = i; pushUndo('Heading color'); markDirty(); });
+  initPresetCards('#heading-anim-grid', (i) => { cms.animation = i; pushUndo('Heading animation'); syncPreviewStyles(); toast(`Animation ${i+1} applied`, 'gold'); });
+  initPresetCards('#heading-font-grid', (i) => { cms.font = i; pushUndo('Heading font'); syncPreviewStyles(); markDirty(); });
+  initPresetCards('#heading-color-grid', (i) => { cms.colorCombo = i; pushUndo('Heading color'); syncPreviewStyles(); markDirty(); });
 
   initSlider('heading-slider-size', 'heading-num-size', 'heading-val-size', v => {
     cms.size = v;
@@ -1059,10 +1070,12 @@ function initHeroHeadingPage() {
     chip.addEventListener('click', () => {
       document.querySelectorAll('#heading-align-chips .s-chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
+      cms.align = chip.dataset.val;
       applyToPreview(doc => {
-        const h = doc.querySelector('.hero h1, .hero-title');
-        if (h) h.style.textAlign = chip.dataset.val;
+        const h = doc.querySelector('.hero-content h1') || doc.querySelector('.hero h1, .hero-title');
+        if (h) h.style.textAlign = cms.align;
       });
+      syncPreviewStyles();
       markDirty();
     });
   });
@@ -1087,7 +1100,7 @@ function initHeroSubPage() {
     };
   }
 
-  initPresetCards('#sub-preset-grid', (i) => { cms.preset = i; pushUndo('Sub preset'); markDirty(); });
+  initPresetCards('#sub-preset-grid', (i) => { cms.preset = i; pushUndo('Sub preset'); syncPreviewStyles(); markDirty(); });
 
   initSlider('sub-slider-size', 'sub-num-size', 'sub-val-size', v => {
     cms.size = v;
@@ -1099,6 +1112,7 @@ function initHeroSubPage() {
 
   initSlider('sub-slider-lh', 'sub-num-lh', 'sub-val-lh', v => {
     cms.lineHeight = v / 100;
+    syncPreviewStyles();
     markDirty();
   });
 
@@ -1106,19 +1120,23 @@ function initHeroSubPage() {
     chip.addEventListener('click', () => {
       document.querySelectorAll('#sub-align-chips .s-chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
+      cms.align = chip.dataset.val;
       applyToPreview(doc => {
-        const h = doc.querySelector('.hero p, .hero-subtitle');
-        if (h) h.style.textAlign = chip.dataset.val;
+        const h = doc.querySelector('.hero-content .lede') || doc.querySelector('.hero p, .hero-subtitle');
+        if (h) h.style.textAlign = cms.align;
       });
+      syncPreviewStyles();
       markDirty();
     });
   });
 
   initColorPair('sub-color-swatch', 'sub-color-hex', v => {
+    cms.color = v;
     applyToPreview(doc => {
-      const h = doc.querySelector('.hero p, .hero-subtitle');
+      const h = doc.querySelector('.hero-content .lede') || doc.querySelector('.hero p, .hero-subtitle');
       if (h) h.style.color = v;
     });
+    syncPreviewStyles();
     markDirty();
   });
 }
@@ -1152,7 +1170,7 @@ function initBgPage() {
   initSlider('bg-slider-posy', 'bg-num-posy', 'bg-val-posy', v => { cms.posY = v; markDirty(); }, '%');
   initSlider('bg-slider-opacity', 'bg-num-opacity', 'bg-val-opacity', v => { cms.overlayOpacity = v; markDirty(); }, '%');
 
-  initColorPair('bg-overlay-swatch', 'bg-overlay-hex', v => { markDirty(); });
+  initColorPair('bg-overlay-swatch', 'bg-overlay-hex', v => { cms.overlayColor = v; syncPreviewStyles(); markDirty(); });
 }
 
 /* ══════════════════════════════════════════════════
