@@ -233,12 +233,34 @@ function syncPreviewStyles() {
   const heroPosY = c.hero?.posY ?? 50;
   const heroBrightness = c.hero?.brightness ?? 100;
   const heroContrast = c.hero?.contrast ?? 100;
+  const heroBlur = c.hero?.blur ?? 0;
+  const heroDisplayMode = c.hero?.displayMode || 'cover';
+  const overlayColor = /^#[0-9a-f]{6}$/i.test(c.hero?.overlayColor || '') ? c.hero.overlayColor : '#000000';
+  const overlayOpacity = Math.max(0, Math.min(100, Number(c.hero?.overlayOpacity ?? 40)));
 
   const headingSize = c.heroHeading?.size || 56;
   const headingWeight = c.heroHeading?.weight || 800;
   const headingLH = c.heroHeading?.lineHeight || 1.15;
   const headingLS = c.heroHeading?.letterSpacing || -1;
   const headingText = c.heroHeading?.text;
+  const headingFontIndex = Number(c.heroHeading?.font ?? 0);
+  const headingFonts = [
+    "'Playfair Display', Georgia, serif", "'Plus Jakarta Sans', Arial, sans-serif",
+    "Georgia, serif", "'Courier New', monospace", "Impact, sans-serif",
+    "Georgia, serif", "Arial, sans-serif", "Arial Black, Arial, sans-serif",
+    "'Times New Roman', serif", "'Playfair Display', Georgia, serif"
+  ];
+  const headingColors = [
+    ['#c6a15b','#e8c87a'],['#ffffff','#f0f0f0'],['#ff6b6b','#ee5a24'],['#a29bfe','#6c5ce7'],
+    ['#00cec9','#0984e3'],['#55efc4','#00b894'],['#fd79a8','#e84393'],['#fdcb6e','#e17055'],
+    ['#636e72','#2d3436'],['#e67e22','#d35400'],['#1abc9c','#16a085'],['#9b59b6','#8e44ad'],
+    ['#2c3e50','#34495e'],['#c0392b','#e74c3c'],['#f39c12','#f1c40f'],['#ecf0f1','#bdc3c7'],
+    ['#3498db','#2980b9'],['#27ae60','#229954'],['#ff4757','#ff6b81'],['#ffeaa7','#fdcb6e'],
+    ['#5f27cd','#341f97'],['#ee5a24','#c0392b'],['#00d2d3','#0abde3'],['#8395a7','#576574'],
+    ['#f368e0','#e056d7'],['#01a3a4','#048a81'],['#d63031','#6c0303'],['#6ab04c','#badc58'],
+    ['#e55039','#f0b27a'],['#1e3799','#0c2461']
+  ];
+  const headingColorPair = headingColors[Math.max(0,Math.min(29,Number(c.heroHeading?.colorCombo)||0))];
 
   const subSize = c.heroSub?.size || 18;
   const subWeight = c.heroSub?.weight || 400;
@@ -274,24 +296,38 @@ function syncPreviewStyles() {
     .hero {
       min-height: ${heroH}vh !important;
     }
-    .hero-media img, .hero-slide {
+    .hero-media img, .hero-slide, .hero-slideshow [data-hero-slide] {
       object-position: ${heroPosX}% ${heroPosY}% !important;
-      transform: scale(${heroScale / 100}) !important;
-      filter: brightness(${heroBrightness / 100}) contrast(${heroContrast / 100}) !important;
+      object-fit: ${heroDisplayMode} !important;
+      scale: ${heroScale / 100} !important;
+      filter: brightness(${heroBrightness / 100}) contrast(${heroContrast / 100}) blur(${heroBlur}px) !important;
+      ${c.hero?.kenBurns ? 'animation: rbhStudioKenBurns ' + Math.max(1000,Number(c.hero.animationSpeed||10)*1000) + 'ms ease-in-out ' + Math.max(0,Number(c.hero.animationDelay||0)*100) + 'ms infinite alternate !important;' : ''}
+      ${c.hero?.parallax ? 'transform: translateY(-1.5%) !important;' : ''}
     }
+    ${c.hero?.gradient ? '.hero-media::after,.hero-slideshow::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(135deg,rgba(0,0,0,.28),transparent 70%);}' : ''}
+    ${c.hero?.decorative ? '.hero-content{outline:1px solid rgba(198,161,91,.58);outline-offset:12px;}' : ''}
     .hero-content h1,
     .hero-title-primary,
     .hero-title-accent {
+      font-family: ${headingFonts[headingFontIndex] || headingFonts[0]} !important;
       font-size: ${headingSize}px !important;
       font-weight: ${headingWeight} !important;
       line-height: ${headingLH} !important;
       letter-spacing: ${headingLS}px !important;
+      text-align: ${c.heroHeading?.align || 'center'} !important;
+      background-image: linear-gradient(110deg,${headingColorPair[0]},${headingColorPair[1]}) !important;
+      background-clip: text !important;
+      -webkit-background-clip: text !important;
+      color: transparent !important;
     }
-    .hero-content .lede {
+    .hero-content .lede, .hero-content p {
       font-size: ${subSize}px !important;
       font-weight: ${subWeight} !important;
       line-height: ${subLH} !important;
+      text-align: ${c.heroSub?.align || 'center'} !important;
+      ${c.heroSub?.color ? 'color:' + c.heroSub.color + ' !important;' : ''}
     }
+    @keyframes rbhStudioKenBurns { from { transform:scale(1.02) } to { transform:scale(1.12) } }
     #site-intro, .site-intro {
       display: none !important;
       opacity: 0 !important;
@@ -320,6 +356,29 @@ function syncPreviewStyles() {
         (doc.head || doc.body).appendChild(tag);
       }
       tag.textContent = css;
+
+      // Render persistent hero overlay, including drafts loaded after page initialization.
+      doc.querySelectorAll('.hero, .hero-section').forEach(hero => {
+        const mediaLayer = hero.querySelector('.hero-media, .hero-slideshow') || hero;
+        let overlay = mediaLayer.querySelector(':scope > .rbh-studio-preview-overlay');
+        if (overlayOpacity > 0 || c.hero?.gradient) {
+          if (!overlay) {
+            overlay = doc.createElement('div');
+            overlay.className = 'rbh-studio-preview-overlay';
+            overlay.setAttribute('aria-hidden', 'true');
+            Object.assign(overlay.style, {position:'absolute', inset:'0', width:'100%', height:'100%', pointerEvents:'none', zIndex:'2', transition:'background .15s ease'});
+            if (!mediaLayer.style.position && mediaLayer === hero) hero.style.position = 'relative';
+            mediaLayer.appendChild(overlay);
+          }
+          const hex = overlayColor.slice(1);
+          const rgba = 'rgba(' + parseInt(hex.slice(0,2),16) + ',' + parseInt(hex.slice(2,4),16) + ',' + parseInt(hex.slice(4,6),16) + ',' + (overlayOpacity/100) + ')';
+          overlay.style.background = c.hero?.gradient ? 'linear-gradient(135deg,' + rgba + ',transparent 78%)' : rgba;
+        } else if (overlay) {
+          overlay.remove();
+        }
+        const content = hero.querySelector('.hero-content');
+        if (content) { content.style.position = 'relative'; content.style.zIndex = '3'; }
+      });
 
       // Update Header elements directly
       const headers = doc.querySelectorAll('.site-header');
@@ -350,12 +409,23 @@ function syncPreviewStyles() {
         if (slides.length && slides[0].src !== c.hero.src) slides[0].src = c.hero.src;
       }
       if (headingText) {
-        const h1 = doc.querySelector('.hero-title-primary') || doc.querySelector('.hero-content h1');
-        if (h1 && h1.textContent !== headingText) h1.textContent = headingText;
+        const h1 = doc.querySelector('.hero-content h1') || doc.querySelector('.hero-title-primary');
+        if (h1) {
+          const primary = h1.querySelector('.hero-title-primary');
+          const accent = h1.querySelector('.hero-title-accent');
+          const words = String(headingText).trim().split(/\s+/);
+          if (primary && accent && words.length) {
+            accent.textContent = words.pop() || '';
+            primary.textContent = words.join(' ') + (words.length ? ' ' : '');
+          } else if (h1.textContent !== headingText) {
+            h1.textContent = headingText;
+          }
+        }
       }
       if (subText) {
-        const lede = doc.querySelector('.hero-content .lede');
+        const lede = doc.querySelector('.hero-content .lede') || doc.querySelector('.hero-content p');
         if (lede && lede.textContent !== subText) lede.textContent = subText;
+        if (lede && c.heroSub?.color) lede.style.color = c.heroSub.color;
       }
     } catch (e) {
       // Ignored
