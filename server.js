@@ -228,8 +228,9 @@ app.get('/api/load-cms', async (req, res) => {
       return res.json({ success: true, data: snapshot.cms, source: 'published-file', updatedAt: snapshot.published_at || null });
     }
   } catch {}
-  // Do not fall back to the admin's unpublished draft on a public request.
-  return res.json({ success: true, data: DEFAULT_CMS, source: 'defaults' });
+  // The static website already has its own default design. Return no CMS override
+  // until the administrator has explicitly published one.
+  return res.json({ success: true, data: {}, source: 'no-published-cms' });
 });
 
 // POST /api/save-cms
