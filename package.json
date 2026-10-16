@@ -6,9 +6,15 @@
   "scripts": {
     "serve": "npx serve .",
     "admin": "node scripts/admin-server.mjs",
-    "check": "node scripts/check-site.mjs"
+    "check": "node scripts/check-site.mjs",
+    "studio": "node server.js",
+    "dev": "node server.js",
+    "python-api": "python server.py"
   },
   "dependencies": {
-    "cloudinary": "^2.11.0"
+    "cloudinary": "^2.11.0",
+    "cors": "^2.8.6",
+    "express": "^4.22.3",
+    "multer": "^1.4.5-lts.2"
   }
 }

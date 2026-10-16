@@ -1,0 +1,1635 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Royal Banquet – Website Customization Studio</title>
+<meta name="description" content="Advanced visual editor for Royal Banquet Hall website. 13-page customization studio.">
+<link rel="stylesheet" href="assets/css/admin-studio.css">
+</head>
+<body class="studio-app">
+
+<!-- ══════════════════════════════════════════════
+     TOP HEADER
+══════════════════════════════════════════════════ -->
+<header class="s-header">
+  <!-- Brand -->
+  <div class="s-header-brand">
+    <img src="assets/images/royal-hall-crest.webp" alt="Royal Crest">
+    <div class="s-brand-text">
+      <strong>ROYAL <span style="color:var(--s-gold)">BANQUET HALL</span></strong>
+      <em>Admin Panel</em>
+    </div>
+  </div>
+
+  <!-- Page selector -->
+  <select id="page-selector" class="s-header-page-select" title="Select page to preview">
+    <option value="index.html">🏠 Home</option>
+    <option value="events.html">🎉 Events</option>
+    <option value="gallery.html">🖼️ Gallery</option>
+    <option value="experience.html">✨ Experience</option>
+    <option value="catering.html">🍽️ Catering</option>
+    <option value="reviews.html">⭐ Reviews</option>
+    <option value="contact.html">📬 Contact</option>
+    <option value="booking.html">📅 Booking</option>
+    <option value="packages.html">💎 Packages</option>
+  </select>
+
+  <div class="s-header-sep"></div>
+
+  <!-- Undo/Redo -->
+  <div class="s-history-group">
+    <button type="button" id="btn-studio-undo" title="Undo (Ctrl+Z)" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+    </button>
+    <button type="button" id="btn-studio-redo" title="Redo (Ctrl+Y)" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+    </button>
+  </div>
+
+  <!-- Save status -->
+  <div class="s-save-badge">
+    <div class="s-save-dot" id="save-status-dot"></div>
+    <span id="save-status-text">All saved</span>
+  </div>
+
+  <!-- Actions -->
+  <div class="s-header-actions">
+    <a href="index.html" target="_blank" class="s-btn s-btn-outline" title="View Live Website">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      View Live Website
+    </a>
+    <button type="button" id="btn-studio-save" class="s-btn s-btn-outline">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+      Save Changes
+    </button>
+    <button type="button" id="btn-open-publish" class="s-btn s-btn-gold">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      Publish
+    </button>
+    <div class="s-user-badge">
+      <div class="s-user-avatar">S</div>
+      <div class="s-user-info">
+        <strong>Sana Admin</strong>
+        <em>Administrator</em>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════
+     MAIN WORKSPACE
+══════════════════════════════════════════════════ -->
+<div class="s-workspace">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="s-sidebar">
+    <div class="s-sidebar-inner">
+
+      <!-- Dashboard -->
+      <div class="s-sidebar-label">Studio</div>
+      <button class="s-nav-item" data-page="dashboard">
+        <span class="s-nav-num">⌂</span>
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span class="s-nav-label">Dashboard</span>
+      </button>
+
+      <div class="s-sidebar-label">Pages</div>
+
+      <button class="s-nav-item" data-page="logo">
+        <span class="s-nav-num">1</span>
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <span class="s-nav-label">Logo Management</span>
+      </button>
+
+      <button class="s-nav-item" data-page="navbar">
+        <span class="s-nav-num">2</span>
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        <span class="s-nav-label">Navbar Customization</span>
+      </button>
+
+      <button class="s-nav-item" data-page="hero-image">
+        <span class="s-nav-num">3</span>
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <span class="s-nav-label">Hero Image Editor</span>
+      </button>
+
+      <button class="s-nav-item" data-page="hero-heading">
+        <span class="s-nav-num">4</span>
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+        <span class="s-nav-label">Hero Heading Editor</span>
+      </button>
+
+      <button class="s-nav-item" data-page="hero-sub">
+        <span class="s-nav-num">5</span>
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+        <span class="s-nav-label">Hero Subheading Editor</span>
+      </button>
+
+      <button class="s-nav-item" data-page="background">
+        <span class="s-nav-num">6</span>
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+        <span class="s-nav-label">Background &amp; Animation</span>
+      </button>
+
+      <button class="s-nav-item" data-page="video">
+        <span class="s-nav-num">7</span>
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        <span class="s-nav-label">Video Management</span>
+      </button>
+
+      <button class="s-nav-item" data-page="image-library">
+        <span class="s-nav-num">8</span>
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>
+        <span class="s-nav-label">Image Library</span>
+      </button>
+
+      <button class="s-nav-item" data-page="themes">
+        <span class="s-nav-num">9</span>
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="7" r="1.5"/><circle cx="7" cy="12" r="1.5"/><circle cx="17" cy="12" r="1.5"/><circle cx="12" cy="17" r="1.5"/></svg>
+        <span class="s-nav-label">Theme Library</span>
+      </button>
+
+      <button class="s-nav-item" data-page="animations">
+        <span class="s-nav-num">10</span>
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>
+        <span class="s-nav-label">Animation Library</span>
+      </button>
+
+      <button class="s-nav-item" data-page="effects">
+        <span class="s-nav-num">11</span>
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <span class="s-nav-label">Visual Effects</span>
+      </button>
+
+      <button class="s-nav-item" data-page="components">
+        <span class="s-nav-num">12</span>
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="2" width="9" height="9"/><rect x="13" y="2" width="9" height="9"/><rect x="2" y="13" width="9" height="9"/><rect x="13" y="13" width="9" height="9"/></svg>
+        <span class="s-nav-label">Components Library</span>
+      </button>
+
+      <button class="s-nav-item" data-page="font-animations">
+        <span class="s-nav-num">13</span>
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/><circle cx="19" cy="18" r="3"/></svg>
+        <span class="s-nav-label">Font Animation</span>
+      </button>
+
+      <!-- Settings -->
+      <div class="s-sidebar-label" style="margin-top:8px;">System</div>
+      <button class="s-nav-item" data-page="settings">
+        <span class="s-nav-num">⚙</span>
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span class="s-nav-label">Settings</span>
+      </button>
+    </div>
+
+    <div class="s-sidebar-footer">
+      <button class="s-nav-item" style="color:var(--s-danger);" onclick="location.href='index.html'">
+        <span class="s-nav-num" style="background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.2);color:var(--s-danger);">←</span>
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <span class="s-nav-label">Exit Studio</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── CONTENT AREA ── -->
+  <main class="s-content">
+
+    <!-- ════════════════════════════════════════
+         PAGE 0: DASHBOARD
+    ════════════════════════════════════════ -->
+    <div id="page-dashboard" class="s-page">
+      <div class="s-dash-full">
+        <div class="s-dash-welcome">
+          <h2>Welcome to the <span>Customization Studio</span></h2>
+          <p>Select a feature below to start editing your Royal Banquet Hall website. All changes preview live before publishing.</p>
+        </div>
+
+        <div class="s-stats" style="margin-bottom:28px;">
+          <div class="s-stat"><div class="s-stat-val">13</div><div class="s-stat-label">Editor Pages</div></div>
+          <div class="s-stat"><div class="s-stat-val">40</div><div class="s-stat-label">Animations</div></div>
+          <div class="s-stat"><div class="s-stat-val">40</div><div class="s-stat-label">Effects</div></div>
+          <div class="s-stat"><div class="s-stat-val">50</div><div class="s-stat-label">Font Anims</div></div>
+        </div>
+
+        <div class="s-dash-grid">
+          <div class="s-dash-card" data-page="logo">
+            <div class="s-dash-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+            <div class="s-dash-num">Page 1</div>
+            <div class="s-dash-title">Logo Management</div>
+            <div class="s-dash-desc">Resize, reposition, and replace your logo with live preview</div>
+          </div>
+          <div class="s-dash-card" data-page="navbar">
+            <div class="s-dash-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+            <div class="s-dash-num">Page 2</div>
+            <div class="s-dash-title">Navbar Customization</div>
+            <div class="s-dash-desc">6 designs, 10 button styles, 10 animations, 10 hover effects</div>
+          </div>
+          <div class="s-dash-card" data-page="hero-image">
+            <div class="s-dash-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div class="s-dash-num">Page 3</div>
+            <div class="s-dash-title">Hero Image Editor</div>
+            <div class="s-dash-desc">Upload, resize, position, and animate your hero image</div>
+          </div>
+          <div class="s-dash-card" data-page="hero-heading">
+            <div class="s-dash-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg></div>
+            <div class="s-dash-num">Page 4</div>
+            <div class="s-dash-title">Hero Heading Editor</div>
+            <div class="s-dash-desc">12 animations, 10 fonts, 30 color combos, typography controls</div>
+          </div>
+          <div class="s-dash-card" data-page="hero-sub">
+            <div class="s-dash-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg></div>
+            <div class="s-dash-num">Page 5</div>
+            <div class="s-dash-title">Hero Subheading</div>
+            <div class="s-dash-desc">30 typography presets, font controls, color and spacing</div>
+          </div>
+          <div class="s-dash-card" data-page="background">
+            <div class="s-dash-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg></div>
+            <div class="s-dash-num">Page 6</div>
+            <div class="s-dash-title">Background &amp; Animation</div>
+            <div class="s-dash-desc">15 animated backgrounds, overlays, gradients, effects</div>
+          </div>
+          <div class="s-dash-card" data-page="video">
+            <div class="s-dash-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>
+            <div class="s-dash-num">Page 7</div>
+            <div class="s-dash-title">Video Management</div>
+            <div class="s-dash-desc">Upload, crop, position and control video playback</div>
+          </div>
+          <div class="s-dash-card" data-page="image-library">
+            <div class="s-dash-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg></div>
+            <div class="s-dash-num">Page 8</div>
+            <div class="s-dash-title">Image Library</div>
+            <div class="s-dash-desc">Manage all 43 website images: upload, rename, crop, delete</div>
+          </div>
+          <div class="s-dash-card" data-page="themes">
+            <div class="s-dash-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="7" r="1.5"/><circle cx="7" cy="12" r="1.5"/><circle cx="17" cy="12" r="1.5"/></svg></div>
+            <div class="s-dash-num">Page 9</div>
+            <div class="s-dash-title">Theme Library</div>
+            <div class="s-dash-desc">10 one-click professional themes with live preview</div>
+          </div>
+          <div class="s-dash-card" data-page="animations">
+            <div class="s-dash-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg></div>
+            <div class="s-dash-num">Page 10</div>
+            <div class="s-dash-title">Animation Library</div>
+            <div class="s-dash-desc">40 pre-built animations with speed, delay, and target controls</div>
+          </div>
+          <div class="s-dash-card" data-page="effects">
+            <div class="s-dash-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+            <div class="s-dash-num">Page 11</div>
+            <div class="s-dash-title">Visual Effects</div>
+            <div class="s-dash-desc">40 effects: glassmorphism, neon, shadows, hover, gradients</div>
+          </div>
+          <div class="s-dash-card" data-page="components">
+            <div class="s-dash-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="2" width="9" height="9"/><rect x="13" y="2" width="9" height="9"/><rect x="2" y="13" width="9" height="9"/><rect x="13" y="13" width="9" height="9"/></svg></div>
+            <div class="s-dash-num">Page 12</div>
+            <div class="s-dash-title">Components Library</div>
+            <div class="s-dash-desc">40 reusable components: cards, buttons, sections, forms</div>
+          </div>
+          <div class="s-dash-card" data-page="font-animations">
+            <div class="s-dash-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg></div>
+            <div class="s-dash-num">Page 13</div>
+            <div class="s-dash-title">Font Animation</div>
+            <div class="s-dash-desc">50 text animation presets: typewriter, wave, shimmer & more</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         PAGE 1: LOGO MANAGEMENT
+    ════════════════════════════════════════ -->
+    <div id="page-logo" class="s-page">
+      <!-- Left Panel -->
+      <div class="s-left-panel">
+        <div class="s-page-header">
+          <h1><span class="pg-num">1.</span> Logo Management</h1>
+          <p>Upload, resize, position, and preview your website logo with live preview.</p>
+        </div>
+        <div class="s-panel-scroll">
+
+          <!-- Current Logo Preview -->
+          <div class="s-card">
+            <div class="s-card-head">
+              <div class="s-card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/></svg>
+                Logo Preview
+              </div>
+              <span class="s-card-badge">Live</span>
+            </div>
+            <div style="background:var(--s-surface);border:1px solid var(--s-border);border-radius:var(--r-md);padding:20px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
+              <img id="logo-preview-img" src="assets/images/royal-hall-crest.webp" alt="Logo Preview" style="max-width:160px;max-height:100px;object-fit:contain;">
+            </div>
+
+            <!-- Upload -->
+            <div class="s-upload-zone">
+              <input type="file" id="logo-upload" accept="image/*">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <p>Click to Upload New Logo</p>
+              <small>PNG, SVG, WebP recommended • Min 200×200px</small>
+            </div>
+
+            <!-- URL Input -->
+            <div class="s-fg">
+              <label class="s-label">Logo Image URL / Path</label>
+              <input type="text" id="logo-url-input" class="s-input" value="assets/images/royal-hall-crest.webp">
+            </div>
+          </div>
+
+          <!-- Size Controls -->
+          <div class="s-card">
+            <div class="s-card-head">
+              <div class="s-card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="8 3 4 7 8 11"/><polyline points="16 21 20 17 16 13"/></svg>
+                Size &amp; Dimensions
+              </div>
+              <span class="s-card-badge">Live 60fps</span>
+            </div>
+
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Logo Width</span><span class="sv" id="logo-val-w">145px</span></div>
+              <div class="s-cp-row">
+                <input type="range" class="s-range" id="logo-slider-w" min="60" max="320" step="5" value="145">
+                <input type="number" class="s-ni" id="logo-num-w" value="145">
+              </div>
+            </div>
+
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Logo Height</span><span class="sv" id="logo-val-h">98px</span></div>
+              <div class="s-cp-row">
+                <input type="range" class="s-range" id="logo-slider-h" min="30" max="220" step="5" value="98">
+                <input type="number" class="s-ni" id="logo-num-h" value="98">
+              </div>
+            </div>
+          </div>
+
+          <!-- Position Controls -->
+          <div class="s-card">
+            <div class="s-card-head">
+              <div class="s-card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+                Logo Position
+              </div>
+            </div>
+            <div class="s-section-title">Alignment</div>
+            <div class="s-chips" id="logo-position-chips">
+              <button class="s-chip active" data-val="left">Left</button>
+              <button class="s-chip" data-val="center">Center</button>
+              <button class="s-chip" data-val="right">Right</button>
+            </div>
+          </div>
+
+          <!-- Responsive Behavior -->
+          <div class="s-card">
+            <div class="s-card-head">
+              <div class="s-card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                Responsive Behavior
+              </div>
+            </div>
+            <div class="s-toggle-row">
+              <span class="s-toggle-label">Auto-scale on mobile</span>
+              <div class="s-toggle on" id="logo-mobile-scale-toggle"></div>
+            </div>
+            <div class="s-toggle-row">
+              <span class="s-toggle-label">Hide on very small screens</span>
+              <div class="s-toggle" id="logo-hide-xs-toggle"></div>
+            </div>
+            <div class="s-toggle-row">
+              <span class="s-toggle-label">Show text logo fallback</span>
+              <div class="s-toggle on" id="logo-text-fallback-toggle"></div>
+            </div>
+          </div>
+
+        </div>
+        <div class="s-left-footer">
+          <button class="s-btn s-btn-gold" onclick="window.STUDIO&&window.STUDIO.cms&&(window.pushUndo&&pushUndo('Logo save'),saveDraft())">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Save Logo
+          </button>
+          <button class="s-btn s-btn-outline" onclick="toast('Logo reset to default','gold')">Reset</button>
+        </div>
+      </div>
+
+      <!-- Right Preview -->
+      <div class="s-right-panel">
+        <div class="s-preview-toolbar">
+          <span class="s-pt-label">🔴 Live Preview — Royal Banquet Hall Website</span>
+          <div class="s-vp-btns">
+            <button class="s-vp-btn active" data-vp="desktop">Desktop</button>
+            <button class="s-vp-btn" data-vp="tablet">Tablet</button>
+            <button class="s-vp-btn" data-vp="mobile">Mobile</button>
+          </div>
+        </div>
+        <div class="s-iframe-wrap vp-desktop" id="logo-iframe-wrap">
+          <iframe id="studio-preview-frame" src="index.html" title="Website Preview"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         PAGE 2: NAVBAR CUSTOMIZATION
+    ════════════════════════════════════════ -->
+    <div id="page-navbar" class="s-page">
+      <div class="s-left-panel">
+        <div class="s-page-header">
+          <h1><span class="pg-num">2.</span> Navbar Customization</h1>
+          <p>6 designs • 10 button styles • 10 animations • 10 hover effects</p>
+        </div>
+        <div class="s-panel-scroll">
+
+          <!-- 6 Navbar Designs -->
+          <div class="s-card">
+            <div class="s-card-head">
+              <div class="s-card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/></svg>
+                6 Pre-Built Navbar Designs
+              </div>
+              <span class="s-card-badge">Click to Apply</span>
+            </div>
+            <div class="s-navbar-designs" id="navbar-designs-container">
+              <!-- Design 1: Dark Minimal -->
+              <div class="s-nb-item active" data-index="0">
+                <div class="s-nb-mini" style="background:#0a0b0d;color:#c6a15b;">
+                  <span class="s-nb-logo">ROYAL</span>
+                  <div class="s-nb-links">
+                    <span class="s-nb-link" style="color:#e8eaf0">Home</span>
+                    <span class="s-nb-link" style="color:#e8eaf0">About</span>
+                    <span class="s-nb-link" style="color:#e8eaf0">Services</span>
+                    <span class="s-nb-link" style="color:#e8eaf0">Contact</span>
+                  </div>
+                  <span class="s-nb-cta" style="background:#c6a15b;color:#1a1200">Book Now</span>
+                </div>
+                <div class="s-nb-label">Design 1: Dark Minimal <span>Active</span></div>
+              </div>
+              <!-- Design 2: Glass Blur -->
+              <div class="s-nb-item" data-index="1">
+                <div class="s-nb-mini" style="background:rgba(255,255,255,0.08);backdrop-filter:blur(10px);color:#fff;border-bottom:1px solid rgba(255,255,255,0.1);">
+                  <span class="s-nb-logo" style="color:#c6a15b;">ROYAL</span>
+                  <div class="s-nb-links"><span class="s-nb-link">Home</span><span class="s-nb-link">Gallery</span><span class="s-nb-link">Events</span></div>
+                  <span class="s-nb-cta" style="border:1px solid #c6a15b;color:#c6a15b">Book Now</span>
+                </div>
+                <div class="s-nb-label">Design 2: Glassmorphism</div>
+              </div>
+              <!-- Design 3: White Luxury -->
+              <div class="s-nb-item" data-index="2">
+                <div class="s-nb-mini" style="background:#fff;color:#171d19;border-bottom:2px solid #c6a15b;">
+                  <span class="s-nb-logo" style="color:#171d19;">ROYAL</span>
+                  <div class="s-nb-links"><span class="s-nb-link" style="color:#3c4440">Home</span><span class="s-nb-link" style="color:#3c4440">Services</span><span class="s-nb-link" style="color:#3c4440">Gallery</span></div>
+                  <span class="s-nb-cta" style="background:#171d19;color:#c6a15b">Book Now</span>
+                </div>
+                <div class="s-nb-label">Design 3: White Luxury</div>
+              </div>
+              <!-- Design 4: Transparent -->
+              <div class="s-nb-item" data-index="3">
+                <div class="s-nb-mini" style="background:linear-gradient(rgba(0,0,0,0.5),transparent);color:#fff;">
+                  <span class="s-nb-logo" style="color:#c6a15b;">ROYAL</span>
+                  <div class="s-nb-links"><span class="s-nb-link">Home</span><span class="s-nb-link">Events</span><span class="s-nb-link">Book</span></div>
+                  <span class="s-nb-cta" style="border:1px solid rgba(255,255,255,0.5);color:#fff;">Reserve</span>
+                </div>
+                <div class="s-nb-label">Design 4: Transparent Overlay</div>
+              </div>
+              <!-- Design 5: Centered Logo -->
+              <div class="s-nb-item" data-index="4">
+                <div class="s-nb-mini" style="background:#1a1a2e;color:#c6a15b;flex-direction:column;height:50px;padding:4px 12px;gap:4px;">
+                  <span class="s-nb-logo" style="font-size:0.8rem;align-self:center;">ROYAL BANQUET HALL</span>
+                  <div class="s-nb-links" style="align-self:center;"><span class="s-nb-link" style="color:#aaa">Home</span><span class="s-nb-link" style="color:#aaa">Gallery</span><span class="s-nb-link" style="color:#aaa">Events</span><span class="s-nb-link" style="color:#aaa">Book</span></div>
+                </div>
+                <div class="s-nb-label">Design 5: Centered Stacked</div>
+              </div>
+              <!-- Design 6: Side Drawer indicator -->
+              <div class="s-nb-item" data-index="5">
+                <div class="s-nb-mini" style="background:#0f0a20;color:#fff;">
+                  <span class="s-nb-logo" style="color:#c6a15b;">ROYAL</span>
+                  <div class="s-nb-links" style="flex:1;justify-content:flex-end;gap:4px;"><span style="font-size:1rem;">≡</span></div>
+                </div>
+                <div class="s-nb-label">Design 6: Hamburger / Drawer</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Button Styles -->
+          <div class="s-card">
+            <div class="s-card-head">
+              <div class="s-card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+                10 Navbar Button Styles
+              </div>
+            </div>
+            <div class="s-col2" id="navbar-btn-styles">
+              <div class="s-preset-card active" data-index="0"><div style="height:28px;background:#c6a15b;border-radius:99px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:800;color:#1a1200">Gold Pill</div></div>
+              <div class="s-preset-card" data-index="1"><div style="height:28px;border:1px solid #c6a15b;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:#c6a15b">Square Outline</div></div>
+              <div class="s-preset-card" data-index="2"><div style="height:28px;background:linear-gradient(135deg,#c6a15b,#e8c87a);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:800;color:#1a1200">Gradient</div></div>
+              <div class="s-preset-card" data-index="3"><div style="height:28px;background:transparent;border-bottom:2px solid #c6a15b;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:#c6a15b">Underline</div></div>
+              <div class="s-preset-card" data-index="4"><div style="height:28px;background:#fff;border-radius:99px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:800;color:#1a1200">White Pill</div></div>
+              <div class="s-preset-card" data-index="5"><div style="height:28px;background:rgba(198,161,91,0.15);border:1px solid rgba(198,161,91,0.4);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:#c6a15b">Ghost Gold</div></div>
+              <div class="s-preset-card" data-index="6"><div style="height:28px;background:#171d19;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:#c6a15b">Dark Solid</div></div>
+              <div class="s-preset-card" data-index="7"><div style="height:28px;background:transparent;border:1px dashed #c6a15b;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:#c6a15b">Dashed</div></div>
+              <div class="s-preset-card" data-index="8"><div style="height:28px;background:linear-gradient(135deg,#c6a15b,#927039);border-radius:0;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:800;color:#fff">Sharp Gradient</div></div>
+              <div class="s-preset-card" data-index="9"><div style="height:28px;box-shadow:0 0 10px rgba(198,161,91,0.5);background:#c6a15b;border-radius:99px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:800;color:#1a1200">Glow Pill</div></div>
+            </div>
+          </div>
+
+          <!-- Navigation Animations -->
+          <div class="s-card">
+            <div class="s-card-head">
+              <div class="s-card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>
+                10 Navigation Animations
+              </div>
+            </div>
+            <div class="s-anim-grid" id="navbar-anim-grid">
+              <div class="s-anim-card active" data-index="0"><div class="s-anim-thumb">➡️</div><div class="s-anim-name">Slide Down</div></div>
+              <div class="s-anim-card" data-index="1"><div class="s-anim-thumb">✨</div><div class="s-anim-name">Fade In</div></div>
+              <div class="s-anim-card" data-index="2"><div class="s-anim-thumb">🔍</div><div class="s-anim-name">Zoom In</div></div>
+              <div class="s-anim-card" data-index="3"><div class="s-anim-thumb">💫</div><div class="s-anim-name">Glow Reveal</div></div>
+              <div class="s-anim-card" data-index="4"><div class="s-anim-thumb">⬆️</div><div class="s-anim-name">Slide Up</div></div>
+              <div class="s-anim-card" data-index="5"><div class="s-anim-thumb">🌀</div><div class="s-anim-name">Spin In</div></div>
+              <div class="s-anim-card" data-index="6"><div class="s-anim-thumb">📌</div><div class="s-anim-name">Sticky Drop</div></div>
+              <div class="s-anim-card" data-index="7"><div class="s-anim-thumb">🎭</div><div class="s-anim-name">Curtain</div></div>
+              <div class="s-anim-card" data-index="8"><div class="s-anim-thumb">⚡</div><div class="s-anim-name">Flash</div></div>
+              <div class="s-anim-card" data-index="9"><div class="s-anim-thumb">🌊</div><div class="s-anim-name">Wave</div></div>
+            </div>
+          </div>
+
+          <!-- Hover Animations -->
+          <div class="s-card">
+            <div class="s-card-head">
+              <div class="s-card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                10 Hover Animations
+              </div>
+            </div>
+            <div class="s-anim-grid" id="navbar-hover-grid">
+              <div class="s-anim-card active" data-index="0"><div class="s-anim-thumb">⬆️</div><div class="s-anim-name">Lift Up</div></div>
+              <div class="s-anim-card" data-index="1"><div class="s-anim-thumb">📏</div><div class="s-anim-name">Underline</div></div>
+              <div class="s-anim-card" data-index="2"><div class="s-anim-thumb">🎨</div><div class="s-anim-name">Color Fill</div></div>
+              <div class="s-anim-card" data-index="3"><div class="s-anim-thumb">💡</div><div class="s-anim-name">Glow</div></div>
+              <div class="s-anim-card" data-index="4"><div class="s-anim-thumb">🔭</div><div class="s-anim-name">Scale</div></div>
+              <div class="s-anim-card" data-index="5"><div class="s-anim-thumb">🌈</div><div class="s-anim-name">Gradient</div></div>
+              <div class="s-anim-card" data-index="6"><div class="s-anim-thumb">📦</div><div class="s-anim-name">Box Fill</div></div>
+              <div class="s-anim-card" data-index="7"><div class="s-anim-thumb">💧</div><div class="s-anim-name">Ripple</div></div>
+              <div class="s-anim-card" data-index="8"><div class="s-anim-thumb">🔄</div><div class="s-anim-name">Rotate</div></div>
+              <div class="s-anim-card" data-index="9"><div class="s-anim-thumb">🌟</div><div class="s-anim-name">Sparkle</div></div>
+            </div>
+          </div>
+
+          <!-- Layout controls -->
+          <div class="s-card">
+            <div class="s-card-head">
+              <div class="s-card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/></svg>
+                Layout Controls
+              </div>
+            </div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Navbar Height</span><span class="sv" id="navbar-val-h">72px</span></div>
+              <div class="s-cp-row">
+                <input type="range" class="s-range" id="navbar-slider-h" min="40" max="120" step="4" value="72">
+                <input type="number" class="s-ni" id="navbar-num-h" value="72">
+              </div>
+            </div>
+            <div class="s-fg">
+              <label class="s-label">Background Color</label>
+              <div class="s-color-pick-wrap">
+                <input type="color" class="s-color-swatch" id="navbar-color-swatch" value="#0a0b0d">
+                <input type="text" class="s-color-hex" id="navbar-color-hex" value="#0a0b0d">
+              </div>
+            </div>
+            <div class="s-toggle-row">
+              <span class="s-toggle-label">Transparent on hero</span>
+              <div class="s-toggle on" id="navbar-transparent-toggle"></div>
+            </div>
+            <div class="s-toggle-row">
+              <span class="s-toggle-label">Sticky on scroll</span>
+              <div class="s-toggle on" id="navbar-sticky-toggle"></div>
+            </div>
+            <div class="s-toggle-row">
+              <span class="s-toggle-label">Show on mobile as hamburger</span>
+              <div class="s-toggle on" id="navbar-hamburger-toggle"></div>
+            </div>
+          </div>
+
+        </div>
+        <div class="s-left-footer">
+          <button class="s-btn s-btn-gold" onclick="saveDraft&&saveDraft();toast('Navbar saved','success')">Save Navbar</button>
+          <button class="s-btn s-btn-outline">Reset</button>
+        </div>
+      </div>
+
+      <div class="s-right-panel">
+        <div class="s-preview-toolbar">
+          <span class="s-pt-label">🔴 Live Preview — Navbar</span>
+          <div class="s-vp-btns">
+            <button class="s-vp-btn active" data-vp="desktop">Desktop</button>
+            <button class="s-vp-btn" data-vp="tablet">Tablet</button>
+            <button class="s-vp-btn" data-vp="mobile">Mobile</button>
+          </div>
+        </div>
+        <div class="s-iframe-wrap vp-desktop">
+          <iframe src="index.html" title="Navbar Preview"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         PAGE 3: HERO IMAGE EDITOR
+    ════════════════════════════════════════ -->
+    <div id="page-hero-image" class="s-page">
+      <div class="s-left-panel">
+        <div class="s-page-header">
+          <h1><span class="pg-num">3.</span> Hero Image Editor</h1>
+          <p>Upload, resize, position and animate your hero image with live preview.</p>
+        </div>
+        <div class="s-panel-scroll">
+
+          <!-- Hero Image -->
+          <div class="s-card">
+            <div class="s-card-head">
+              <div class="s-card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                Hero Image
+              </div>
+              <span class="s-card-badge">1920×800+</span>
+            </div>
+            <div class="s-img-prev">
+              <img id="hero-img-preview" src="assets/images/hero-venue.jpg" alt="Hero Preview">
+              <button class="s-change-img-btn" onclick="document.getElementById('hero-img-upload').click()">Change Image</button>
+            </div>
+            <input type="file" id="hero-img-upload" accept="image/*" style="display:none">
+            <div class="s-row" style="gap:8px;margin-bottom:12px;">
+              <button class="s-btn s-btn-outline s-btn-sm" style="flex:1" onclick="document.getElementById('hero-img-upload').click()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="12" height="12"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Change Image
+              </button>
+              <button class="s-btn s-btn-danger s-btn-sm" onclick="toast('Hero image removed','error')">Remove</button>
+            </div>
+            <p style="font-size:0.65rem;color:var(--s-text-dim)">Recommended: 1920 × 800 or higher</p>
+          </div>
+
+          <!-- Position & Resize -->
+          <div class="s-card">
+            <div class="s-card-head">
+              <div class="s-card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><move/><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/></svg>
+                Position &amp; Resize
+              </div>
+            </div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Scale</span><span class="sv" id="hero-val-scale">100%</span></div>
+              <div class="s-cp-row"><input type="range" class="s-range" id="hero-slider-scale" min="50" max="200" step="5" value="100"><input type="number" class="s-ni" id="hero-num-scale" value="100"></div>
+            </div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Position X</span><span class="sv" id="hero-val-posx">50%</span></div>
+              <div class="s-cp-row"><input type="range" class="s-range" id="hero-slider-posx" min="0" max="100" step="1" value="50"><input type="number" class="s-ni" id="hero-num-posx" value="50"></div>
+            </div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Position Y</span><span class="sv" id="hero-val-posy">50%</span></div>
+              <div class="s-cp-row"><input type="range" class="s-range" id="hero-slider-posy" min="0" max="100" step="1" value="50"><input type="number" class="s-ni" id="hero-num-posy" value="50"></div>
+            </div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Hero Height</span><span class="sv" id="hero-val-height">70vh</span></div>
+              <div class="s-cp-row"><input type="range" class="s-range" id="hero-slider-height" min="30" max="100" step="5" value="70"><input type="number" class="s-ni" id="hero-num-height" value="70"></div>
+            </div>
+          </div>
+
+          <!-- Display Mode -->
+          <div class="s-card">
+            <div class="s-card-head">
+              <div class="s-card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                Image Display Mode
+              </div>
+            </div>
+            <div class="s-display-modes" id="hero-display-modes">
+              <button class="s-mode-btn active" data-mode="cover">Cover</button>
+              <button class="s-mode-btn" data-mode="contain">Contain</button>
+              <button class="s-mode-btn" data-mode="fill">Fill</button>
+              <button class="s-mode-btn" data-mode="auto">Auto</button>
+            </div>
+          </div>
+
+          <!-- Hero Animations -->
+          <div class="s-card">
+            <div class="s-card-head">
+              <div class="s-card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>
+                Hero Image Animations (10)
+              </div>
+              <span class="s-view-all">View All</span>
+            </div>
+            <div class="s-anim-grid" id="hero-anim-grid">
+              <div class="s-anim-card active" data-index="0"><div class="s-anim-thumb">🚫</div><div class="s-anim-name">None</div></div>
+              <div class="s-anim-card" data-index="1"><div class="s-anim-thumb"><img src="assets/images/photo-01.jpeg" alt=""></div><div class="s-anim-name">Zoom In</div></div>
+              <div class="s-anim-card" data-index="2"><div class="s-anim-thumb"><img src="assets/images/photo-02.jpeg" alt=""></div><div class="s-anim-name">Zoom Out</div></div>
+              <div class="s-anim-card" data-index="3"><div class="s-anim-thumb"><img src="assets/images/photo-03.jpeg" alt=""></div><div class="s-anim-name">Fade In</div></div>
+              <div class="s-anim-card" data-index="4"><div class="s-anim-thumb"><img src="assets/images/photo-04.jpeg" alt=""></div><div class="s-anim-name">Slide Up</div></div>
+              <div class="s-anim-card" data-index="5"><div class="s-anim-thumb"><img src="assets/images/photo-05.jpeg" alt=""></div><div class="s-anim-name">Slide Left</div></div>
+              <div class="s-anim-card" data-index="6"><div class="s-anim-thumb"><img src="assets/images/photo-06.jpeg" alt=""></div><div class="s-anim-name">Slide Right</div></div>
+              <div class="s-anim-card" data-index="7"><div class="s-anim-thumb"><img src="assets/images/photo-07.jpeg" alt=""></div><div class="s-anim-name">Parallax</div></div>
+              <div class="s-anim-card" data-index="8"><div class="s-anim-thumb"><img src="assets/images/photo-08.jpeg" alt=""></div><div class="s-anim-name">Ken Burns</div></div>
+              <div class="s-anim-card" data-index="9"><div class="s-anim-thumb"><img src="assets/images/photo-09.jpeg" alt=""></div><div class="s-anim-name">Blur In</div></div>
+            </div>
+          </div>
+
+          <!-- Overlay & Filters -->
+          <div class="s-card">
+            <div class="s-card-head">
+              <div class="s-card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                Overlay &amp; Filters
+              </div>
+            </div>
+            <div class="s-fg">
+              <label class="s-label">Overlay Color</label>
+              <div class="s-color-pick-wrap">
+                <input type="color" class="s-color-swatch" id="hero-overlay-swatch" value="#000000">
+                <input type="text" class="s-color-hex" id="hero-overlay-hex" value="#000000">
+              </div>
+            </div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Opacity</span><span class="sv" id="hero-val-opacity">40%</span></div>
+              <div class="s-cp-row"><input type="range" class="s-range" id="hero-slider-opacity" min="0" max="100" step="5" value="40"><input type="number" class="s-ni" id="hero-num-opacity" value="40"></div>
+            </div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Brightness</span><span class="sv" id="hero-val-brightness">100%</span></div>
+              <div class="s-cp-row"><input type="range" class="s-range" id="hero-slider-brightness" min="0" max="200" step="5" value="100"><input type="number" class="s-ni" id="hero-num-brightness" value="100"></div>
+            </div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Contrast</span><span class="sv" id="hero-val-contrast">100%</span></div>
+              <div class="s-cp-row"><input type="range" class="s-range" id="hero-slider-contrast" min="0" max="200" step="5" value="100"><input type="number" class="s-ni" id="hero-num-contrast" value="100"></div>
+            </div>
+          </div>
+
+          <!-- Advanced Options -->
+          <div class="s-card">
+            <div class="s-card-head">
+              <div class="s-card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                Advanced Options
+              </div>
+            </div>
+            <div class="s-toggle-row">
+              <span class="s-toggle-label">Enable Ken Burns Effect</span>
+              <div class="s-toggle" id="hero-ken-burns-toggle"></div>
+            </div>
+            <div class="s-toggle-row">
+              <span class="s-toggle-label">Parallax Scrolling</span>
+              <div class="s-toggle on" id="hero-parallax-toggle"></div>
+            </div>
+            <div class="s-toggle-row">
+              <span class="s-toggle-label">Add Gradient Overlay</span>
+              <div class="s-toggle on" id="hero-gradient-toggle"></div>
+            </div>
+            <div class="s-toggle-row">
+              <span class="s-toggle-label">Show Decorative Elements</span>
+              <div class="s-toggle" id="hero-decorative-toggle"></div>
+            </div>
+            <div class="s-divider"></div>
+            <div class="s-col2">
+              <div class="s-fg">
+                <label class="s-label">Animation Speed</label>
+                <div class="s-cp">
+                  <div class="s-cp-label"><span></span><span class="sv" id="hero-val-animspeed">1.2s</span></div>
+                  <div class="s-cp-row"><input type="range" class="s-range" id="hero-slider-animspeed" min="1" max="50" step="1" value="12"><input type="number" class="s-ni" id="hero-num-animspeed" value="12"></div>
+                </div>
+              </div>
+              <div class="s-fg">
+                <label class="s-label">Animation Delay</label>
+                <div class="s-cp">
+                  <div class="s-cp-label"><span></span><span class="sv" id="hero-val-animdelay">0.3s</span></div>
+                  <div class="s-cp-row"><input type="range" class="s-range" id="hero-slider-animdelay" min="0" max="20" step="1" value="3"><input type="number" class="s-ni" id="hero-num-animdelay" value="3"></div>
+                </div>
+              </div>
+            </div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Image Blur</span><span class="sv" id="hero-val-blur">0px</span></div>
+              <div class="s-cp-row"><input type="range" class="s-range" id="hero-slider-blur" min="0" max="20" step="1" value="0"><input type="number" class="s-ni" id="hero-num-blur" value="0"></div>
+            </div>
+          </div>
+
+        </div>
+        <div class="s-left-footer">
+          <button class="s-btn s-btn-gold" onclick="saveDraft&&saveDraft();toast('Hero image settings saved','success')">Save Hero Image</button>
+          <button class="s-btn s-btn-outline">Reset</button>
+        </div>
+      </div>
+
+      <div class="s-right-panel">
+        <div class="s-preview-toolbar">
+          <span class="s-pt-label">🔴 Live Preview — Royal Banquet Hall Website</span>
+          <div class="s-vp-btns">
+            <button class="s-vp-btn active" data-vp="desktop">Desktop</button>
+            <button class="s-vp-btn" data-vp="tablet">Tablet</button>
+            <button class="s-vp-btn" data-vp="mobile">Mobile</button>
+          </div>
+        </div>
+        <div class="s-iframe-wrap vp-desktop">
+          <iframe src="index.html" title="Hero Preview"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         PAGE 4: HERO HEADING EDITOR
+    ════════════════════════════════════════ -->
+    <div id="page-hero-heading" class="s-page">
+      <div class="s-left-panel">
+        <div class="s-page-header">
+          <h1><span class="pg-num">4.</span> Hero Heading Editor</h1>
+          <p>12 animations • 10 fonts • 30 color combos • typography controls</p>
+        </div>
+        <div class="s-panel-scroll">
+
+          <!-- Heading Text -->
+          <div class="s-card">
+            <div class="s-card-head">
+              <div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Heading Text</div>
+            </div>
+            <div class="s-fg">
+              <label class="s-label">Hero Headline</label>
+              <textarea class="s-textarea" id="hero-heading-text" rows="3">A Royal Celebration Awaits</textarea>
+            </div>
+          </div>
+
+          <!-- Heading Animations -->
+          <div class="s-card">
+            <div class="s-card-head">
+              <div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>12 Heading Animations</div>
+              <span class="s-card-badge">Live</span>
+            </div>
+            <div class="s-anim-grid" id="heading-anim-grid">
+              <div class="s-anim-card active" data-index="0"><div class="s-anim-thumb">🚫</div><div class="s-anim-name">None</div></div>
+              <div class="s-anim-card" data-index="1"><div class="s-anim-thumb">✨</div><div class="s-anim-name">Fade Up</div></div>
+              <div class="s-anim-card" data-index="2"><div class="s-anim-thumb">⬇️</div><div class="s-anim-name">Slide Down</div></div>
+              <div class="s-anim-card" data-index="3"><div class="s-anim-thumb">📝</div><div class="s-anim-name">Typewriter</div></div>
+              <div class="s-anim-card" data-index="4"><div class="s-anim-thumb">🌊</div><div class="s-anim-name">Wave</div></div>
+              <div class="s-anim-card" data-index="5"><div class="s-anim-thumb">💥</div><div class="s-anim-name">Explode In</div></div>
+              <div class="s-anim-card" data-index="6"><div class="s-anim-thumb">🌫️</div><div class="s-anim-name">Blur Reveal</div></div>
+              <div class="s-anim-card" data-index="7"><div class="s-anim-thumb">⚡</div><div class="s-anim-name">Glitch</div></div>
+              <div class="s-anim-card" data-index="8"><div class="s-anim-thumb">🎯</div><div class="s-anim-name">Bounce In</div></div>
+              <div class="s-anim-card" data-index="9"><div class="s-anim-thumb">🔠</div><div class="s-anim-name">Scatter</div></div>
+              <div class="s-anim-card" data-index="10"><div class="s-anim-thumb">💫</div><div class="s-anim-name">Gold Shimmer</div></div>
+              <div class="s-anim-card" data-index="11"><div class="s-anim-thumb">🎭</div><div class="s-anim-name">Masked</div></div>
+            </div>
+          </div>
+
+          <!-- Font Selection -->
+          <div class="s-card">
+            <div class="s-card-head">
+              <div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>10 Font Options</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;" id="heading-font-grid">
+              <div class="s-preset-card active" data-index="0" style="flex-direction:row;justify-content:space-between;"><span style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--s-text)">Playfair Display</span><span style="font-size:0.6rem;color:var(--s-text-dim)">Serif</span></div>
+              <div class="s-preset-card" data-index="1" style="flex-direction:row;justify-content:space-between;"><span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:1rem;font-weight:800;color:var(--s-text)">Plus Jakarta Sans</span><span style="font-size:0.6rem;color:var(--s-text-dim)">Modern</span></div>
+              <div class="s-preset-card" data-index="2" style="flex-direction:row;justify-content:space-between;"><span style="font-family:Georgia,serif;font-size:1rem;font-weight:700;color:var(--s-text)">Georgia Classic</span><span style="font-size:0.6rem;color:var(--s-text-dim)">Classic</span></div>
+              <div class="s-preset-card" data-index="3" style="flex-direction:row;justify-content:space-between;"><span style="font-family:'Courier New',monospace;font-size:1rem;font-weight:700;color:var(--s-text)">Courier Mono</span><span style="font-size:0.6rem;color:var(--s-text-dim)">Mono</span></div>
+              <div class="s-preset-card" data-index="4" style="flex-direction:row;justify-content:space-between;"><span style="font-family:Impact,sans-serif;font-size:1rem;font-weight:900;color:var(--s-text)">Impact Bold</span><span style="font-size:0.6rem;color:var(--s-text-dim)">Display</span></div>
+              <div class="s-preset-card" data-index="5" style="flex-direction:row;justify-content:space-between;"><span style="font-size:1rem;font-weight:700;color:var(--s-text);font-style:italic">Elegant Italic</span><span style="font-size:0.6rem;color:var(--s-text-dim)">Italic</span></div>
+              <div class="s-preset-card" data-index="6" style="flex-direction:row;justify-content:space-between;"><span style="font-size:1rem;font-weight:300;color:var(--s-text);letter-spacing:0.3em">LIGHT SPACED</span><span style="font-size:0.6rem;color:var(--s-text-dim)">Spaced</span></div>
+              <div class="s-preset-card" data-index="7" style="flex-direction:row;justify-content:space-between;"><span style="font-size:1rem;font-weight:900;color:var(--s-text);letter-spacing:-0.05em">Ultra Black</span><span style="font-size:0.6rem;color:var(--s-text-dim)">Heavy</span></div>
+              <div class="s-preset-card" data-index="8" style="flex-direction:row;justify-content:space-between;"><span style="font-family:'Times New Roman',serif;font-size:1rem;font-weight:700;color:var(--s-text)">Times New Roman</span><span style="font-size:0.6rem;color:var(--s-text-dim)">Traditional</span></div>
+              <div class="s-preset-card" data-index="9" style="flex-direction:row;justify-content:space-between;"><span style="font-size:1rem;font-weight:600;color:var(--s-gold)">Gold Royal Font</span><span style="font-size:0.6rem;color:var(--s-text-dim)">Gold</span></div>
+            </div>
+          </div>
+
+          <!-- 30 Color Combos -->
+          <div class="s-card">
+            <div class="s-card-head">
+              <div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>30 Trending Color Combinations</div>
+              <span class="s-card-badge">30</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:10px;" id="heading-color-grid">
+              <div class="s-preset-card active" data-index="0" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#c6a15b,#e8c87a);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Gold</div></div>
+              <div class="s-preset-card" data-index="1" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#fff,#f0f0f0);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">White</div></div>
+              <div class="s-preset-card" data-index="2" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#ff6b6b,#ee5a24);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Ruby</div></div>
+              <div class="s-preset-card" data-index="3" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#a29bfe,#6c5ce7);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Lavender</div></div>
+              <div class="s-preset-card" data-index="4" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#00cec9,#0984e3);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Ocean</div></div>
+              <div class="s-preset-card" data-index="5" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#55efc4,#00b894);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Mint</div></div>
+              <div class="s-preset-card" data-index="6" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#fd79a8,#e84393);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Rose</div></div>
+              <div class="s-preset-card" data-index="7" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#fdcb6e,#e17055);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Sunset</div></div>
+              <div class="s-preset-card" data-index="8" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#636e72,#2d3436);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Slate</div></div>
+              <div class="s-preset-card" data-index="9" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#e67e22,#d35400);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Amber</div></div>
+              <div class="s-preset-card" data-index="10" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#1abc9c,#16a085);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Teal</div></div>
+              <div class="s-preset-card" data-index="11" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#9b59b6,#8e44ad);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Violet</div></div>
+              <div class="s-preset-card" data-index="12" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#2c3e50,#34495e);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Navy</div></div>
+              <div class="s-preset-card" data-index="13" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#c0392b,#e74c3c);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Crimson</div></div>
+              <div class="s-preset-card" data-index="14" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#f39c12,#f1c40f);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Honey</div></div>
+              <div class="s-preset-card" data-index="15" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#ecf0f1,#bdc3c7);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Silver</div></div>
+              <div class="s-preset-card" data-index="16" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#3498db,#2980b9);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Sky</div></div>
+              <div class="s-preset-card" data-index="17" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#27ae60,#229954);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Forest</div></div>
+              <div class="s-preset-card" data-index="18" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#ff4757,#ff6b81);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Coral</div></div>
+              <div class="s-preset-card" data-index="19" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#ffeaa7,#fdcb6e);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Cream</div></div>
+              <div class="s-preset-card" data-index="20" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#5f27cd,#341f97);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Royal Blue</div></div>
+              <div class="s-preset-card" data-index="21" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#ee5a24,#c0392b);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Scarlet</div></div>
+              <div class="s-preset-card" data-index="22" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#00d2d3,#0abde3);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Cyan</div></div>
+              <div class="s-preset-card" data-index="23" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#8395a7,#576574);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Storm</div></div>
+              <div class="s-preset-card" data-index="24" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#f368e0,#e056d7);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Pink</div></div>
+              <div class="s-preset-card" data-index="25" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#01a3a4,#048a81);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Jade</div></div>
+              <div class="s-preset-card" data-index="26" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#d63031,#6c0303);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Dark Red</div></div>
+              <div class="s-preset-card" data-index="27" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#6ab04c,#badc58);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Lime</div></div>
+              <div class="s-preset-card" data-index="28" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#e55039,#f0b27a);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Autumn</div></div>
+              <div class="s-preset-card" data-index="29" style="padding:4px;"><div style="height:24px;border-radius:4px;background:linear-gradient(135deg,#1e3799,#0c2461);"></div><div style="font-size:0.56rem;color:var(--s-text-dim);text-align:center;margin-top:3px;">Deep Navy</div></div>
+            </div>
+          </div>
+
+          <!-- Typography Controls -->
+          <div class="s-card">
+            <div class="s-card-head">
+              <div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h8m-8 6h16"/></svg>Typography Controls</div>
+            </div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Font Size</span><span class="sv" id="heading-val-size">56px</span></div>
+              <div class="s-cp-row"><input type="range" class="s-range" id="heading-slider-size" min="20" max="120" step="2" value="56"><input type="number" class="s-ni" id="heading-num-size" value="56"></div>
+            </div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Line Height</span><span class="sv" id="heading-val-lh">115</span></div>
+              <div class="s-cp-row"><input type="range" class="s-range" id="heading-slider-lh" min="80" max="200" step="5" value="115"><input type="number" class="s-ni" id="heading-num-lh" value="115"></div>
+            </div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Letter Spacing</span><span class="sv" id="heading-val-ls">-1px</span></div>
+              <div class="s-cp-row"><input type="range" class="s-range" id="heading-slider-ls" min="-10" max="20" step="1" value="-1"><input type="number" class="s-ni" id="heading-num-ls" value="-1"></div>
+            </div>
+            <div class="s-section-title">Text Alignment</div>
+            <div class="s-chips" id="heading-align-chips">
+              <button class="s-chip" data-val="left">Left</button>
+              <button class="s-chip active" data-val="center">Center</button>
+              <button class="s-chip" data-val="right">Right</button>
+            </div>
+          </div>
+
+        </div>
+        <div class="s-left-footer">
+          <button class="s-btn s-btn-gold" onclick="saveDraft&&saveDraft();toast('Hero heading saved','success')">Save Heading</button>
+          <button class="s-btn s-btn-outline">Reset</button>
+        </div>
+      </div>
+
+      <div class="s-right-panel">
+        <div class="s-preview-toolbar">
+          <span class="s-pt-label">🔴 Live Preview — Hero Heading</span>
+          <div class="s-vp-btns">
+            <button class="s-vp-btn active" data-vp="desktop">Desktop</button>
+            <button class="s-vp-btn" data-vp="tablet">Tablet</button>
+            <button class="s-vp-btn" data-vp="mobile">Mobile</button>
+          </div>
+        </div>
+        <div class="s-iframe-wrap vp-desktop">
+          <iframe src="index.html" title="Heading Preview"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         PAGE 5: HERO SUBHEADING
+    ════════════════════════════════════════ -->
+    <div id="page-hero-sub" class="s-page">
+      <div class="s-left-panel">
+        <div class="s-page-header">
+          <h1><span class="pg-num">5.</span> Hero Subheading Editor</h1>
+          <p>30 typography presets • font controls • color • spacing</p>
+        </div>
+        <div class="s-panel-scroll">
+          <div class="s-card">
+            <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>Subheading Text</div></div>
+            <div class="s-fg">
+              <label class="s-label">Subheading</label>
+              <textarea class="s-textarea" id="hero-sub-text" rows="3">The Perfect Venue for Weddings, Receptions, Birthdays, Corporate Events &amp; More.</textarea>
+            </div>
+          </div>
+
+          <div class="s-card">
+            <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h8"/></svg>30 Typography Presets</div><span class="s-card-badge">30</span></div>
+            <div class="s-col2" id="sub-preset-grid">
+              <div class="s-preset-card active" data-index="0"><div style="font-size:0.75rem;font-weight:400;color:var(--s-text);text-align:center;line-height:1.6">Regular Light</div></div>
+              <div class="s-preset-card" data-index="1"><div style="font-size:0.75rem;font-weight:700;color:var(--s-text);text-align:center">Bold Clean</div></div>
+              <div class="s-preset-card" data-index="2"><div style="font-size:0.75rem;font-style:italic;color:var(--s-text-muted);text-align:center">Elegant Italic</div></div>
+              <div class="s-preset-card" data-index="3"><div style="font-size:0.75rem;font-weight:300;letter-spacing:0.1em;color:var(--s-text);text-align:center">LIGHT SPACED</div></div>
+              <div class="s-preset-card" data-index="4"><div style="font-size:0.75rem;font-weight:600;color:var(--s-gold);text-align:center">Gold Accent</div></div>
+              <div class="s-preset-card" data-index="5"><div style="font-size:0.7rem;font-weight:400;color:rgba(255,255,255,0.7);text-align:center;border-bottom:1px solid rgba(198,161,91,0.3)">Underlined</div></div>
+              <div class="s-preset-card" data-index="6"><div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;color:var(--s-text);text-align:center">ALL CAPS BOLD</div></div>
+              <div class="s-preset-card" data-index="7"><div style="font-size:0.75rem;color:var(--s-text);text-align:center;background:rgba(198,161,91,0.1);padding:3px 8px;border-radius:4px">Highlighted</div></div>
+              <div class="s-preset-card" data-index="8"><div style="font-size:0.75rem;font-family:'Courier New',mono;color:var(--s-text-muted);text-align:center">Monospace</div></div>
+              <div class="s-preset-card" data-index="9"><div style="font-size:0.7rem;font-weight:400;color:var(--s-text);text-align:center;text-shadow:0 0 10px rgba(198,161,91,0.5)">Glow Text</div></div>
+            </div>
+            <div class="s-view-all" style="margin-top:8px;">Show all 30 presets →</div>
+          </div>
+
+          <div class="s-card">
+            <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>Colors &amp; Typography</div></div>
+            <div class="s-fg">
+              <label class="s-label">Text Color</label>
+              <div class="s-color-pick-wrap">
+                <input type="color" class="s-color-swatch" id="sub-color-swatch" value="#e8eaf0">
+                <input type="text" class="s-color-hex" id="sub-color-hex" value="#e8eaf0">
+              </div>
+            </div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Font Size</span><span class="sv" id="sub-val-size">18px</span></div>
+              <div class="s-cp-row"><input type="range" class="s-range" id="sub-slider-size" min="12" max="36" step="1" value="18"><input type="number" class="s-ni" id="sub-num-size" value="18"></div>
+            </div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Line Height</span><span class="sv" id="sub-val-lh">160</span></div>
+              <div class="s-cp-row"><input type="range" class="s-range" id="sub-slider-lh" min="100" max="250" step="5" value="160"><input type="number" class="s-ni" id="sub-num-lh" value="160"></div>
+            </div>
+            <div class="s-section-title">Alignment</div>
+            <div class="s-chips" id="sub-align-chips">
+              <button class="s-chip" data-val="left">Left</button>
+              <button class="s-chip active" data-val="center">Center</button>
+              <button class="s-chip" data-val="right">Right</button>
+            </div>
+          </div>
+        </div>
+        <div class="s-left-footer">
+          <button class="s-btn s-btn-gold" onclick="saveDraft&&saveDraft();toast('Subheading saved','success')">Save Subheading</button>
+          <button class="s-btn s-btn-outline">Reset</button>
+        </div>
+      </div>
+      <div class="s-right-panel">
+        <div class="s-preview-toolbar"><span class="s-pt-label">🔴 Live Preview — Subheading</span><div class="s-vp-btns"><button class="s-vp-btn active" data-vp="desktop">Desktop</button><button class="s-vp-btn" data-vp="tablet">Tablet</button><button class="s-vp-btn" data-vp="mobile">Mobile</button></div></div>
+        <div class="s-iframe-wrap vp-desktop"><iframe src="index.html" title="Subheading Preview"></iframe></div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         PAGE 6: BACKGROUND & ANIMATION
+    ════════════════════════════════════════ -->
+    <div id="page-background" class="s-page">
+      <div class="s-left-panel">
+        <div class="s-page-header">
+          <h1><span class="pg-num">6.</span> Background &amp; Animation</h1>
+          <p>Upload backgrounds • 15 animated effects • overlays • gradients</p>
+        </div>
+        <div class="s-panel-scroll">
+
+          <div class="s-card">
+            <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Background Image</div></div>
+            <div class="s-img-prev">
+              <img id="bg-preview-img" src="assets/images/hero-venue.jpg" alt="Background">
+              <button class="s-change-img-btn" onclick="document.getElementById('bg-upload').click()">Change Background</button>
+            </div>
+            <input type="file" id="bg-upload" accept="image/*" style="display:none">
+            <div class="s-upload-zone" style="margin:0;">
+              <input type="file" accept="image/*">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <p>Upload Background Image</p>
+              <small>JPG, PNG, WebP • Any resolution</small>
+            </div>
+          </div>
+
+          <div class="s-card">
+            <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>15 Pre-Built Background Animations</div><span class="s-card-badge">15</span></div>
+            <div class="s-anim-grid" id="bg-anim-grid">
+              <div class="s-anim-card active" data-index="0"><div class="s-anim-thumb" style="background:linear-gradient(135deg,#0a0b0d,#1a1d24)">🚫</div><div class="s-anim-name">None / Static</div></div>
+              <div class="s-anim-card" data-index="1"><div class="s-anim-thumb" style="background:linear-gradient(135deg,#c6a15b,#1a1200)">🌊</div><div class="s-anim-name">Gold Wave</div></div>
+              <div class="s-anim-card" data-index="2"><div class="s-anim-thumb" style="background:linear-gradient(225deg,#1a0d2e,#0a0b0d)">✨</div><div class="s-anim-name">Particle Stars</div></div>
+              <div class="s-anim-card" data-index="3"><div class="s-anim-thumb" style="background:linear-gradient(135deg,#0a1a2e,#0d0f14)">🌊</div><div class="s-anim-name">Ripple Ocean</div></div>
+              <div class="s-anim-card" data-index="4"><div class="s-anim-thumb" style="background:conic-gradient(#c6a15b,#1a1200,#c6a15b)">🔄</div><div class="s-anim-name">Rotating Gradient</div></div>
+              <div class="s-anim-card" data-index="5"><div class="s-anim-thumb" style="background:radial-gradient(circle,#c6a15b33,#0a0b0d)">💫</div><div class="s-anim-name">Pulsing Glow</div></div>
+              <div class="s-anim-card" data-index="6"><div class="s-anim-thumb" style="background:linear-gradient(45deg,#1a0a0f,#2d0f1a)">🌟</div><div class="s-anim-name">Aurora</div></div>
+              <div class="s-anim-card" data-index="7"><div class="s-anim-thumb" style="background:#0a0b0d">⚡</div><div class="s-anim-name">Lightning</div></div>
+              <div class="s-anim-card" data-index="8"><div class="s-anim-thumb" style="background:linear-gradient(135deg,#0d0a1f,#1a0f2e)">🔮</div><div class="s-anim-name">Galaxy Drift</div></div>
+              <div class="s-anim-card" data-index="9"><div class="s-anim-thumb" style="background:linear-gradient(135deg,#0a1a0f,#1a2f1a)">🌿</div><div class="s-anim-name">Matrix Rain</div></div>
+              <div class="s-anim-card" data-index="10"><div class="s-anim-thumb" style="background:linear-gradient(135deg,#1a0a0a,#2d0a0a)">🔥</div><div class="s-anim-name">Fire Flicker</div></div>
+              <div class="s-anim-card" data-index="11"><div class="s-anim-thumb" style="background:linear-gradient(135deg,#0a0d1a,#0f1526)">❄️</div><div class="s-anim-name">Snow Fall</div></div>
+              <div class="s-anim-card" data-index="12"><div class="s-anim-thumb" style="background:linear-gradient(135deg,#0a0b0d,#1a1d24)">💧</div><div class="s-anim-name">Bokeh Bubbles</div></div>
+              <div class="s-anim-card" data-index="13"><div class="s-anim-thumb" style="background:linear-gradient(135deg,#1a1200,#2d1f00)">🌸</div><div class="s-anim-name">Confetti</div></div>
+              <div class="s-anim-card" data-index="14"><div class="s-anim-thumb" style="background:repeating-linear-gradient(45deg,#c6a15b08 0px,#c6a15b08 1px,transparent 1px,transparent 30px)">🔲</div><div class="s-anim-name">Grid Pattern</div></div>
+            </div>
+          </div>
+
+          <div class="s-card">
+            <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>Overlay &amp; Positioning</div></div>
+            <div class="s-fg">
+              <label class="s-label">Overlay Color</label>
+              <div class="s-color-pick-wrap">
+                <input type="color" class="s-color-swatch" id="bg-overlay-swatch" value="#000000">
+                <input type="text" class="s-color-hex" id="bg-overlay-hex" value="#000000">
+              </div>
+            </div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Overlay Opacity</span><span class="sv" id="bg-val-opacity">30%</span></div>
+              <div class="s-cp-row"><input type="range" class="s-range" id="bg-slider-opacity" min="0" max="100" step="5" value="30"><input type="number" class="s-ni" id="bg-num-opacity" value="30"></div>
+            </div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Position X</span><span class="sv" id="bg-val-posx">50%</span></div>
+              <div class="s-cp-row"><input type="range" class="s-range" id="bg-slider-posx" min="0" max="100" step="1" value="50"><input type="number" class="s-ni" id="bg-num-posx" value="50"></div>
+            </div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Position Y</span><span class="sv" id="bg-val-posy">50%</span></div>
+              <div class="s-cp-row"><input type="range" class="s-range" id="bg-slider-posy" min="0" max="100" step="1" value="50"><input type="number" class="s-ni" id="bg-num-posy" value="50"></div>
+            </div>
+            <div class="s-toggle-row">
+              <span class="s-toggle-label">Fixed background (parallax)</span>
+              <div class="s-toggle on" id="bg-fixed-toggle"></div>
+            </div>
+            <div class="s-toggle-row">
+              <span class="s-toggle-label">Gradient overlay</span>
+              <div class="s-toggle on" id="bg-gradient-toggle"></div>
+            </div>
+          </div>
+        </div>
+        <div class="s-left-footer">
+          <button class="s-btn s-btn-gold" onclick="saveDraft&&saveDraft();toast('Background settings saved','success')">Save Background</button>
+          <button class="s-btn s-btn-outline">Reset</button>
+        </div>
+      </div>
+      <div class="s-right-panel">
+        <div class="s-preview-toolbar"><span class="s-pt-label">🔴 Live Preview — Background</span><div class="s-vp-btns"><button class="s-vp-btn active" data-vp="desktop">Desktop</button><button class="s-vp-btn" data-vp="tablet">Tablet</button><button class="s-vp-btn" data-vp="mobile">Mobile</button></div></div>
+        <div class="s-iframe-wrap vp-desktop"><iframe src="index.html" title="Background Preview"></iframe></div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         PAGE 7: VIDEO MANAGEMENT
+    ════════════════════════════════════════ -->
+    <div id="page-video" class="s-page">
+      <div class="s-left-panel">
+        <div class="s-page-header">
+          <h1><span class="pg-num">7.</span> Video Management</h1>
+          <p>Upload, crop, position, and control video playback settings.</p>
+        </div>
+        <div class="s-panel-scroll">
+          <div class="s-card">
+            <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>Video File</div></div>
+            <div class="s-video-box">
+              <video id="video-preview-el" style="display:none;" muted autoplay loop playsinline></video>
+              <div class="s-no-video" id="video-no-video">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                No video uploaded
+              </div>
+            </div>
+            <div class="s-upload-zone">
+              <input type="file" id="video-upload" accept="video/*">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <p>Upload Video File</p>
+              <small>MP4, WebM recommended • Max 50MB for web</small>
+            </div>
+          </div>
+
+          <div class="s-card">
+            <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="10" y1="15" x2="10" y2="9"/><line x1="14" y1="15" x2="14" y2="9"/></svg>Playback Controls</div></div>
+            <div class="s-toggle-row"><span class="s-toggle-label">Autoplay</span><div class="s-toggle on" id="video-autoplay-toggle"></div></div>
+            <div class="s-toggle-row"><span class="s-toggle-label">Loop</span><div class="s-toggle on" id="video-loop-toggle"></div></div>
+            <div class="s-toggle-row"><span class="s-toggle-label">Muted</span><div class="s-toggle on" id="video-muted-toggle"></div></div>
+            <div class="s-toggle-row"><span class="s-toggle-label">Show Controls</span><div class="s-toggle" id="video-controls-toggle"></div></div>
+            <div class="s-toggle-row"><span class="s-toggle-label">Play inline (mobile)</span><div class="s-toggle on" id="video-inline-toggle"></div></div>
+            <div class="s-fg" style="margin-top:12px;">
+              <label class="s-label">Poster Image (fallback)</label>
+              <input type="text" class="s-input" placeholder="assets/images/hero-venue.jpg" value="assets/images/hero-venue.jpg">
+            </div>
+          </div>
+
+          <div class="s-card">
+            <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="8 3 4 7 8 11"/><polyline points="16 21 20 17 16 13"/></svg>Crop &amp; Position</div></div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Position X</span><span class="sv" id="video-val-posx">50%</span></div>
+              <div class="s-cp-row"><input type="range" class="s-range" id="video-slider-posx" min="0" max="100" step="1" value="50"><input type="number" class="s-ni" id="video-num-posx" value="50"></div>
+            </div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Position Y</span><span class="sv" id="video-val-posy">50%</span></div>
+              <div class="s-cp-row"><input type="range" class="s-range" id="video-slider-posy" min="0" max="100" step="1" value="50"><input type="number" class="s-ni" id="video-num-posy" value="50"></div>
+            </div>
+            <div class="s-section-title">Object Fit</div>
+            <div class="s-display-modes">
+              <button class="s-mode-btn active" data-mode="cover">Cover</button>
+              <button class="s-mode-btn" data-mode="contain">Contain</button>
+              <button class="s-mode-btn" data-mode="fill">Fill</button>
+            </div>
+          </div>
+        </div>
+        <div class="s-left-footer">
+          <button class="s-btn s-btn-gold" onclick="saveDraft&&saveDraft();toast('Video settings saved','success')">Save Video</button>
+          <button class="s-btn s-btn-outline">Reset</button>
+        </div>
+      </div>
+      <div class="s-right-panel">
+        <div class="s-preview-toolbar"><span class="s-pt-label">🔴 Live Preview — Video</span><div class="s-vp-btns"><button class="s-vp-btn active" data-vp="desktop">Desktop</button><button class="s-vp-btn" data-vp="tablet">Tablet</button><button class="s-vp-btn" data-vp="mobile">Mobile</button></div></div>
+        <div class="s-iframe-wrap vp-desktop"><iframe src="index.html" title="Video Preview"></iframe></div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         PAGE 8: IMAGE LIBRARY
+    ════════════════════════════════════════ -->
+    <div id="page-image-library" class="s-page">
+      <div class="s-left-panel">
+        <div class="s-page-header">
+          <h1><span class="pg-num">8.</span> Image Library</h1>
+          <p>Manage all website assets — upload, rename, crop, resize, delete.</p>
+        </div>
+        <div class="s-panel-scroll">
+          <div class="s-stats">
+            <div class="s-stat"><div class="s-stat-val">43</div><div class="s-stat-label">Total Images</div></div>
+            <div class="s-stat"><div class="s-stat-val">0</div><div class="s-stat-label">Selected</div></div>
+            <div class="s-stat"><div class="s-stat-val">~15MB</div><div class="s-stat-label">Total Size</div></div>
+          </div>
+
+          <!-- Upload -->
+          <div class="s-upload-zone">
+            <input type="file" id="img-lib-upload" accept="image/*" multiple>
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <p>Upload New Images</p>
+            <small>Multiple files supported • Click or drag &amp; drop</small>
+          </div>
+
+          <!-- Filter -->
+          <div class="s-chips" style="margin-bottom:12px;">
+            <button class="s-chip active">All (43)</button>
+            <button class="s-chip">Hero</button>
+            <button class="s-chip">Gallery</button>
+            <button class="s-chip">Events</button>
+          </div>
+
+          <!-- Grid -->
+          <div id="img-library-grid" class="s-img-grid"></div>
+
+          <!-- Resize/Crop Controls (when image selected) -->
+          <div class="s-divider"></div>
+          <div class="s-section-title">Resize &amp; Crop Selected</div>
+
+          <div class="s-fg">
+            <label class="s-label">Selected Image</label>
+            <input type="text" class="s-input" id="selected-img-name" placeholder="Select an image above" readonly>
+          </div>
+          <div style="margin-bottom:12px;border:1px solid var(--s-border);border-radius:var(--r-md);overflow:hidden;aspect-ratio:16/9;background:var(--s-surface);display:flex;align-items:center;justify-content:center;">
+            <img id="selected-img-preview" src="" alt="" style="width:100%;height:100%;object-fit:cover;display:none;">
+            <span style="font-size:0.75rem;color:var(--s-text-dim);display:block;" id="selected-img-placeholder">No image selected</span>
+          </div>
+          <div class="s-cp">
+            <div class="s-cp-label"><span>Width</span><span class="sv" id="imglib-val-w">auto</span></div>
+            <div class="s-cp-row"><input type="range" class="s-range" id="imglib-slider-w" min="100" max="3000" step="10" value="1920"><input type="number" class="s-ni" id="imglib-num-w" value="1920"></div>
+          </div>
+          <div class="s-cp">
+            <div class="s-cp-label"><span>Height</span><span class="sv" id="imglib-val-h">auto</span></div>
+            <div class="s-cp-row"><input type="range" class="s-range" id="imglib-slider-h" min="100" max="3000" step="10" value="1080"><input type="number" class="s-ni" id="imglib-num-h" value="1080"></div>
+          </div>
+          <div class="s-row" style="gap:8px;margin-bottom:14px;">
+            <button class="s-btn s-btn-gold s-btn-sm" style="flex:1" onclick="toast('Image resized','success')">Apply Resize</button>
+            <button class="s-btn s-btn-outline s-btn-sm" onclick="toast('Crop mode (coming soon)','gold')">Crop</button>
+          </div>
+        </div>
+        <div class="s-left-footer">
+          <button class="s-btn s-btn-gold" onclick="saveDraft&&saveDraft();toast('Library saved','success')">Save Changes</button>
+          <button class="s-btn s-btn-outline">Cancel</button>
+        </div>
+      </div>
+      <div class="s-right-panel">
+        <div class="s-preview-toolbar"><span class="s-pt-label">🖼️ Image Library — 43 Assets</span><div class="s-vp-btns"><button class="s-vp-btn active" data-vp="desktop">Desktop</button><button class="s-vp-btn" data-vp="tablet">Tablet</button><button class="s-vp-btn" data-vp="mobile">Mobile</button></div></div>
+        <div class="s-iframe-wrap vp-desktop"><iframe src="index.html" title="Image Preview"></iframe></div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         PAGE 9: THEME LIBRARY
+    ════════════════════════════════════════ -->
+    <div id="page-themes" class="s-page">
+      <div class="s-left-panel">
+        <div class="s-page-header">
+          <h1><span class="pg-num">9.</span> Theme Library</h1>
+          <p>10 one-click professional themes. Click to preview, apply instantly.</p>
+        </div>
+        <div class="s-panel-scroll">
+          <div class="s-stats">
+            <div class="s-stat"><div class="s-stat-val">10</div><div class="s-stat-label">Themes</div></div>
+            <div class="s-stat"><div class="s-stat-val">1</div><div class="s-stat-label">Active</div></div>
+          </div>
+
+          <div class="s-card">
+            <div class="s-card-head">
+              <div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>Select Theme</div>
+              <span class="s-card-badge">One-Click Apply</span>
+            </div>
+            <div class="s-theme-grid" id="theme-grid">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <div class="s-card">
+            <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg>Custom Theme Colors</div></div>
+            <div class="s-color-row">
+              <div class="s-color-info"><div class="s-color-name">Primary Gold</div><div class="s-color-token">--gold</div></div>
+              <div class="s-color-pick-wrap"><input type="color" class="s-color-swatch" value="#c6a15b"><input type="text" class="s-color-hex" value="#c6a15b"></div>
+            </div>
+            <div class="s-color-row">
+              <div class="s-color-info"><div class="s-color-name">Background</div><div class="s-color-token">--bg</div></div>
+              <div class="s-color-pick-wrap"><input type="color" class="s-color-swatch" value="#0a0b0d"><input type="text" class="s-color-hex" value="#0a0b0d"></div>
+            </div>
+            <div class="s-color-row">
+              <div class="s-color-info"><div class="s-color-name">Dark Ink</div><div class="s-color-token">--ink</div></div>
+              <div class="s-color-pick-wrap"><input type="color" class="s-color-swatch" value="#171d19"><input type="text" class="s-color-hex" value="#171d19"></div>
+            </div>
+            <div class="s-color-row">
+              <div class="s-color-info"><div class="s-color-name">Cream Accent</div><div class="s-color-token">--cream</div></div>
+              <div class="s-color-pick-wrap"><input type="color" class="s-color-swatch" value="#f5f0e7"><input type="text" class="s-color-hex" value="#f5f0e7"></div>
+            </div>
+          </div>
+        </div>
+        <div class="s-left-footer">
+          <button class="s-btn s-btn-gold" onclick="saveDraft&&saveDraft();toast('Theme saved','success')">Save Theme</button>
+          <button class="s-btn s-btn-outline" onclick="toast('Theme reset to default','gold')">Reset</button>
+        </div>
+      </div>
+      <div class="s-right-panel">
+        <div class="s-preview-toolbar"><span class="s-pt-label">🔴 Live Preview — Themes</span><div class="s-vp-btns"><button class="s-vp-btn active" data-vp="desktop">Desktop</button><button class="s-vp-btn" data-vp="tablet">Tablet</button><button class="s-vp-btn" data-vp="mobile">Mobile</button></div></div>
+        <div class="s-iframe-wrap vp-desktop"><iframe src="index.html" title="Theme Preview"></iframe></div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         PAGE 10: ANIMATION LIBRARY
+    ════════════════════════════════════════ -->
+    <div id="page-animations" class="s-page">
+      <div class="s-left-panel">
+        <div class="s-page-header">
+          <h1><span class="pg-num">10.</span> Animation Library</h1>
+          <p>40 pre-built animations with speed, delay, duration, and target controls.</p>
+        </div>
+        <div class="s-panel-scroll">
+          <div class="s-stats">
+            <div class="s-stat"><div class="s-stat-val">40</div><div class="s-stat-label">Animations</div></div>
+            <div class="s-stat"><div class="s-stat-val" id="anim-active-count">0</div><div class="s-stat-label">Active</div></div>
+          </div>
+
+          <div class="s-card">
+            <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>Animation Library</div><span class="s-card-badge">Click to Toggle</span></div>
+            <div id="anim-lib-grid" class="s-anim-grid"><!-- Populated by JS --></div>
+          </div>
+
+          <div class="s-card">
+            <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg>Animation Settings</div></div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Animation Speed</span><span class="sv" id="anim-val-speed">1.0s</span></div>
+              <div class="s-cp-row"><input type="range" class="s-range" id="anim-slider-speed" min="1" max="50" step="1" value="10"><input type="number" class="s-ni" id="anim-num-speed" value="10"></div>
+            </div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Delay</span><span class="sv" id="anim-val-delay">0.0s</span></div>
+              <div class="s-cp-row"><input type="range" class="s-range" id="anim-slider-delay" min="0" max="30" step="1" value="0"><input type="number" class="s-ni" id="anim-num-delay" value="0"></div>
+            </div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Duration</span><span class="sv" id="anim-val-duration">500ms</span></div>
+              <div class="s-cp-row"><input type="range" class="s-range" id="anim-slider-duration" min="100" max="3000" step="50" value="500"><input type="number" class="s-ni" id="anim-num-duration" value="500"></div>
+            </div>
+            <div class="s-section-title">Apply To</div>
+            <div class="s-chips" id="anim-target-chips">
+              <button class="s-chip active">Headings</button>
+              <button class="s-chip">Images</button>
+              <button class="s-chip">Buttons</button>
+              <button class="s-chip">Cards</button>
+              <button class="s-chip">Sections</button>
+              <button class="s-chip">Text</button>
+            </div>
+            <div class="s-section-title" style="margin-top:10px;">Direction</div>
+            <div class="s-chips">
+              <button class="s-chip active">Normal</button>
+              <button class="s-chip">Reverse</button>
+              <button class="s-chip">Alternate</button>
+            </div>
+            <div class="s-toggle-row" style="margin-top:10px;">
+              <span class="s-toggle-label">Trigger on scroll</span>
+              <div class="s-toggle on" id="anim-scroll-trigger"></div>
+            </div>
+            <div class="s-toggle-row">
+              <span class="s-toggle-label">Repeat on every view</span>
+              <div class="s-toggle" id="anim-repeat-toggle"></div>
+            </div>
+          </div>
+        </div>
+        <div class="s-left-footer">
+          <button class="s-btn s-btn-gold" onclick="saveDraft&&saveDraft();toast('Animation settings saved','success')">Save Animations</button>
+          <button class="s-btn s-btn-outline">Clear All</button>
+        </div>
+      </div>
+      <div class="s-right-panel">
+        <div class="s-preview-toolbar"><span class="s-pt-label">🔴 Live Preview — Animations</span><div class="s-vp-btns"><button class="s-vp-btn active" data-vp="desktop">Desktop</button><button class="s-vp-btn" data-vp="tablet">Tablet</button><button class="s-vp-btn" data-vp="mobile">Mobile</button></div></div>
+        <div class="s-iframe-wrap vp-desktop"><iframe src="index.html" title="Animations Preview"></iframe></div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         PAGE 11: VISUAL EFFECTS
+    ════════════════════════════════════════ -->
+    <div id="page-effects" class="s-page">
+      <div class="s-left-panel">
+        <div class="s-page-header">
+          <h1><span class="pg-num">11.</span> Visual Effects Library</h1>
+          <p>40 visual effects: glassmorphism, neon, shadows, hover, gradients.</p>
+        </div>
+        <div class="s-panel-scroll">
+          <div class="s-stats">
+            <div class="s-stat"><div class="s-stat-val">40</div><div class="s-stat-label">Effects</div></div>
+            <div class="s-stat"><div class="s-stat-val" id="effects-active-count">0</div><div class="s-stat-label">Active</div></div>
+          </div>
+
+          <div class="s-card">
+            <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Filter by Category</div></div>
+            <div class="s-chips" id="effects-filter-bar"><!-- Populated by JS --></div>
+          </div>
+
+          <div class="s-card">
+            <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>Visual Effects</div><span class="s-card-badge">Click to Apply</span></div>
+            <div id="effects-grid" class="s-effect-grid"><!-- Populated by JS --></div>
+          </div>
+
+          <div class="s-card">
+            <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg>Effect Settings</div></div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Intensity</span><span class="sv" id="effects-val-intensity">100%</span></div>
+              <div class="s-cp-row"><input type="range" class="s-range" id="effects-slider-intensity" min="0" max="200" step="5" value="100"><input type="number" class="s-ni" id="effects-num-intensity" value="100"></div>
+            </div>
+            <div class="s-toggle-row">
+              <span class="s-toggle-label">Preview effects in real-time</span>
+              <div class="s-toggle on"></div>
+            </div>
+          </div>
+        </div>
+        <div class="s-left-footer">
+          <button class="s-btn s-btn-gold" onclick="saveDraft&&saveDraft();toast('Effects saved','success')">Save Effects</button>
+          <button class="s-btn s-btn-outline" onclick="toast('All effects cleared','gold')">Clear All</button>
+        </div>
+      </div>
+      <div class="s-right-panel">
+        <div class="s-preview-toolbar"><span class="s-pt-label">🔴 Live Preview — Visual Effects</span><div class="s-vp-btns"><button class="s-vp-btn active" data-vp="desktop">Desktop</button><button class="s-vp-btn" data-vp="tablet">Tablet</button><button class="s-vp-btn" data-vp="mobile">Mobile</button></div></div>
+        <div class="s-iframe-wrap vp-desktop"><iframe src="index.html" title="Effects Preview"></iframe></div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         PAGE 12: COMPONENTS LIBRARY
+    ════════════════════════════════════════ -->
+    <div id="page-components" class="s-page">
+      <div class="s-left-panel">
+        <div class="s-page-header">
+          <h1><span class="pg-num">12.</span> Components Library</h1>
+          <p>40 reusable components: cards, buttons, sections, forms, and more.</p>
+        </div>
+        <div class="s-panel-scroll">
+          <div class="s-stats">
+            <div class="s-stat"><div class="s-stat-val">40</div><div class="s-stat-label">Components</div></div>
+            <div class="s-stat"><div class="s-stat-val" id="comp-active-count">0</div><div class="s-stat-label">Added</div></div>
+          </div>
+
+          <div class="s-card">
+            <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="2" width="9" height="9"/><rect x="13" y="2" width="9" height="9"/></svg>Filter Category</div></div>
+            <div class="s-chips" id="comp-filter-bar"><!-- Populated by JS --></div>
+          </div>
+
+          <div class="s-card">
+            <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="2" width="9" height="9"/><rect x="13" y="2" width="9" height="9"/><rect x="2" y="13" width="9" height="9"/><rect x="13" y="13" width="9" height="9"/></svg>All Components</div><span class="s-card-badge">Click to Add</span></div>
+            <div id="components-grid" class="s-comp-grid"><!-- Populated by JS --></div>
+          </div>
+        </div>
+        <div class="s-left-footer">
+          <button class="s-btn s-btn-gold" onclick="saveDraft&&saveDraft();toast('Components saved','success')">Save Layout</button>
+          <button class="s-btn s-btn-outline">Clear</button>
+        </div>
+      </div>
+      <div class="s-right-panel">
+        <div class="s-preview-toolbar"><span class="s-pt-label">🔴 Live Preview — Components</span><div class="s-vp-btns"><button class="s-vp-btn active" data-vp="desktop">Desktop</button><button class="s-vp-btn" data-vp="tablet">Tablet</button><button class="s-vp-btn" data-vp="mobile">Mobile</button></div></div>
+        <div class="s-iframe-wrap vp-desktop"><iframe src="index.html" title="Components Preview"></iframe></div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         PAGE 13: FONT ANIMATION LIBRARY
+    ════════════════════════════════════════ -->
+    <div id="page-font-animations" class="s-page">
+      <div class="s-left-panel">
+        <div class="s-page-header">
+          <h1><span class="pg-num">13.</span> Font Animation Library</h1>
+          <p>50 text animation presets: typewriter, wave, shimmer, scatter &amp; more.</p>
+        </div>
+        <div class="s-panel-scroll">
+
+          <!-- Preview -->
+          <div class="s-card">
+            <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>Animation Preview</div></div>
+            <div style="background:var(--s-surface);border:1px solid var(--s-border);border-radius:var(--r-md);padding:24px;text-align:center;margin-bottom:12px;min-height:80px;display:flex;align-items:center;justify-content:center;">
+              <span id="fontanim-preview-text" style="font-size:1.4rem;font-weight:800;color:var(--s-gold);font-family:'Playfair Display',serif;">A Royal Celebration Awaits</span>
+            </div>
+            <div class="s-fg">
+              <label class="s-label">Preview Text</label>
+              <input type="text" class="s-input" id="fontanim-preview-input" value="A Royal Celebration Awaits"
+                oninput="const p=document.getElementById('fontanim-preview-text');if(p)p.textContent=this.value;">
+            </div>
+          </div>
+
+          <!-- 50 Font Animations -->
+          <div class="s-card">
+            <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>50 Font Animation Presets</div><span class="s-card-badge">50</span></div>
+            <div class="s-fa-list" id="font-anim-list"><!-- Populated by JS --></div>
+          </div>
+
+          <!-- Controls -->
+          <div class="s-card">
+            <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg>Animation Controls</div></div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Speed</span><span class="sv" id="fontanim-val-speed">1.0s</span></div>
+              <div class="s-cp-row"><input type="range" class="s-range" id="fontanim-slider-speed" min="1" max="50" step="1" value="10"><input type="number" class="s-ni" id="fontanim-num-speed" value="10"></div>
+            </div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Delay</span><span class="sv" id="fontanim-val-delay">0.0s</span></div>
+              <div class="s-cp-row"><input type="range" class="s-range" id="fontanim-slider-delay" min="0" max="30" step="1" value="0"><input type="number" class="s-ni" id="fontanim-num-delay" value="0"></div>
+            </div>
+            <div class="s-cp">
+              <div class="s-cp-label"><span>Duration</span><span class="sv" id="fontanim-val-duration">500ms</span></div>
+              <div class="s-cp-row"><input type="range" class="s-range" id="fontanim-slider-duration" min="100" max="5000" step="50" value="500"><input type="number" class="s-ni" id="fontanim-num-duration" value="500"></div>
+            </div>
+            <div class="s-section-title">Apply Animation To</div>
+            <div class="s-chips" id="fontanim-target-chips">
+              <button class="s-chip active">Hero Heading</button>
+              <button class="s-chip">Subheading</button>
+              <button class="s-chip">Section Title</button>
+              <button class="s-chip">Body Text</button>
+              <button class="s-chip">CTA Button</button>
+            </div>
+            <div class="s-section-title" style="margin-top:12px;">Repeat</div>
+            <div class="s-chips">
+              <button class="s-chip active">Once</button>
+              <button class="s-chip">Loop</button>
+              <button class="s-chip">On Hover</button>
+              <button class="s-chip">On Scroll</button>
+            </div>
+          </div>
+        </div>
+        <div class="s-left-footer">
+          <button class="s-btn s-btn-gold" onclick="saveDraft&&saveDraft();toast('Font animations saved','success')">Save Font Animation</button>
+          <button class="s-btn s-btn-outline">Reset</button>
+        </div>
+      </div>
+      <div class="s-right-panel">
+        <div class="s-preview-toolbar"><span class="s-pt-label">🔴 Live Preview — Font Animations</span><div class="s-vp-btns"><button class="s-vp-btn active" data-vp="desktop">Desktop</button><button class="s-vp-btn" data-vp="tablet">Tablet</button><button class="s-vp-btn" data-vp="mobile">Mobile</button></div></div>
+        <div class="s-iframe-wrap vp-desktop"><iframe src="index.html" title="Font Animation Preview"></iframe></div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         SETTINGS PAGE
+    ════════════════════════════════════════ -->
+    <div id="page-settings" class="s-page">
+      <div class="s-left-panel">
+        <div class="s-page-header"><h1><span class="pg-num">⚙</span> Settings</h1><p>Studio configuration and global preferences.</p></div>
+        <div class="s-panel-scroll">
+          <div class="s-card">
+            <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg>General Settings</div></div>
+            <div class="s-toggle-row"><span class="s-toggle-label">Auto-save every 2 minutes</span><div class="s-toggle on"></div></div>
+            <div class="s-toggle-row"><span class="s-toggle-label">Show live preview updates</span><div class="s-toggle on"></div></div>
+            <div class="s-toggle-row"><span class="s-toggle-label">Keyboard shortcuts enabled</span><div class="s-toggle on"></div></div>
+            <div class="s-toggle-row"><span class="s-toggle-label">Animation previews in library</span><div class="s-toggle on"></div></div>
+            <div class="s-toggle-row"><span class="s-toggle-label">Confirm before destructive actions</span><div class="s-toggle on"></div></div>
+          </div>
+          <div class="s-card">
+            <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/></svg>Keyboard Shortcuts</div></div>
+            <div style="display:flex;flex-direction:column;gap:8px;font-size:0.75rem;color:var(--s-text-muted);">
+              <div class="s-sb"><span>Undo</span><span style="color:var(--s-gold);font-family:monospace">Ctrl+Z</span></div>
+              <div class="s-sb"><span>Redo</span><span style="color:var(--s-gold);font-family:monospace">Ctrl+Y</span></div>
+              <div class="s-sb"><span>Save Draft</span><span style="color:var(--s-gold);font-family:monospace">Ctrl+S</span></div>
+            </div>
+          </div>
+          <div class="s-card">
+            <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>Danger Zone</div></div>
+            <button class="s-btn s-btn-danger" style="width:100%;margin-bottom:8px;" onclick="if(confirm('Reset ALL customizations? This cannot be undone.')){localStorage.removeItem('rbh_studio_cms');location.reload();}">Reset All Studio Settings</button>
+            <button class="s-btn s-btn-outline" style="width:100%;" onclick="toast('Export feature coming soon','gold')">Export Settings</button>
+          </div>
+        </div>
+      </div>
+      <div class="s-right-panel">
+        <div class="s-preview-toolbar"><span class="s-pt-label">⚙️ Studio Settings</span></div>
+        <div style="display:flex;align-items:center;justify-content:center;flex:1;flex-direction:column;gap:16px;padding:40px;text-align:center;">
+          <div style="width:64px;height:64px;border-radius:var(--r-lg);background:var(--s-gold-subtle);border:1px solid var(--s-gold-border);display:flex;align-items:center;justify-content:center;color:var(--s-gold);">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="28" height="28"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </div>
+          <h2 style="color:#fff;font-size:1.2rem;font-weight:800;">Studio Settings</h2>
+          <p style="color:var(--s-text-muted);max-width:300px;font-size:0.82rem;line-height:1.6;">Configure studio preferences, keyboard shortcuts, and global behavior from the left panel.</p>
+        </div>
+      </div>
+    </div>
+
+  </main><!-- /s-content -->
+</div><!-- /s-workspace -->
+
+<!-- ── PUBLISH MODAL ── -->
+<div class="s-modal-overlay" id="publish-modal">
+  <div class="s-modal">
+    <div class="s-modal-head">
+      <h3>🚀 Publish to Live Website</h3>
+      <button class="s-modal-close" id="btn-close-publish">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="s-modal-body">
+      <p>You're about to publish all saved changes to the <strong>live Royal Banquet Hall website</strong>. This will immediately update what visitors see.</p>
+      <br>
+      <p>• All 13 customization pages will be applied<br>• Changes take effect immediately<br>• You can revert by loading the last backup</p>
+    </div>
+    <div class="s-modal-footer">
+      <button class="s-btn s-btn-outline" id="btn-cancel-publish">Cancel</button>
+      <button class="s-btn s-btn-gold" id="btn-confirm-publish">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        Confirm &amp; Publish Live
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/admin-studio.js"></script>
+</body>
+</html>
