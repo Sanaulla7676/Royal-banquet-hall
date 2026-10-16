@@ -1,4 +1,4 @@
-const { readState, errorMessage } = require('./_lib/cms-db.js');
+const { readState, errorMessage } = require('../lib/cms-db.js');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store, max-age=0');
