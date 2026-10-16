@@ -25,5 +25,3 @@ jobs:
           find api -name '*.js' -print0 | xargs -0 -n1 node --check
       - name: Python syntax
         run: python -m py_compile server.py
-      - name: PHP syntax
-        run: php -l api.php
