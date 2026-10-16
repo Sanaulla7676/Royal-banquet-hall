@@ -644,9 +644,26 @@ async function loadFromBackend() {
   if (!API.available) return false;
   const res = await API.get('/api/admin/load-cms');
   if (res?.success && res.data && Object.keys(res.data).length) {
+    // A saved server draft is authoritative. Rebuilding from defaults first avoids
+    // stale keys from this browser silently overwriting settings deleted in the CMS.
+    STUDIO.cms = copyCmsValue(STUDIO_RESET_DEFAULTS);
     mergeIntoCMS(res.data);
+    STUDIO.cms.hero = { ...STUDIO_RESET_DEFAULTS.hero, ...(STUDIO.cms.hero || {}) };
+    STUDIO.cms.heroHeading = { ...STUDIO_RESET_DEFAULTS.heroHeading, ...(STUDIO.cms.heroHeading || {}) };
+    STUDIO.cms.heroSub = { ...STUDIO_RESET_DEFAULTS.heroSub, ...(STUDIO.cms.heroSub || {}) };
+    STUDIO.cms.video = { ...STUDIO_RESET_DEFAULTS.video, ...(STUDIO.cms.video || {}) };
+    STUDIO.cms.theme = { ...STUDIO_RESET_DEFAULTS.theme, ...(STUDIO.cms.theme || {}) };
+    STUDIO.cms.theme.customColors = { ...STUDIO_RESET_DEFAULTS.theme.customColors, ...(STUDIO.cms.theme.customColors || {}) };
+    STUDIO.cms.integrations = STUDIO.cms.integrations || {};
+    STUDIO.cms.integrations.cloudinary = STUDIO.cms.integrations.cloudinary || {};
+    STUDIO.cms.mediaLibrary = Array.isArray(STUDIO.cms.mediaLibrary) ? STUDIO.cms.mediaLibrary : [];
+    STUDIO.cms.mediaLabels = STUDIO.cms.mediaLabels && typeof STUDIO.cms.mediaLabels === 'object' ? STUDIO.cms.mediaLabels : {};
+    STUDIO.cms.hiddenMediaAssets = Array.isArray(STUDIO.cms.hiddenMediaAssets) ? STUDIO.cms.hiddenMediaAssets : [];
+    STUDIO.cms.imageSizing = STUDIO.cms.imageSizing && typeof STUDIO.cms.imageSizing === 'object' ? STUDIO.cms.imageSizing : {};
     localStorage.setItem('rbh_studio_cms', JSON.stringify(STUDIO.cms));
     syncAllControls();
+    window.refreshMediaLibrary?.();
+    syncPreviewStyles();
     console.log('CMS draft loaded from shared storage');
     return true;
   }
@@ -2225,6 +2242,22 @@ function syncAllControls() {
   document.querySelectorAll('#hero-display-modes .s-mode-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.mode === (hero.displayMode || 'cover')));
   const heroToggles = {'hero-ken-burns':'kenBurns','hero-parallax':'parallax','hero-gradient':'gradient','hero-decorative':'decorative'};
   Object.entries(heroToggles).forEach(([id,key]) => document.getElementById(id+'-toggle')?.classList.toggle('on', !!hero[key]));
+
+  const customThemeColors = c.theme?.customColors || {};
+  document.querySelectorAll('#page-themes .s-color-row[data-theme-token]').forEach(row => {
+    const token = row.dataset.themeToken;
+    const value = customThemeColors[token];
+    if (!/^#[0-9a-f]{6}$/i.test(value || '')) return;
+    const swatch = row.querySelector('input[type="color"]');
+    const hex = row.querySelector('input[type="text"]');
+    if (swatch) swatch.value = value;
+    if (hex) hex.value = value;
+  });
+  const cloudinary = c.integrations?.cloudinary || {};
+  const cloudNameInput = document.getElementById('cloudinary-cloud-name');
+  const uploadPresetInput = document.getElementById('cloudinary-upload-preset');
+  if (cloudNameInput) cloudNameInput.value = cloudinary.cloudName || '';
+  if (uploadPresetInput) uploadPresetInput.value = cloudinary.uploadPreset || '';
 
   const background = c.background || {};
   const bgPosX = document.getElementById('bg-slider-posx');
