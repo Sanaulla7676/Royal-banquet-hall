@@ -27,10 +27,20 @@ const API = {
         headers: { 'Content-Type': 'application/json' },
       };
       if (body) opts.body = JSON.stringify(body);
+      opts.credentials = 'same-origin';
       const res = await fetch(this.base + endpoint, opts);
-      return await res.json();
-    } catch {
-      return null;
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return {
+          ...payload,
+          success: false,
+          httpStatus: res.status,
+          message: payload.message || payload.error || ('Request failed (' + res.status + ').')
+        };
+      }
+      return payload;
+    } catch (error) {
+      return { success: false, message: 'Network request failed.', detail: error?.message || '' };
     }
   },
 
@@ -51,14 +61,18 @@ async function detectBackend() {
   for (const b of API.backends) {
     try {
       const url = b.url ? `${b.url}/api/status` : '/api/status';
-      const res = await fetch(url, { signal: AbortSignal.timeout(1500) });
+      const res = await fetch(url, { signal: AbortSignal.timeout(1500), credentials: 'same-origin', cache: 'no-store' });
       if (res.ok) {
         API.base      = b.url;
         API.available = true;
         const data    = await res.json();
-        console.log(`✓ Connected to ${b.name} backend at ${b.url || 'same origin'}`);
-        toast(`Backend: ${b.name} server connected`, 'success');
+        console.log('Connected to ' + b.name + ' backend at ' + (b.url || 'same origin'));
         updateServerBadge(b.name, data);
+        if (data.storageConfigured === false) {
+          toast('Backend detected, but shared CMS storage is not configured.', 'gold');
+        } else {
+          toast('Backend: ' + b.name + ' server connected', 'success');
+        }
         return;
       }
     } catch { /* try next */ }
@@ -386,32 +400,54 @@ function markSaved() {
 }
 
 /* ── SAVE ── */
-async function saveDraft() {
-  // Always write to localStorage as fallback
+async function saveDraft(options = {}) {
+  const silent = options.silent === true;
+  // Keep a local recovery copy, but never call it a server save.
   localStorage.setItem('rbh_studio_cms', JSON.stringify(STUDIO.cms));
 
-  if (API.available) {
-    const res = await API.post('/api/save-cms', STUDIO.cms);
-    if (res?.success) {
-      markSaved();
-      toast('Draft saved ✓ (server + browser)', 'success');
-      return;
-    }
+  if (!API.available) {
+    markSaved();
+    const txt = $('#save-status-text');
+    if (txt) txt.textContent = 'Local draft only';
+    if (!silent) toast('Draft kept in this browser only. The shared backend is unavailable.', 'gold');
+    return false;
   }
 
-  // Offline fallback
-  markSaved();
-  toast('Draft saved to browser — start server for cloud save', 'gold');
+  const res = await API.post('/api/save-cms', STUDIO.cms);
+  if (res?.success) {
+    markSaved();
+    if (!silent) toast('Draft saved to shared CMS storage.', 'success');
+    return true;
+  }
+
+  const txt = $('#save-status-text');
+  if (txt) txt.textContent = 'Server save failed';
+  STUDIO.dirty = true;
+  const message = res?.message || res?.error || 'The server rejected the save.';
+  if (!silent) toast('Local recovery copy kept. Server save failed: ' + message, 'error');
+  return false;
 }
 
 async function publishLive() {
-  // 1. Save draft
+  // Save a browser recovery copy, but do not label it published yet.
   localStorage.setItem('rbh_studio_cms', JSON.stringify(STUDIO.cms));
 
-  // 2. Publish to live website store
-  localStorage.setItem('royal_cms_published', JSON.stringify(STUDIO.cms));
+  if (!API.available) {
+    markDirty();
+    toast('Nothing was published. The shared backend is unavailable.', 'error');
+    return false;
+  }
 
-  // 3. Sync to legacy store for backward compatibility
+  const res = await API.post('/api/publish', STUDIO.cms);
+  if (!res?.success) {
+    markDirty();
+    const message = res?.message || res?.error || 'The server rejected publishing.';
+    toast('Publishing failed. No live changes were confirmed: ' + message, 'error');
+    return false;
+  }
+
+  // Only record local published state after the server confirms the publish.
+  localStorage.setItem('royal_cms_published', JSON.stringify(STUDIO.cms));
   try {
     const existing = JSON.parse(localStorage.getItem('royal_cms_data_store') || '{}');
     existing.navbar = existing.navbar || {};
@@ -424,33 +460,23 @@ async function publishLive() {
     localStorage.setItem('royal_cms_data_store', JSON.stringify(existing));
   } catch {}
 
-  // 4. Send to backend if available
-  if (API.available) {
-    try {
-      const res = await API.post('/api/publish', STUDIO.cms);
-      if (res?.success) {
-        markSaved();
-        toast('Website published successfully! ✓ Live website updated.', 'success');
-        if (res.report?.length) console.log('Publish report:', res.report);
-        return;
-      }
-    } catch {}
-  }
-
   markSaved();
-  toast('Website published! Live changes are now active ✓', 'success');
+  toast('Published to shared CMS storage. Public pages will load the published settings.', 'success');
+  if (res.report?.length) console.log('Publish report:', res.report);
+  return true;
 }
 
 async function loadFromBackend() {
-  if (!API.available) return;
-  const res = await API.get('/api/load-cms');
-  if (res?.success && res.data) {
-    // Merge backend CMS into current state
+  if (!API.available) return false;
+  const res = await API.get('/api/admin/load-cms');
+  if (res?.success && res.data && Object.keys(res.data).length) {
     mergeIntoCMS(res.data);
     localStorage.setItem('rbh_studio_cms', JSON.stringify(STUDIO.cms));
     syncAllControls();
-    console.log('✓ CMS loaded from backend');
+    console.log('CMS draft loaded from shared storage');
+    return true;
   }
+  return false;
 }
 
 /* ── TOAST ── */
@@ -1611,8 +1637,8 @@ function initAll() {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveDraft(); }
   });
 
-  // Autosave every 2min
-  setInterval(saveDraft, 120000);
+  // Autosave every 2min without interrupting the editor with toast popups.
+  setInterval(() => saveDraft({ silent: true }), 120000);
 
   // ── Authentication Gate (Royal Hall / Royal@07)
   initAuth();
@@ -1637,101 +1663,105 @@ function initAll() {
   console.log('Royal Banquet Admin Studio initialized ✓ (backend: auto-detect)');
 }
 
-/* ── AUTHENTICATION MANAGEMENT ──
-   Login ID: Royal Hall
-   Password: Royal@07
-*/
+/* ── SERVER-VALIDATED ADMIN SESSION ── */
 function initAuth() {
-  const overlay   = document.getElementById('studio-login-overlay');
-  const form      = document.getElementById('studio-login-form');
+  const overlay = document.getElementById('studio-login-overlay');
+  const form = document.getElementById('studio-login-form');
   const userInput = document.getElementById('login-username');
   const passInput = document.getElementById('login-password');
-  const errBox    = document.getElementById('login-error-msg');
-  const remember  = document.getElementById('login-remember');
-  const togglePass= document.getElementById('toggle-password-btn');
+  const errBox = document.getElementById('login-error-msg');
+  const remember = document.getElementById('login-remember');
+  const togglePass = document.getElementById('toggle-password-btn');
   const logoutBtn = document.getElementById('btn-studio-logout');
+  const submitBtn = document.getElementById('btn-login-submit');
 
-  // Check saved session
-  const isAuth = localStorage.getItem('royal_studio_auth') === 'true' ||
-                 sessionStorage.getItem('royal_studio_auth') === 'true';
+  const showError = message => {
+    if (!errBox) return;
+    errBox.textContent = message;
+    errBox.style.display = 'block';
+  };
 
-  if (isAuth) {
-    overlay?.classList.add('hidden');
-  } else {
-    overlay?.classList.remove('hidden');
-    setTimeout(() => userInput?.focus(), 150);
-  }
+  // A browser flag is not authentication. Verify the signed server session.
+  (async () => {
+    try {
+      const response = await fetch('/api/auth/session', {
+        credentials: 'same-origin',
+        cache: 'no-store'
+      });
+      const result = await response.json().catch(() => ({}));
+      if (response.ok && result.success) {
+        overlay?.classList.add('hidden');
+        loadFromBackend();
+      } else {
+        overlay?.classList.remove('hidden');
+        if (response.status === 503) showError(result.message || 'Admin authentication is not configured on this deployment.');
+        setTimeout(() => userInput?.focus(), 150);
+      }
+    } catch {
+      overlay?.classList.remove('hidden');
+      showError('Cannot reach the sign-in service. Open the deployed Admin Studio URL and try again.');
+    }
+  })();
 
-  // Toggle password visibility
   togglePass?.addEventListener('click', () => {
     if (!passInput) return;
-    const isPass = passInput.type === 'password';
-    passInput.type = isPass ? 'text' : 'password';
-    togglePass.style.color = isPass ? 'var(--s-gold)' : 'var(--s-text-muted)';
+    const show = passInput.type === 'password';
+    passInput.type = show ? 'text' : 'password';
+    togglePass.style.color = show ? 'var(--s-gold)' : 'var(--s-text-muted)';
   });
 
-  // Auto-clear error when user types
   userInput?.addEventListener('input', () => { if (errBox) errBox.style.display = 'none'; });
   passInput?.addEventListener('input', () => { if (errBox) errBox.style.display = 'none'; });
 
-  // Handle Login Submission
-  form?.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  form?.addEventListener('submit', async event => {
+    event.preventDefault();
     if (errBox) errBox.style.display = 'none';
+    if (submitBtn) submitBtn.disabled = true;
 
-    // Normalize inputs (trim whitespace, normalize unicode spaces & case)
-    const rawU = userInput?.value || '';
-    const rawP = passInput?.value || '';
-
-    const cleanU = rawU.replace(/[\u00A0\u200B\u200E\s]+/g, ' ').trim().toLowerCase();
-    const cleanP = rawP.trim();
-
-    // Check direct valid credentials
-    const isUserValid = cleanU === 'royal hall' || cleanU === 'royalhall';
-    const isPassValid = cleanP === 'Royal@07' || cleanP === 'Royal@O7' || cleanP === 'Royal@o7';
-
-    let success = isUserValid && isPassValid;
-
-    // Also check backend API if available and not yet confirmed
-    if (!success && API.available) {
-      try {
-        const res = await API.post('/api/auth/login', { username: rawU, password: rawP });
-        if (res && res.success) success = true;
-      } catch {}
-    }
-
-    if (success) {
-      if (remember && remember.checked) {
-        localStorage.setItem('royal_studio_auth', 'true');
-        localStorage.setItem('royal_studio_user', 'Royal Hall');
-      } else {
-        sessionStorage.setItem('royal_studio_auth', 'true');
-        sessionStorage.setItem('royal_studio_user', 'Royal Hall');
-      }
-      overlay?.classList.add('hidden');
-      toast('Welcome, Royal Hall! Admin Studio unlocked.', 'gold');
-    } else {
-      if (errBox) {
-        errBox.textContent = 'Invalid Login ID or Password. Please try again.';
-        errBox.style.display = 'block';
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: userInput?.value || '',
+          password: passInput?.value || '',
+          remember: Boolean(remember?.checked)
+        })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) {
+        showError(result.message || 'Sign-in failed. Check your credentials and server configuration.');
         passInput?.focus();
         passInput?.select();
+        return;
       }
+
+      overlay?.classList.add('hidden');
+      await loadFromBackend();
+      toast('Admin session verified. Welcome to Royal Studio.', 'gold');
+    } catch {
+      showError('Sign-in service is unavailable. No login was accepted.');
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
     }
   });
 
-  // Handle Logout
-  logoutBtn?.addEventListener('click', () => {
-    localStorage.removeItem('royal_studio_auth');
-    localStorage.removeItem('royal_studio_user');
-    sessionStorage.removeItem('royal_studio_auth');
-    sessionStorage.removeItem('royal_studio_user');
+  logoutBtn?.addEventListener('click', async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}'
+      });
+    } catch {}
     overlay?.classList.remove('hidden');
     if (userInput) userInput.value = '';
     if (passInput) passInput.value = '';
     if (errBox) errBox.style.display = 'none';
     setTimeout(() => userInput?.focus(), 150);
-    toast('Logged out successfully.', 'info');
+    toast('Signed out of Royal Studio.', 'info');
   });
 }
 
