@@ -136,6 +136,16 @@ STUDIO.cms.fontAnimations = {
   repeat: 'Once',
   ...(STUDIO.cms.fontAnimations || {})
 };
+STUDIO.cms.hero = {
+  animationSpeed: 10,
+  animationDelay: 3,
+  blur: 0,
+  kenBurns: false,
+  parallax: false,
+  gradient: false,
+  decorative: false,
+  ...(STUDIO.cms.hero || {})
+};
 if (!Array.isArray(STUDIO.cms.animations.targets)) STUDIO.cms.animations.targets = ['Headings'];
 if (!Array.isArray(STUDIO.cms.fontAnimations.targets)) STUDIO.cms.fontAnimations.targets = ['Hero Heading'];
 
@@ -848,36 +858,82 @@ function initHeroImagePage() {
 
   function applyOverlay() {
     applyToPreview(doc => {
-      const overlay = doc.querySelector('.hero-overlay, .hero::after, [class*=overlay]');
-      if (overlay) {
-        const c = cms.overlayColor;
-        const a = cms.overlayOpacity / 100;
-        const hex = c.replace('#','');
-        const r = parseInt(hex.substring(0,2),16);
-        const g = parseInt(hex.substring(2,4),16);
-        const b = parseInt(hex.substring(4,6),16);
-        overlay.style.background = `rgba(${r},${g},${b},${a})`;
-      }
       const hero = doc.querySelector('.hero, .hero-section');
-      if (hero) hero.style.filter = `brightness(${cms.brightness/100}) contrast(${cms.contrast/100})`;
+      if (!hero) return;
+      let media = hero.querySelector('.hero-media, .hero-slideshow');
+      if (!media) media = hero;
+      let overlay = media.querySelector(':scope > .rbh-studio-preview-overlay');
+      if (!overlay) {
+        overlay = doc.createElement('div');
+        overlay.className = 'rbh-studio-preview-overlay';
+        overlay.setAttribute('aria-hidden', 'true');
+        Object.assign(overlay.style, {
+          position: 'absolute',
+          inset: '0',
+          width: '100%',
+          height: '100%',
+          pointerEvents: 'none',
+          zIndex: '2',
+          transition: 'background .15s ease'
+        });
+        if (window.getComputedStyle && media !== hero) media.style.position = 'absolute';
+        else if (media === hero && !hero.style.position) hero.style.position = 'relative';
+        media.appendChild(overlay);
+      }
+      const color = /^#[0-9a-f]{6}$/i.test(cms.overlayColor || '') ? cms.overlayColor : '#000000';
+      const alpha = Math.max(0, Math.min(100, Number(cms.overlayOpacity) || 0)) / 100;
+      overlay.style.background = color + Math.round(alpha * 255).toString(16).padStart(2, '0');
+      hero.querySelectorAll('.hero-media img, .hero-slideshow [data-hero-slide], .hero-media video').forEach(mediaImage => {
+        mediaImage.style.filter =
+          'brightness(' + Math.max(0, Number(cms.brightness) || 100) / 100 + ') ' +
+          'contrast(' + Math.max(0, Number(cms.contrast) || 100) / 100 + ') ' +
+          'blur(' + Math.max(0, Number(cms.blur) || 0) + 'px)';
+      });
+      const content = hero.querySelector('.hero-content');
+      if (content) {
+        content.style.position = 'relative';
+        content.style.zIndex = '3';
+      }
     });
+    syncPreviewStyles();
     markDirty();
   }
 
-  // Advanced toggles
-  ['hero-ken-burns', 'hero-parallax', 'hero-gradient', 'hero-decorative'].forEach(id => {
-    const t = document.getElementById(id + '-toggle');
-    if (t) t.addEventListener('click', () => { t.classList.toggle('on'); markDirty(); });
+  // Advanced hero toggles are stateful and are applied to the same live preview as the basic controls.
+  const heroToggleState = {
+    'hero-ken-burns': 'kenBurns',
+    'hero-parallax': 'parallax',
+    'hero-gradient': 'gradient',
+    'hero-decorative': 'decorative'
+  };
+  Object.entries(heroToggleState).forEach(([id, property]) => {
+    const toggle = document.getElementById(id + '-toggle');
+    if (!toggle) return;
+    toggle.classList.toggle('on', !!cms[property]);
+    toggle.addEventListener('click', () => {
+      pushUndo('Hero ' + property);
+      cms[property] = toggle.classList.toggle('on');
+      syncPreviewStyles();
+      markDirty();
+    });
   });
 
-  // Anim speed / delay / blur
-  initSlider('hero-slider-animspeed', 'hero-num-animspeed', 'hero-val-animspeed', v => { markDirty(); }, 's');
-  initSlider('hero-slider-animdelay', 'hero-num-animdelay', 'hero-val-animdelay', v => { markDirty(); }, 's');
+  // Persist the timings and blur; these values must survive save/reload.
+  initSlider('hero-slider-animspeed', 'hero-num-animspeed', 'hero-val-animspeed', v => {
+    cms.animationSpeed = v;
+    syncPreviewStyles();
+    markDirty();
+  }, 's');
+  initSlider('hero-slider-animdelay', 'hero-num-animdelay', 'hero-val-animdelay', v => {
+    cms.animationDelay = v;
+    syncPreviewStyles();
+    markDirty();
+  }, 's');
   initSlider('hero-slider-blur', 'hero-num-blur', 'hero-val-blur', v => {
-    applyToPreview(doc => {
-      const hero = doc.querySelector('.hero img, .hero-bg');
-      if (hero) hero.style.filter = `blur(${v}px)`;
-    });
+    cms.blur = v;
+    applyOverlay();
+    syncPreviewStyles();
+    markDirty();
   }, 'px');
 }
 
@@ -1300,7 +1356,7 @@ function initAnimationPage() {
       }
       syncPreviewStyles();
       toast(anim.name + ' ' + (card.classList.contains('active') ? 'enabled' : 'disabled'), 'gold');
-    });;
+    });
     grid.appendChild(card);
   });
 
@@ -1443,7 +1499,7 @@ function initEffectsPage() {
       else { STUDIO.cms.effects.activeItems.push(i); card.classList.add('active'); }
       syncPreviewStyles();
       toast(eff.name + ' ' + (card.classList.contains('active') ? 'applied' : 'removed'), 'gold');
-    });;
+    });
     grid.appendChild(card);
   });
 
@@ -1550,7 +1606,7 @@ function initComponentsPage() {
       else { STUDIO.cms.components.activeItems.push(i); card.classList.add('active'); }
       syncPreviewStyles();
       toast(comp.name + ' ' + (card.classList.contains('active') ? 'enabled' : 'disabled') + ' for the live layout', 'gold');
-    });;
+    });
     grid.appendChild(card);
   });
 }
