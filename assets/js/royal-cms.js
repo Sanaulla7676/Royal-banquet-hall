@@ -52,6 +52,9 @@
         if (Number.isFinite(Number(pub.hero.posX)) && Number.isFinite(Number(pub.hero.posY))) {
           img.style.objectPosition = Number(pub.hero.posX) + '% ' + Number(pub.hero.posY) + '%';
         }
+        if (Number.isFinite(Number(pub.hero.scale))) {
+          img.style.transform = 'scale(' + (Number(pub.hero.scale) / 100) + ')';
+        }
         if (Number.isFinite(Number(pub.hero.brightness))) {
           img.style.filter = 'brightness(' + Number(pub.hero.brightness) + '%) contrast(' +
             (Number.isFinite(Number(pub.hero.contrast)) ? Number(pub.hero.contrast) : 100) + '%)';
@@ -63,8 +66,8 @@
     }
 
     if (pub.heroHeading) {
-      const heading = document.querySelector('.hero-title-primary') ||
-        document.querySelector('.hero-content h1');
+      const heading = document.querySelector('.hero-content h1') ||
+        document.querySelector('.hero-title-primary');
       if (heading && typeof pub.heroHeading.text === 'string') heading.textContent = pub.heroHeading.text;
       if (heading && Number.isFinite(Number(pub.heroHeading.size))) {
         heading.style.fontSize = Number(pub.heroHeading.size) + 'px';
