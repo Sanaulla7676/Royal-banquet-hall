@@ -315,25 +315,57 @@
     // Apply the same core settings that are edited in the Admin Studio to every visitor.
     const hero = document.querySelector('.hero, .hero-section');
     if (pub.hero) {
-      const slides = Array.from(document.querySelectorAll('.hero-slideshow [data-hero-slide]'));
-      if (pub.hero.src && slides.length) slides[0].src = pub.hero.src;
+      const slides = Array.from(document.querySelectorAll('.hero-media img, .hero-slide, .hero-slideshow [data-hero-slide]'));
+      if (pub.hero.src && slides.length && slides[0].src !== new URL(pub.hero.src, window.location.href).href) slides[0].src = pub.hero.src;
       if (hero && Number.isFinite(Number(pub.hero.height))) {
         hero.style.setProperty('min-height', Number(pub.hero.height) + 'vh', 'important');
       }
+      const objectFit = ['cover','contain','fill','none','scale-down'].includes(pub.hero.displayMode) ? pub.hero.displayMode : 'cover';
       slides.forEach(img => {
         if (Number.isFinite(Number(pub.hero.posX)) && Number.isFinite(Number(pub.hero.posY))) {
           img.style.objectPosition = Number(pub.hero.posX) + '% ' + Number(pub.hero.posY) + '%';
         }
-        if (Number.isFinite(Number(pub.hero.scale))) {
-          img.style.transform = 'scale(' + (Number(pub.hero.scale) / 100) + ')';
-        }
-        if (Number.isFinite(Number(pub.hero.brightness))) {
-          img.style.filter = 'brightness(' + Number(pub.hero.brightness) + '%) contrast(' +
-            (Number.isFinite(Number(pub.hero.contrast)) ? Number(pub.hero.contrast) : 100) + '%)';
-        }
+        img.style.objectFit = objectFit;
+        if (Number.isFinite(Number(pub.hero.scale))) img.style.scale = String(Math.max(50,Math.min(160,Number(pub.hero.scale))) / 100);
+        img.style.filter = 'brightness(' + (Number.isFinite(Number(pub.hero.brightness)) ? Number(pub.hero.brightness) : 100) + '%) contrast(' +
+          (Number.isFinite(Number(pub.hero.contrast)) ? Number(pub.hero.contrast) : 100) + '%) blur(' +
+          Math.max(0,Math.min(20,Number(pub.hero.blur)||0)) + 'px)';
       });
-      if (hero && pub.hero.displayMode) {
-        hero.style.setProperty('--cms-hero-display-mode', pub.hero.displayMode);
+      if (hero && pub.hero.displayMode) hero.style.setProperty('--cms-hero-display-mode', objectFit);
+      if (hero && pub.hero.decorative) {
+        hero.style.setProperty('outline','1px solid rgba(198,161,91,.58)');
+        hero.style.setProperty('outline-offset','-10px');
+      } else if (hero) {
+        hero.style.removeProperty('outline');
+        hero.style.removeProperty('outline-offset');
+      }
+
+      // A persistent in-flow overlay works across local previews and deployed static pages.
+      if (hero) {
+        const mediaLayer = hero.querySelector('.hero-media, .hero-slideshow') || hero;
+        let overlay = mediaLayer.querySelector(':scope > .rbh-cms-hero-overlay');
+        const overlayColor = /^#[0-9a-f]{6}$/i.test(pub.hero.overlayColor || '') ? pub.hero.overlayColor : '#000000';
+        const opacity = Math.max(0,Math.min(100,Number(pub.hero.overlayOpacity ?? 0))) / 100;
+        if (opacity > 0 || pub.hero.gradient) {
+          if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.className = 'rbh-cms-hero-overlay';
+            overlay.setAttribute('aria-hidden','true');
+            Object.assign(overlay.style,{position:'absolute',inset:'0',width:'100%',height:'100%',pointerEvents:'none',zIndex:'2'});
+            if (!mediaLayer.style.position && mediaLayer === hero) hero.style.position = 'relative';
+            mediaLayer.appendChild(overlay);
+          }
+          const hex = overlayColor.slice(1);
+          const rgba = 'rgba(' + parseInt(hex.slice(0,2),16) + ',' + parseInt(hex.slice(2,4),16) + ',' + parseInt(hex.slice(4,6),16) + ',' + opacity + ')';
+          overlay.style.background = pub.hero.gradient
+            ? 'linear-gradient(135deg,' + rgba + ',transparent 78%)'
+            : rgba;
+        } else if (overlay) overlay.remove();
+        const heroContent = hero.querySelector('.hero-content');
+        if (heroContent) {
+          heroContent.style.position = 'relative';
+          heroContent.style.zIndex = '3';
+        }
       }
     }
 
@@ -364,22 +396,71 @@
       if (heading && Number.isFinite(Number(pub.heroHeading.letterSpacing))) {
         heading.style.letterSpacing = Number(pub.heroHeading.letterSpacing) + 'px';
       }
+      const headingFonts = [
+        "'Playfair Display', Georgia, serif","'Plus Jakarta Sans', Arial, sans-serif",
+        "Georgia, serif","'Courier New', monospace","Impact, sans-serif","Georgia, serif",
+        "Arial, sans-serif","Arial Black, Arial, sans-serif","'Times New Roman', serif",
+        "'Playfair Display', Georgia, serif"
+      ];
+      const fontIndex = Math.max(0,Math.min(9,Number(pub.heroHeading.font)||0));
+      if (heading) {
+        heading.style.fontFamily = headingFonts[fontIndex];
+        heading.style.textAlign = ['left','center','right'].includes(pub.heroHeading.align) ? pub.heroHeading.align : 'center';
+      }
+      const colors = [
+        ['#c6a15b','#e8c87a'],['#ffffff','#f0f0f0'],['#ff6b6b','#ee5a24'],['#a29bfe','#6c5ce7'],
+        ['#00cec9','#0984e3'],['#55efc4','#00b894'],['#fd79a8','#e84393'],['#fdcb6e','#e17055'],
+        ['#636e72','#2d3436'],['#e67e22','#d35400'],['#1abc9c','#16a085'],['#9b59b6','#8e44ad'],
+        ['#2c3e50','#34495e'],['#c0392b','#e74c3c'],['#f39c12','#f1c40f'],['#ecf0f1','#bdc3c7'],
+        ['#3498db','#2980b9'],['#27ae60','#229954'],['#ff4757','#ff6b81'],['#ffeaa7','#fdcb6e'],
+        ['#5f27cd','#341f97'],['#ee5a24','#c0392b'],['#00d2d3','#0abde3'],['#8395a7','#576574'],
+        ['#f368e0','#e056d7'],['#01a3a4','#048a81'],['#d63031','#6c0303'],['#6ab04c','#badc58'],
+        ['#e55039','#f0b27a'],['#1e3799','#0c2461']
+      ];
+      const pair = colors[Math.max(0,Math.min(29,Number(pub.heroHeading.colorCombo)||0))];
+      if (heading && pair) {
+        heading.style.backgroundImage = 'linear-gradient(110deg,' + pair[0] + ',' + pair[1] + ')';
+        heading.style.backgroundClip = 'text';
+        heading.style.webkitBackgroundClip = 'text';
+        heading.style.color = 'transparent';
+      }
     }
 
     if (pub.heroSub) {
       const subheading = document.querySelector('.hero-content .lede') ||
         document.querySelector('.hero-content p');
       if (subheading && typeof pub.heroSub.text === 'string') subheading.textContent = pub.heroSub.text;
-      if (subheading && Number.isFinite(Number(pub.heroSub.size))) {
-        subheading.style.fontSize = Number(pub.heroSub.size) + 'px';
-      }
+      if (subheading && Number.isFinite(Number(pub.heroSub.size))) subheading.style.fontSize = Number(pub.heroSub.size) + 'px';
+      if (subheading && Number.isFinite(Number(pub.heroSub.lineHeight))) subheading.style.lineHeight = String(pub.heroSub.lineHeight);
+      if (subheading && pub.heroSub.color && /^#[0-9a-f]{6}$/i.test(pub.heroSub.color)) subheading.style.color = pub.heroSub.color;
+      if (subheading) subheading.style.textAlign = ['left','center','right'].includes(pub.heroSub.align) ? pub.heroSub.align : 'center';
+
+      const presetStyles = [
+        {fontWeight:'400',fontStyle:'normal',letterSpacing:'normal',textTransform:'none',textShadow:'none',background:'transparent',padding:'0',borderBottom:'0'},
+        {fontWeight:'700',fontStyle:'normal',letterSpacing:'normal',textTransform:'none'},
+        {fontWeight:'400',fontStyle:'italic',letterSpacing:'normal',textTransform:'none'},
+        {fontWeight:'300',fontStyle:'normal',letterSpacing:'.1em',textTransform:'uppercase'},
+        {fontWeight:'600',fontStyle:'normal',letterSpacing:'normal',color:'var(--gold)',textTransform:'none'},
+        {fontWeight:'400',fontStyle:'normal',borderBottom:'1px solid rgba(198,161,91,.3)',textTransform:'none'},
+        {fontWeight:'800',fontStyle:'normal',textTransform:'uppercase',letterSpacing:'.12em'},
+        {fontWeight:'400',fontStyle:'normal',background:'rgba(198,161,91,.1)',padding:'3px 8px',borderRadius:'4px'},
+        {fontWeight:'400',fontStyle:'normal',fontFamily:'Courier New,monospace'},
+        {fontWeight:'400',fontStyle:'normal',textShadow:'0 0 10px rgba(198,161,91,.5)'}
+      ];
+      const preset = presetStyles[Math.max(0,Math.min(9,Number(pub.heroSub.preset)||0))];
+      if (subheading && preset) Object.entries(preset).forEach(([property,value]) => subheading.style[property] = value);
     }
 
-    if (pub.background && pub.background.src) {
-      document.body.style.backgroundImage = 'url("' + String(pub.background.src).replace(/"/g, '%22') + '")';
-      document.body.style.backgroundPosition = Number(pub.background.posX ?? 50) + '% ' +
-        Number(pub.background.posY ?? 50) + '%';
-      document.body.style.backgroundSize = 'cover';
+    if (pub.background) {
+      if (pub.background.src) {
+        const color = /^#[0-9a-f]{6}$/i.test(pub.background.overlayColor || '') ? pub.background.overlayColor : '#000000';
+        const alpha = Math.max(0,Math.min(100,Number(pub.background.overlayOpacity ?? 0))) / 100;
+        const hex = color.slice(1);
+        const overlay = 'rgba(' + parseInt(hex.slice(0,2),16) + ',' + parseInt(hex.slice(2,4),16) + ',' + parseInt(hex.slice(4,6),16) + ',' + alpha + ')';
+        document.body.style.backgroundImage = 'linear-gradient(' + overlay + ',' + overlay + '),url("' + String(pub.background.src).replace(/"/g, '%22') + '")';
+        document.body.style.backgroundPosition = Number(pub.background.posX ?? 50) + '% ' + Number(pub.background.posY ?? 50) + '%';
+        document.body.style.backgroundSize = 'cover';
+      }
     }
 
     if (pub.video && pub.video.src) {
