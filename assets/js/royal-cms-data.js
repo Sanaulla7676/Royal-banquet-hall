@@ -6,8 +6,7 @@ window.ROYAL_CMS_DATA = {
   "version": "1.0.0",
   "lastSaved": "2026-10-15T00:00:00.000Z",
   "auth": {
-    "adminPin": "royal2026",
-    "sessionDurationHours": 24
+    "sessionDurationHours": 8
   },
   "theme": {
     "activePreset": "royal-heritage",

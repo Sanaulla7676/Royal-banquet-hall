@@ -12,6 +12,14 @@ const multer     = require('multer');
 const path       = require('path');
 const fs         = require('fs');
 const fsp        = require('fs/promises');
+const {
+  authConfig,
+  credentialsMatch,
+  setSessionCookie,
+  clearSessionCookie,
+  isAuthenticated,
+  isSameOrigin
+} = require('./lib/admin-auth.js');
 
 // ── Config ────────────────────────────────────────────────────────────────
 const PORT       = process.env.PORT || 3001;
@@ -124,28 +132,62 @@ function scanImages(dir) {
 
 // ── API Routes ────────────────────────────────────────────────────────────
 
-// POST /api/auth/login
-app.post('/api/auth/login', (req, res) => {
-  const { username, password } = req.body || {};
-  const cleanUser = (username || '').replace(/[\u00A0\u200B\u200E\s]+/g, ' ').trim().toLowerCase();
-  const cleanPass = (password || '').trim();
-
-  const validUser = cleanUser === 'royal hall' || cleanUser === 'royalhall';
-  const validPass = cleanPass === 'Royal@07' || cleanPass === 'Royal@O7' || cleanPass === 'Royal@o7';
-
-  if (validUser && validPass) {
-    return res.json({
-      success: true,
-      message: 'Authentication successful',
-      user: { id: 'Royal Hall', role: 'Administrator' },
-      token: 'royal_auth_' + Date.now()
+// Authentication is shared with the Vercel serverless API; no credentials are hard-coded in source.
+function requireAdminApi(req, res, next) {
+  if (!isSameOrigin(req)) {
+    return res.status(403).json({ success: false, message: 'Cross-origin request rejected.' });
+  }
+  if (!authConfig().configured) {
+    return res.status(503).json({
+      success: false,
+      message: 'Admin authentication is not configured. Set ADMIN_USERNAME, ADMIN_PASSWORD and ADMIN_SESSION_SECRET.'
     });
   }
+  if (!isAuthenticated(req)) {
+    return res.status(401).json({ success: false, message: 'Your admin session expired. Sign in again.' });
+  }
+  return next();
+}
 
-  return res.status(401).json({
-    success: false,
-    message: 'Invalid Login ID or Password'
+app.post('/api/auth/login', (req, res) => {
+  if (!isSameOrigin(req)) {
+    return res.status(403).json({ success: false, message: 'Cross-origin sign-in rejected.' });
+  }
+  if (!authConfig().configured) {
+    return res.status(503).json({
+      success: false,
+      message: 'Admin sign-in is not configured. Set ADMIN_USERNAME, ADMIN_PASSWORD and ADMIN_SESSION_SECRET.'
+    });
+  }
+  const body = req.body || {};
+  if (!credentialsMatch(body.username, body.password)) {
+    return res.status(401).json({ success: false, message: 'Invalid Login ID or password.' });
+  }
+  setSessionCookie(req, res, body.remember === true);
+  return res.json({
+    success: true,
+    message: 'Authentication successful.',
+    user: { id: process.env.ADMIN_USERNAME, role: 'Administrator' }
   });
+});
+
+app.get('/api/auth/session', (req, res) => {
+  if (!authConfig().configured) {
+    return res.status(503).json({
+      success: false,
+      message: 'Admin authentication is not configured. Set ADMIN_USERNAME, ADMIN_PASSWORD and ADMIN_SESSION_SECRET.'
+    });
+  }
+  if (!isAuthenticated(req)) return res.status(401).json({ success: false, message: 'Not signed in.' });
+  return res.json({ success: true, user: { id: process.env.ADMIN_USERNAME, role: 'Administrator' } });
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  if (!isSameOrigin(req)) {
+    return res.status(403).json({ success: false, message: 'Cross-origin request rejected.' });
+  }
+  clearSessionCookie(req, res);
+  return res.json({ success: true, message: 'Signed out.' });
 });
 
 // GET /api/status
@@ -157,6 +199,8 @@ app.get('/api/status', async (req, res) => {
   res.json({
     success:     true,
     server:      `Node.js ${process.version}`,
+    storageConfigured: true,
+    authConfigured: authConfig().configured,
     cms_exists:  fs.existsSync(CMS_FILE),
     cms_modified:fs.existsSync(CMS_FILE) ? fs.statSync(CMS_FILE).mtime : null,
     backups,
@@ -167,13 +211,30 @@ app.get('/api/status', async (req, res) => {
 });
 
 // GET /api/load-cms
-app.get('/api/load-cms', async (req, res) => {
+app.get('/api/admin/load-cms', requireAdminApi, async (req, res) => {
   const data = await readCMS();
-  res.json({ success: true, data, source: fs.existsSync(CMS_FILE) ? 'file' : 'defaults' });
+  return res.json({ success: true, data, source: fs.existsSync(CMS_FILE) ? 'draft-file' : 'defaults' });
+});
+
+app.get('/api/load-cms', async (req, res) => {
+  // Admins load the draft; public visitors receive the last published snapshot.
+  if (isAuthenticated(req)) {
+    const data = await readCMS();
+    return res.json({ success: true, data, source: fs.existsSync(CMS_FILE) ? 'draft-file' : 'defaults' });
+  }
+  try {
+    const snapshot = JSON.parse(await fsp.readFile(path.join(DATA_DIR, 'published.json'), 'utf-8'));
+    if (snapshot && snapshot.cms) {
+      return res.json({ success: true, data: snapshot.cms, source: 'published-file', updatedAt: snapshot.published_at || null });
+    }
+  } catch {}
+  // The static website already has its own default design. Return no CMS override
+  // until the administrator has explicitly published one.
+  return res.json({ success: true, data: {}, source: 'no-published-cms' });
 });
 
 // POST /api/save-cms
-app.post('/api/save-cms', async (req, res) => {
+app.post('/api/save-cms', requireAdminApi, async (req, res) => {
   try {
     await writeCMS(req.body);
     res.json({ success: true, message: 'CMS saved', timestamp: new Date().toISOString() });
@@ -183,7 +244,7 @@ app.post('/api/save-cms', async (req, res) => {
 });
 
 // POST /api/publish
-app.post('/api/publish', async (req, res) => {
+app.post('/api/publish', requireAdminApi, async (req, res) => {
   try {
     await writeCMS(req.body);
     const report = [
@@ -201,14 +262,14 @@ app.post('/api/publish', async (req, res) => {
 });
 
 // POST /api/upload-image
-app.post('/api/upload-image', uploadImg.single('image'), (req, res) => {
+app.post('/api/upload-image', requireAdminApi, uploadImg.single('image'), (req, res) => {
   if (!req.file) return res.status(400).json({ success: false, error: 'No image uploaded' });
   const rel = path.relative(BASE_DIR, req.file.path).replace(/\\/g, '/');
   res.json({ success: true, message: 'Image uploaded', file: req.file.filename, path: rel, size: req.file.size, url: `/${rel}` });
 });
 
 // POST /api/upload-video
-app.post('/api/upload-video', uploadVid.single('video'), (req, res) => {
+app.post('/api/upload-video', requireAdminApi, uploadVid.single('video'), (req, res) => {
   if (!req.file) return res.status(400).json({ success: false, error: 'No video uploaded' });
   const rel = path.relative(BASE_DIR, req.file.path).replace(/\\/g, '/');
   res.json({ success: true, message: 'Video uploaded', file: req.file.filename, path: rel, size: req.file.size, url: `/${rel}` });
@@ -224,7 +285,7 @@ app.get('/api/list-images', (req, res) => {
 });
 
 // DELETE /api/delete-image
-app.delete('/api/delete-image', async (req, res) => {
+app.delete('/api/delete-image', requireAdminApi, async (req, res) => {
   const { filePath } = req.body;
   if (!filePath) return res.status(400).json({ success: false, error: 'No path provided' });
   const abs = path.resolve(BASE_DIR, filePath);
@@ -241,7 +302,7 @@ app.delete('/api/delete-image', async (req, res) => {
 });
 
 // POST /api/rename-image
-app.post('/api/rename-image', async (req, res) => {
+app.post('/api/rename-image', requireAdminApi, async (req, res) => {
   const { filePath, newName } = req.body;
   if (!filePath || !newName) return res.status(400).json({ success: false, error: 'Missing params' });
   const abs    = path.resolve(BASE_DIR, filePath);
@@ -270,7 +331,7 @@ app.get('/api/backups', async (req, res) => {
 });
 
 // POST /api/restore
-app.post('/api/restore', async (req, res) => {
+app.post('/api/restore', requireAdminApi, async (req, res) => {
   const { file } = req.body;
   if (!file) return res.status(400).json({ success: false, error: 'No file specified' });
   const src = path.join(BACKUP_DIR, path.basename(file));
@@ -285,7 +346,7 @@ app.post('/api/restore', async (req, res) => {
 });
 
 // POST /api/reset
-app.post('/api/reset', async (req, res) => {
+app.post('/api/reset', requireAdminApi, async (req, res) => {
   if (fs.existsSync(CMS_FILE)) {
     const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0,19);
     await fsp.copyFile(CMS_FILE, path.join(BACKUP_DIR, `pre_reset_${ts}.json`));

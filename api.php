@@ -56,15 +56,21 @@ function loginUser(): array {
     $data = json_decode(file_get_contents('php://input'), true) ?? $_POST;
     $username = trim($data['username'] ?? '');
     $password = $data['password'] ?? '';
-    if (strcasecmp($username, 'Royal Hall') === 0 && $password === 'Royal@07') {
+    $configuredUser = getenv('ADMIN_USERNAME') ?: '';
+    $configuredPassword = getenv('ADMIN_PASSWORD') ?: '';
+
+    if ($configuredUser === '' || $configuredPassword === '') {
+        respondError(503, 'Legacy PHP admin auth is disabled. Use the Node/Vercel Admin Studio with environment-based authentication.');
+    }
+
+    if (strcasecmp($username, $configuredUser) === 0 && hash_equals($configuredPassword, $password)) {
         return [
             'success' => true,
-            'message' => 'Authentication successful',
-            'user' => ['id' => 'Royal Hall', 'role' => 'Administrator'],
-            'token' => 'royal_auth_' . time()
+            'message' => 'Credentials accepted by the legacy PHP endpoint. Use the canonical Admin Studio session API for administration.'
         ];
     }
     respondError(401, 'Invalid Login ID or Password');
+
 }
 
 // ── CMS Load ───────────────────────────────────────────────────────────────

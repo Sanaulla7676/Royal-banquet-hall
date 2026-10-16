@@ -455,7 +455,7 @@
 
         </div>
         <div class="s-left-footer">
-          <button class="s-btn s-btn-gold" onclick="window.STUDIO&&window.STUDIO.cms&&(window.pushUndo&&pushUndo('Logo save'),saveDraft())">
+          <button class="s-btn s-btn-gold" onclick="window.STUDIO&&window.STUDIO.cms&&(window.pushUndo&&pushUndo('Logo save'),saveSection('Logo'))">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Save Logo
           </button>
           <button class="s-btn s-btn-outline" onclick="toast('Logo reset to default','gold')">Reset</button>
@@ -663,7 +663,7 @@
 
         </div>
         <div class="s-left-footer">
-          <button class="s-btn s-btn-gold" onclick="saveDraft&&saveDraft();toast('Navbar saved','success')">Save Navbar</button>
+          <button class="s-btn s-btn-gold" onclick="saveSection('Navbar')">Save Navbar</button>
           <button class="s-btn s-btn-outline">Reset</button>
         </div>
       </div>
@@ -861,7 +861,7 @@
 
         </div>
         <div class="s-left-footer">
-          <button class="s-btn s-btn-gold" onclick="saveDraft&&saveDraft();toast('Hero image settings saved','success')">Save Hero Image</button>
+          <button class="s-btn s-btn-gold" onclick="saveSection('Hero image')">Save Hero Image</button>
           <button class="s-btn s-btn-outline">Reset</button>
         </div>
       </div>
@@ -1011,7 +1011,7 @@
 
         </div>
         <div class="s-left-footer">
-          <button class="s-btn s-btn-gold" onclick="saveDraft&&saveDraft();toast('Hero heading saved','success')">Save Heading</button>
+          <button class="s-btn s-btn-gold" onclick="saveSection('Hero heading')">Save Heading</button>
           <button class="s-btn s-btn-outline">Reset</button>
         </div>
       </div>
@@ -1092,7 +1092,7 @@
           </div>
         </div>
         <div class="s-left-footer">
-          <button class="s-btn s-btn-gold" onclick="saveDraft&&saveDraft();toast('Subheading saved','success')">Save Subheading</button>
+          <button class="s-btn s-btn-gold" onclick="saveSection('Subheading')">Save Subheading</button>
           <button class="s-btn s-btn-outline">Reset</button>
         </div>
       </div>
@@ -1120,11 +1120,15 @@
               <button class="s-change-img-btn" onclick="document.getElementById('bg-upload').click()">Change Background</button>
             </div>
             <input type="file" id="bg-upload" accept="image/*" style="display:none">
-            <div class="s-upload-zone" style="margin:0;">
-              <input type="file" accept="image/*">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <div class="s-upload-zone" id="bg-upload-zone" style="margin:0;cursor:pointer;">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               <p>Upload Background Image</p>
-              <small>JPG, PNG, WebP • Any resolution</small>
+              <small>JPG, PNG, WebP • Use a permanent URL for larger images</small>
+            </div>
+            <div class="s-fg" style="margin-top:12px;">
+              <label class="s-label" for="bg-url-input">Background image URL / site path</label>
+              <input type="url" class="s-input" id="bg-url-input" placeholder="https://res.cloudinary.com/…/image/upload/…jpg" autocomplete="url">
+              <small style="color:var(--s-text-dim);line-height:1.5;">Use a permanent HTTPS/CDN URL so every visitor can load the image.</small>
             </div>
           </div>
 
@@ -1181,7 +1185,7 @@
           </div>
         </div>
         <div class="s-left-footer">
-          <button class="s-btn s-btn-gold" onclick="saveDraft&&saveDraft();toast('Background settings saved','success')">Save Background</button>
+          <button class="s-btn s-btn-gold" onclick="saveSection('Background')">Save Background</button>
           <button class="s-btn s-btn-outline">Reset</button>
         </div>
       </div>
@@ -1216,6 +1220,11 @@
               <p>Upload Video File</p>
               <small>MP4, WebM recommended • Max 50MB for web</small>
             </div>
+            <div class="s-fg" style="margin-top:12px;">
+              <label class="s-label" for="video-source-url">Persistent video URL</label>
+              <input type="url" class="s-input" id="video-source-url" placeholder="https://res.cloudinary.com/…/video/upload/…mp4" autocomplete="url">
+              <small class="s-muted">The file picker is for local preview only. Paste a public HTTPS/CDN URL to save a video that works for every visitor.</small>
+            </div>
           </div>
 
           <div class="s-card">
@@ -1227,7 +1236,7 @@
             <div class="s-toggle-row"><span class="s-toggle-label">Play inline (mobile)</span><div class="s-toggle on" id="video-inline-toggle"></div></div>
             <div class="s-fg" style="margin-top:12px;">
               <label class="s-label">Poster Image (fallback)</label>
-              <input type="text" class="s-input" placeholder="assets/images/hero-venue.jpg" value="assets/images/hero-venue.jpg">
+              <input type="text" class="s-input" id="video-poster-url" placeholder="assets/images/hero-venue.jpg" value="assets/images/hero-venue.jpg">
             </div>
           </div>
 
@@ -1250,7 +1259,7 @@
           </div>
         </div>
         <div class="s-left-footer">
-          <button class="s-btn s-btn-gold" onclick="saveDraft&&saveDraft();toast('Video settings saved','success')">Save Video</button>
+          <button class="s-btn s-btn-gold" onclick="saveSection('Video')">Save Video</button>
           <button class="s-btn s-btn-outline">Reset</button>
         </div>
       </div>
@@ -1282,6 +1291,20 @@
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             <p>Upload New Images</p>
             <small>Multiple files supported • Click or drag &amp; drop</small>
+          </div>
+
+          <div class="s-card" id="cloudinary-settings-card">
+            <div class="s-card-head"><div class="s-card-title">Cloudinary CDN storage</div></div>
+            <div class="s-fg">
+              <label class="s-label" for="cloudinary-cloud-name">Cloud name</label>
+              <input type="text" class="s-input" id="cloudinary-cloud-name" placeholder="your-cloud-name" autocomplete="off">
+            </div>
+            <div class="s-fg">
+              <label class="s-label" for="cloudinary-upload-preset">Unsigned upload preset</label>
+              <input type="text" class="s-input" id="cloudinary-upload-preset" placeholder="royal-banquet-unsigned" autocomplete="off">
+            </div>
+            <small style="display:block;color:var(--s-text-dim);line-height:1.5;margin-bottom:10px;">Upload settings are public by design. Never put a Cloudinary API secret in this browser panel.</small>
+            <button type="button" id="btn-cloudinary-config-save" class="s-btn s-btn-outline">Save CDN Settings</button>
           </div>
 
           <!-- Filter -->
@@ -1316,12 +1339,12 @@
             <div class="s-cp-row"><input type="range" class="s-range" id="imglib-slider-h" min="100" max="3000" step="10" value="1080"><input type="number" class="s-ni" id="imglib-num-h" value="1080"></div>
           </div>
           <div class="s-row" style="gap:8px;margin-bottom:14px;">
-            <button class="s-btn s-btn-gold s-btn-sm" style="flex:1" onclick="toast('Image resized','success')">Apply Resize</button>
-            <button class="s-btn s-btn-outline s-btn-sm" onclick="toast('Crop mode (coming soon)','gold')">Crop</button>
+            <button class="s-btn s-btn-gold s-btn-sm" style="flex:1" id="btn-imglib-apply-size">Apply Display Size</button>
+            <button class="s-btn s-btn-outline s-btn-sm" onclick="toast('Crop-to-file is not supported in the browser editor. Replace the image with a cropped upload instead.','gold')">Crop</button>
           </div>
         </div>
         <div class="s-left-footer">
-          <button class="s-btn s-btn-gold" onclick="saveDraft&&saveDraft();toast('Library saved','success')">Save Changes</button>
+          <button class="s-btn s-btn-gold" onclick="saveSection('Media library')">Save Changes</button>
           <button class="s-btn s-btn-outline">Cancel</button>
         </div>
       </div>
@@ -1358,26 +1381,26 @@
 
           <div class="s-card">
             <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg>Custom Theme Colors</div></div>
-            <div class="s-color-row">
+            <div class="s-color-row" data-theme-token="gold">
               <div class="s-color-info"><div class="s-color-name">Primary Gold</div><div class="s-color-token">--gold</div></div>
               <div class="s-color-pick-wrap"><input type="color" class="s-color-swatch" value="#c6a15b"><input type="text" class="s-color-hex" value="#c6a15b"></div>
             </div>
-            <div class="s-color-row">
+            <div class="s-color-row" data-theme-token="background">
               <div class="s-color-info"><div class="s-color-name">Background</div><div class="s-color-token">--bg</div></div>
               <div class="s-color-pick-wrap"><input type="color" class="s-color-swatch" value="#0a0b0d"><input type="text" class="s-color-hex" value="#0a0b0d"></div>
             </div>
-            <div class="s-color-row">
+            <div class="s-color-row" data-theme-token="ink">
               <div class="s-color-info"><div class="s-color-name">Dark Ink</div><div class="s-color-token">--ink</div></div>
               <div class="s-color-pick-wrap"><input type="color" class="s-color-swatch" value="#171d19"><input type="text" class="s-color-hex" value="#171d19"></div>
             </div>
-            <div class="s-color-row">
+            <div class="s-color-row" data-theme-token="cream">
               <div class="s-color-info"><div class="s-color-name">Cream Accent</div><div class="s-color-token">--cream</div></div>
               <div class="s-color-pick-wrap"><input type="color" class="s-color-swatch" value="#f5f0e7"><input type="text" class="s-color-hex" value="#f5f0e7"></div>
             </div>
           </div>
         </div>
         <div class="s-left-footer">
-          <button class="s-btn s-btn-gold" onclick="saveDraft&&saveDraft();toast('Theme saved','success')">Save Theme</button>
+          <button class="s-btn s-btn-gold" onclick="saveSection('Theme')">Save Theme</button>
           <button class="s-btn s-btn-outline" onclick="toast('Theme reset to default','gold')">Reset</button>
         </div>
       </div>
@@ -1431,7 +1454,7 @@
               <button class="s-chip">Text</button>
             </div>
             <div class="s-section-title" style="margin-top:10px;">Direction</div>
-            <div class="s-chips">
+            <div class="s-chips" id="anim-direction-chips">
               <button class="s-chip active">Normal</button>
               <button class="s-chip">Reverse</button>
               <button class="s-chip">Alternate</button>
@@ -1447,8 +1470,8 @@
           </div>
         </div>
         <div class="s-left-footer">
-          <button class="s-btn s-btn-gold" onclick="saveDraft&&saveDraft();toast('Animation settings saved','success')">Save Animations</button>
-          <button class="s-btn s-btn-outline">Clear All</button>
+          <button class="s-btn s-btn-gold" onclick="saveSection('Animations')">Save Animations</button>
+          <button class="s-btn s-btn-outline" id="btn-animations-clear">Clear All</button>
         </div>
       </div>
       <div class="s-right-panel">
@@ -1495,8 +1518,8 @@
           </div>
         </div>
         <div class="s-left-footer">
-          <button class="s-btn s-btn-gold" onclick="saveDraft&&saveDraft();toast('Effects saved','success')">Save Effects</button>
-          <button class="s-btn s-btn-outline" onclick="toast('All effects cleared','gold')">Clear All</button>
+          <button class="s-btn s-btn-gold" onclick="saveSection('Visual effects')">Save Effects</button>
+          <button class="s-btn s-btn-outline" id="btn-effects-clear">Clear All</button>
         </div>
       </div>
       <div class="s-right-panel">
@@ -1531,8 +1554,8 @@
           </div>
         </div>
         <div class="s-left-footer">
-          <button class="s-btn s-btn-gold" onclick="saveDraft&&saveDraft();toast('Components saved','success')">Save Layout</button>
-          <button class="s-btn s-btn-outline">Clear</button>
+          <button class="s-btn s-btn-gold" onclick="saveSection('Components')">Save Layout</button>
+          <button class="s-btn s-btn-outline" id="btn-components-clear">Clear</button>
         </div>
       </div>
       <div class="s-right-panel">
@@ -1548,7 +1571,7 @@
       <div class="s-left-panel">
         <div class="s-page-header">
           <h1><span class="pg-num">13.</span> Font Animation Library</h1>
-          <p>50 text animation presets: typewriter, wave, shimmer, scatter &amp; more.</p>
+          <p>40 text animation presets: typewriter, wave, shimmer, scatter &amp; more.</p>
         </div>
         <div class="s-panel-scroll">
 
@@ -1565,9 +1588,9 @@
             </div>
           </div>
 
-          <!-- 50 Font Animations -->
+          <!-- 40 Font Animations -->
           <div class="s-card">
-            <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>50 Font Animation Presets</div><span class="s-card-badge">50</span></div>
+            <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>40 Font Animation Presets</div><span class="s-card-badge">40</span></div>
             <div class="s-fa-list" id="font-anim-list"><!-- Populated by JS --></div>
           </div>
 
@@ -1595,7 +1618,7 @@
               <button class="s-chip">CTA Button</button>
             </div>
             <div class="s-section-title" style="margin-top:12px;">Repeat</div>
-            <div class="s-chips">
+            <div class="s-chips" id="fontanim-repeat-chips">
               <button class="s-chip active">Once</button>
               <button class="s-chip">Loop</button>
               <button class="s-chip">On Hover</button>
@@ -1604,7 +1627,7 @@
           </div>
         </div>
         <div class="s-left-footer">
-          <button class="s-btn s-btn-gold" onclick="saveDraft&&saveDraft();toast('Font animations saved','success')">Save Font Animation</button>
+          <button class="s-btn s-btn-gold" onclick="saveSection('Font animations')">Save Font Animation</button>
           <button class="s-btn s-btn-outline">Reset</button>
         </div>
       </div>
@@ -1623,11 +1646,11 @@
         <div class="s-panel-scroll">
           <div class="s-card">
             <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg>General Settings</div></div>
-            <div class="s-toggle-row"><span class="s-toggle-label">Auto-save every 2 minutes</span><div class="s-toggle on"></div></div>
-            <div class="s-toggle-row"><span class="s-toggle-label">Show live preview updates</span><div class="s-toggle on"></div></div>
-            <div class="s-toggle-row"><span class="s-toggle-label">Keyboard shortcuts enabled</span><div class="s-toggle on"></div></div>
-            <div class="s-toggle-row"><span class="s-toggle-label">Animation previews in library</span><div class="s-toggle on"></div></div>
-            <div class="s-toggle-row"><span class="s-toggle-label">Confirm before destructive actions</span><div class="s-toggle on"></div></div>
+            <div class="s-toggle-row"><span class="s-toggle-label">Auto-save every 2 minutes</span><div class="s-toggle on" id="setting-autosave-toggle" role="switch" aria-checked="true" tabindex="0"></div></div>
+            <div class="s-toggle-row"><span class="s-toggle-label">Show live preview updates</span><div class="s-toggle on" id="setting-live-preview-toggle" role="switch" aria-checked="true" tabindex="0"></div></div>
+            <div class="s-toggle-row"><span class="s-toggle-label">Keyboard shortcuts enabled</span><div class="s-toggle on" id="setting-shortcuts-toggle" role="switch" aria-checked="true" tabindex="0"></div></div>
+            <div class="s-toggle-row"><span class="s-toggle-label">Animation previews in library</span><div class="s-toggle on" id="setting-animation-preview-toggle" role="switch" aria-checked="true" tabindex="0"></div></div>
+            <div class="s-toggle-row"><span class="s-toggle-label">Confirm before destructive actions</span><div class="s-toggle on" id="setting-confirm-destructive-toggle" role="switch" aria-checked="true" tabindex="0"></div></div>
           </div>
           <div class="s-card">
             <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/></svg>Keyboard Shortcuts</div></div>
@@ -1639,8 +1662,8 @@
           </div>
           <div class="s-card">
             <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>Danger Zone</div></div>
-            <button class="s-btn s-btn-danger" style="width:100%;margin-bottom:8px;" onclick="if(confirm('Reset ALL customizations? This cannot be undone.')){localStorage.removeItem('rbh_studio_cms');location.reload();}">Reset All Studio Settings</button>
-            <button class="s-btn s-btn-outline" style="width:100%;" onclick="toast('Export feature coming soon','gold')">Export Settings</button>
+            <button class="s-btn s-btn-danger" id="btn-reset-all-settings" style="width:100%;margin-bottom:8px;">Reset All Studio Settings</button>
+            <button class="s-btn s-btn-outline" id="btn-export-settings" style="width:100%;">Export Settings</button>
           </div>
         </div>
       </div>
@@ -1683,6 +1706,7 @@
   </div>
 </div>
 
+<script src="assets/js/gallery-data.js"></script>
 <script src="assets/js/admin-studio.js?v=1.4"></script>
 </body>
 </html>

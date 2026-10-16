@@ -1,10 +1,15 @@
 import puppeteer from 'puppeteer-core';
 
-const CHROME_PATH = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-const STUDIO_URL = 'http://localhost:3001/admin-studio.html';
-const LIVE_URL = 'http://localhost:3001/index.html';
+const CHROME_PATH = process.env.CHROME_PATH || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const STUDIO_URL = process.env.STUDIO_URL || 'http://localhost:3001/admin-studio.html';
+const LIVE_URL = process.env.LIVE_URL || 'http://localhost:3001/index.html';
+const ADMIN_USER = process.env.ADMIN_USERNAME || '';
+const ADMIN_PASSWORD_VALUE = process.env.ADMIN_PASSWORD || '';
 
 async function run() {
+  if (!ADMIN_USER || !ADMIN_PASSWORD_VALUE) {
+    throw new Error('Set ADMIN_USERNAME and ADMIN_PASSWORD in the test environment before running the admin smoke test.');
+  }
   console.log('=== STARTING COMPLETE STUDIO LIVE PREVIEW & PUBLISH VERIFICATION ===');
   const browser = await puppeteer.launch({
     executablePath: CHROME_PATH,
@@ -25,9 +30,9 @@ async function run() {
   const loginOverlay = await page.$('#studio-login-overlay');
   const isHidden = await page.evaluate(el => el ? el.classList.contains('hidden') : true, loginOverlay);
   if (!isHidden) {
-    console.log('Logging in with Royal Hall / Royal@07...');
-    await page.type('#login-username', 'Royal Hall');
-    await page.type('#login-password', 'Royal@07');
+    console.log('Signing in with the test environment credentials...');
+    await page.type('#login-username', ADMIN_USER);
+    await page.type('#login-password', ADMIN_PASSWORD_VALUE);
     await page.click('#btn-login-submit');
     await new Promise(r => setTimeout(r, 1200));
   }

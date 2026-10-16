@@ -5,6 +5,7 @@ Python 3.8+ | FastAPI-style HTTP server for CMS operations
 Features: Image processing, optimization, backup, export, thumbnail generation
 """
 
+import hmac
 import os
 import json
 import shutil
@@ -221,14 +222,20 @@ class StudioHandler(BaseHTTPRequestHandler):
 
     def handle_login(self) -> tuple[int, str]:
         body = self.read_body()
-        username = (body.get("username") or "").strip().lower()
+        username = " ".join((body.get("username") or "").split()).strip().lower()
         password = body.get("password") or ""
-        if username == "royal hall" and password == "Royal@07":
+        configured_user = os.environ.get("ADMIN_USERNAME", "").strip().lower()
+        configured_password = os.environ.get("ADMIN_PASSWORD", "")
+
+        if not configured_user or not configured_password:
+            return error_response(
+                "Legacy Python admin auth is disabled. Use the Node/Vercel Admin Studio with environment-based authentication.",
+                503,
+            )
+        if username == configured_user and hmac.compare_digest(password, configured_password):
             return json_response({
                 "success": True,
-                "message": "Authentication successful",
-                "user": {"id": "Royal Hall", "role": "Administrator"},
-                "token": f"royal_auth_{int(time.time())}"
+                "message": "Credentials accepted by the legacy Python endpoint. Use the canonical Admin Studio session API for administration.",
             })
         return error_response("Invalid Login ID or Password", 401)
 

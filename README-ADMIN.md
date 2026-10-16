@@ -6,17 +6,34 @@ A luxury management studio and in-context visual CMS for **The Royal Party Hall*
 
 ## 👑 Quick Start
 
-### 1. Launch the Live Admin Server
-Run the local dev & persistence server:
+### 1. Launch the secured local Admin server
+Set the required environment variables before running the server. The production password is never stored in source code.
+
 ```bash
+npm install
+# PowerShell example:
+$env:ADMIN_USERNAME="Royal Hall"
+$env:ADMIN_PASSWORD="replace-with-a-unique-strong-password"
+$env:ADMIN_SESSION_SECRET="replace-with-at-least-32-random-characters"
 npm run admin
 ```
-- **Public Website:** `http://localhost:3000/`
-- **Admin Studio Dashboard:** `http://localhost:3000/admin.html`
 
-### 2. Admin Authentication
-- **Default Admin PIN:** `royal2026`
-- **In-Context Studio Hotkey:** Press `Ctrl + Shift + A` on any live public page, or click the discreet crown icon `♛` in the bottom-right corner.
+- **Public Website:** `http://localhost:3001/`
+- **Admin Studio Dashboard:** `http://localhost:3001/admin-studio.html`
+- **Legacy Admin URL:** `http://localhost:3001/admin.html` redirects to the canonical Studio.
+
+### 2. Production environment (Vercel)
+For the Vercel project that owns `royalbanquethall.in`, set these variables in Project Settings → Environment Variables for Production, Preview and Development, then redeploy:
+
+- `DATABASE_URL`: connection string copied from the dedicated Neon project `royal-banquet-cms`.
+- `ADMIN_USERNAME`: your administrator login ID.
+- `ADMIN_PASSWORD`: a new, unique password. Do not reuse the former source-code password.
+- `ADMIN_SESSION_SECRET`: a random secret of at least 32 characters.
+
+The public website reads only the published CMS record. Save Draft writes to the shared database draft, while Publish updates both the draft and published record. If these variables are missing or a save fails, the Studio must show the actual error and must not claim that the changes were published.
+
+### 3. Admin access
+Sign-in is verified server-side and uses a signed HttpOnly cookie. Browser localStorage is only a local recovery copy, never proof of authentication. On the public website, the crown button / Ctrl + Shift + A shortcut can open the same server-validated sign-in flow.
 
 ---
 
