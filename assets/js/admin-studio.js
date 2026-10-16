@@ -346,10 +346,14 @@ function buildStudioSelectionAnimationCss(settings) {
     ? headingAnimations[headingIndex] + 'body.site-revealed .hero-content h1,body.site-revealed .hero-title-primary,body.site-revealed .hero-title-accent{animation:' + headingNames[headingIndex] + ' 1.1s cubic-bezier(.2,.7,.2,1) both!important}'
     : '';
   const backgroundCss = backgroundIndex
-    ? '@keyframes rbhStudioBgBase{from{opacity:.1}to{opacity:.1}}body:after{content:"";display:block!important;position:fixed;inset:0;pointer-events:none;z-index:-1;opacity:.18;mix-blend-mode:screen;' + backgroundAnimations[backgroundIndex] + '}'
-    : 'body:after{content:none!important}';
-  const css = [heroCss,headingCss,backgroundCss].filter(Boolean).join('\n');
-  return css + '\n@media(prefers-reduced-motion:reduce){body:after{animation:none!important} .hero-slideshow [data-hero-slide].is-active,body.site-revealed .hero-content h1,body.site-revealed .hero-title-primary,body.site-revealed .hero-title-accent{animation:none!important}}';
+    ? 'body:after{content:"";display:block!important;position:fixed;inset:0;pointer-events:none;z-index:-1;opacity:.18;mix-blend-mode:screen}' + backgroundAnimations[backgroundIndex]
+    : '';
+  const reducedMotionRules = '@media(prefers-reduced-motion:reduce){' +
+    (backgroundIndex ? 'body:after{animation:none!important}' : '') +
+    (heroIndex ? '.hero-slideshow [data-hero-slide].is-active{animation:none!important}' : '') +
+    (headingIndex ? 'body.site-revealed .hero-content h1,body.site-revealed .hero-title-primary,body.site-revealed .hero-title-accent{animation:none!important}' : '') +
+    '}';
+  return [heroCss,headingCss,backgroundCss,(heroIndex || headingIndex || backgroundIndex) ? reducedMotionRules : ''].filter(Boolean).join('\n');
 }
 
 function syncPreviewStyles() {
