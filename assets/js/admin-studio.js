@@ -858,21 +858,79 @@ function initLogoPage() {
     markDirty();
   }, 'px');
 
+  // Text URL/path field and persistent responsive preferences.
+  const logoUrlInput = document.getElementById('logo-url-input');
+  if (logoUrlInput) {
+    logoUrlInput.value = STUDIO.cms.logo.src || 'assets/images/royal-hall-crest.webp';
+    logoUrlInput.addEventListener('change', () => {
+      const value = logoUrlInput.value.trim();
+      if (!value || /^(?:blob:|data:)/i.test(value) ||
+          (!/^https:\/\//i.test(value) && !value.startsWith('/') && !value.startsWith('assets/'))) {
+        toast('Use a permanent HTTPS URL or a site path under assets/.', 'error');
+        logoUrlInput.value = STUDIO.cms.logo.src || 'assets/images/royal-hall-crest.webp';
+        return;
+      }
+      pushUndo('Logo URL');
+      STUDIO.cms.logo.src = value;
+      const preview = document.getElementById('logo-preview-img');
+      if (preview) preview.src = value;
+      syncPreviewStyles();
+      markDirty();
+    });
+  }
+
+  const logoToggleMap = {
+    'logo-mobile-scale-toggle':'mobileScale',
+    'logo-hide-xs-toggle':'hideOnSmall',
+    'logo-text-fallback-toggle':'textFallback'
+  };
+  Object.entries(logoToggleMap).forEach(([id,property]) => {
+    const toggle = document.getElementById(id);
+    if (!toggle) return;
+    toggle.classList.toggle('on', STUDIO.cms.logo[property] !== false &&
+      (property !== 'hideOnSmall' || STUDIO.cms.logo[property] === true));
+    toggle.addEventListener('click', () => {
+      pushUndo('Logo ' + property);
+      STUDIO.cms.logo[property] = !toggle.classList.contains('on');
+      toggle.classList.toggle('on', STUDIO.cms.logo[property]);
+      syncPreviewStyles();
+      markDirty();
+    });
+  });
+
   // Upload
   const uploadInput = document.getElementById('logo-upload');
   if (uploadInput) {
     uploadInput.addEventListener('change', e => {
       const file = e.target.files[0];
       if (!file) return;
+      if (file.size > 450 * 1024) {
+        toast('Logo file is over 450 KB. Optimize it first or use a permanent CDN URL.', 'error');
+        uploadInput.value = '';
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        toast('Choose a valid image file.', 'error');
+        uploadInput.value = '';
+        return;
+      }
       const reader = new FileReader();
       reader.onload = ev => {
-        STUDIO.cms.logo.src = ev.target.result;
-        const preview = document.getElementById('logo-preview-img');
-        if (preview) preview.src = ev.target.result;
-        syncPreviewStyles();
+        const source = String(ev.target.result || '');
+        if (!source.startsWith('data:image/')) {
+          toast('The logo file could not be read.', 'error');
+          return;
+        }
         pushUndo('Logo upload');
-        toast('Logo updated', 'success');
+        STUDIO.cms.logo.src = source;
+        if (logoUrlInput) logoUrlInput.value = source;
+        const preview = document.getElementById('logo-preview-img');
+        if (preview) preview.src = source;
+        syncPreviewStyles();
+        markDirty();
+        toast('Logo added to the draft. Save Draft, then Publish when reviewed.', 'gold');
       };
+      reader.onerror = () => toast('The logo file could not be read.', 'error');
       reader.readAsDataURL(file);
     });
   }
@@ -956,6 +1014,23 @@ function initNavbarPage() {
     if (transpToggle) transpToggle.classList.remove('on');
     syncPreviewStyles();
     markDirty();
+  });
+
+  const navToggleMap = {
+    'navbar-sticky-toggle':'sticky',
+    'navbar-hamburger-toggle':'hamburger'
+  };
+  Object.entries(navToggleMap).forEach(([id,property]) => {
+    const toggle = document.getElementById(id);
+    if (!toggle) return;
+    toggle.classList.toggle('on', STUDIO.cms.navbar[property] !== false);
+    toggle.addEventListener('click', () => {
+      pushUndo('Navbar ' + property);
+      STUDIO.cms.navbar[property] = !toggle.classList.contains('on');
+      toggle.classList.toggle('on', STUDIO.cms.navbar[property]);
+      syncPreviewStyles();
+      markDirty();
+    });
   });
 
   // Transparent toggle
@@ -1322,6 +1397,20 @@ function initBgPage() {
   initSlider('bg-slider-opacity', 'bg-num-opacity', 'bg-val-opacity', v => { cms.overlayOpacity = v; syncPreviewStyles(); markDirty(); }, '%');
 
   initColorPair('bg-overlay-swatch', 'bg-overlay-hex', v => { cms.overlayColor = v; syncPreviewStyles(); markDirty(); });
+
+  const bgToggleMap = {'bg-fixed-toggle':'fixed','bg-gradient-toggle':'gradient'};
+  Object.entries(bgToggleMap).forEach(([id,property]) => {
+    const toggle = document.getElementById(id);
+    if (!toggle) return;
+    toggle.classList.toggle('on', cms[property] !== false);
+    toggle.addEventListener('click', () => {
+      pushUndo('Background ' + property);
+      cms[property] = !toggle.classList.contains('on');
+      toggle.classList.toggle('on', cms[property]);
+      syncPreviewStyles();
+      markDirty();
+    });
+  });
 }
 
 /* ══════════════════════════════════════════════════
