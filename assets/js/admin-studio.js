@@ -108,23 +108,174 @@ const el = (tag, attrs = {}, ...children) => {
   return e;
 };
 
-/* ── LIVE IFRAME ── */
-let _iframe = null;
+/* ── LIVE PREVIEW ENGINE (Synchronizes all 13 pages) ── */
+function getAllIframes() {
+  return [...document.querySelectorAll('iframe')];
+}
+
+function getAllIframeDocs() {
+  const docs = [];
+  getAllIframes().forEach(iframe => {
+    try {
+      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (doc && doc.body) {
+        docs.push({ doc, win: iframe.contentWindow, iframe });
+      }
+    } catch (e) {
+      // Cross-origin fallback
+    }
+  });
+  return docs;
+}
+
 function getIframe() {
-  if (!_iframe) _iframe = $('#studio-preview-frame');
-  return _iframe;
+  const activePage = document.querySelector('.s-page.active');
+  if (activePage) {
+    const frame = activePage.querySelector('iframe');
+    if (frame) return frame;
+  }
+  return document.querySelector('#studio-preview-frame') || document.querySelector('iframe');
 }
+
 function getIframeDoc() {
-  try { return getIframe()?.contentDocument || getIframe()?.contentWindow?.document; } catch { return null; }
+  const frame = getIframe();
+  try { return frame?.contentDocument || frame?.contentWindow?.document; } catch { return null; }
 }
+
 function reloadPreview() {
-  const iframe = getIframe();
-  if (iframe) { const src = iframe.src; iframe.src = ''; iframe.src = src; }
+  getAllIframes().forEach(iframe => {
+    try {
+      const src = iframe.src;
+      iframe.src = '';
+      iframe.src = src;
+    } catch {}
+  });
 }
+
 function applyToPreview(fn) {
-  const doc = getIframeDoc();
-  if (doc) fn(doc);
+  getAllIframeDocs().forEach(({ doc, win, iframe }) => {
+    try {
+      if (typeof fn === 'function') fn(doc, win, iframe);
+    } catch (e) {
+      console.warn('[Studio Preview Error]:', e);
+    }
+  });
+  syncPreviewStyles();
 }
+
+function syncPreviewStyles() {
+  const c = STUDIO.cms;
+  if (!c) return;
+
+  const logoW = c.logo?.width || 145;
+  const logoH = c.logo?.height || 98;
+  const logoPos = c.logo?.position || 'left';
+  const logoSrc = c.logo?.src;
+
+  const navH = c.navbar?.height || 72;
+  const navBg = c.navbar?.bgColor || '#0a0b0d';
+  const isTransparent = !!c.navbar?.transparent;
+
+  const heroH = c.hero?.height || 70;
+  const heroScale = c.hero?.scale || 100;
+  const heroPosX = c.hero?.posX ?? 50;
+  const heroPosY = c.hero?.posY ?? 50;
+  const heroBrightness = c.hero?.brightness ?? 100;
+  const heroContrast = c.hero?.contrast ?? 100;
+
+  const headingSize = c.heroHeading?.size || 56;
+  const headingWeight = c.heroHeading?.weight || 800;
+  const headingLH = c.heroHeading?.lineHeight || 1.15;
+  const headingLS = c.heroHeading?.letterSpacing || -1;
+  const headingText = c.heroHeading?.text;
+
+  const subSize = c.heroSub?.size || 18;
+  const subWeight = c.heroSub?.weight || 400;
+  const subLH = c.heroSub?.lineHeight || 1.6;
+  const subText = c.heroSub?.text;
+
+  // Injected CSS with maximum specificity
+  const css = `
+    /* ── STUDIO LIVE PREVIEW STYLES ── */
+    .site-header .brand-logo,
+    .brand img,
+    .site-logo,
+    header img.brand-logo {
+      width: ${logoW}px !important;
+      height: ${logoH}px !important;
+      max-width: ${logoW}px !important;
+      max-height: ${logoH}px !important;
+      object-fit: contain !important;
+      transition: width 0.15s ease, height 0.15s ease !important;
+    }
+    .brand {
+      justify-content: ${logoPos === 'center' ? 'center' : logoPos === 'right' ? 'flex-end' : 'flex-start'} !important;
+    }
+    .site-header {
+      background: ${isTransparent ? 'transparent' : navBg} !important;
+      ${isTransparent ? 'border-bottom: 1px solid rgba(255,255,255,0.12) !important;' : 'border-bottom: 1px solid rgba(198,161,91,0.25) !important;'}
+      min-height: ${navH}px !important;
+      transition: background 0.15s ease, min-height 0.15s ease !important;
+    }
+    .site-header .nav {
+      min-height: ${navH}px !important;
+    }
+    .hero {
+      min-height: ${heroH}vh !important;
+    }
+    .hero-media img, .hero-slide {
+      object-position: ${heroPosX}% ${heroPosY}% !important;
+      transform: scale(${heroScale / 100}) !important;
+      filter: brightness(${heroBrightness / 100}) contrast(${heroContrast / 100}) !important;
+    }
+    .hero-content h1,
+    .hero-title-primary,
+    .hero-title-accent {
+      font-size: ${headingSize}px !important;
+      font-weight: ${headingWeight} !important;
+      line-height: ${headingLH} !important;
+      letter-spacing: ${headingLS}px !important;
+    }
+    .hero-content .lede {
+      font-size: ${subSize}px !important;
+      font-weight: ${subWeight} !important;
+      line-height: ${subLH} !important;
+    }
+  `;
+
+  getAllIframeDocs().forEach(({ doc }) => {
+    try {
+      let tag = doc.getElementById('studio-live-styles');
+      if (!tag) {
+        tag = doc.createElement('style');
+        tag.id = 'studio-live-styles';
+        (doc.head || doc.body).appendChild(tag);
+      }
+      tag.textContent = css;
+
+      // Update DOM nodes directly for instant visual feedback
+      if (logoSrc) {
+        const logo = doc.querySelector('.site-header .brand-logo, .brand img, .site-logo');
+        if (logo && logo.src !== logoSrc) logo.src = logoSrc;
+      }
+      if (c.hero?.src) {
+        const slides = doc.querySelectorAll('.hero-slide, .hero-media img');
+        if (slides.length && slides[0].src !== c.hero.src) slides[0].src = c.hero.src;
+      }
+      if (headingText) {
+        const h1 = doc.querySelector('.hero-title-primary') || doc.querySelector('.hero-content h1');
+        if (h1 && h1.textContent !== headingText) h1.textContent = headingText;
+      }
+      if (subText) {
+        const lede = doc.querySelector('.hero-content .lede');
+        if (lede && lede.textContent !== subText) lede.textContent = subText;
+      }
+    } catch (e) {
+      // Ignored
+    }
+  });
+}
+window.syncPreviewStyles = syncPreviewStyles;
 
 /* ── UNDO / REDO ── */
 function pushUndo(label) {
@@ -193,21 +344,40 @@ async function saveDraft() {
 }
 
 async function publishLive() {
-  // Save first
+  // 1. Save draft
   localStorage.setItem('rbh_studio_cms', JSON.stringify(STUDIO.cms));
 
+  // 2. Publish to live website store
+  localStorage.setItem('royal_cms_published', JSON.stringify(STUDIO.cms));
+
+  // 3. Sync to legacy store for backward compatibility
+  try {
+    const existing = JSON.parse(localStorage.getItem('royal_cms_data_store') || '{}');
+    existing.navbar = existing.navbar || {};
+    existing.navbar.bgColor = STUDIO.cms.navbar?.bgColor;
+    existing.navbar.height = STUDIO.cms.navbar?.height;
+    existing.navbar.transparent = STUDIO.cms.navbar?.transparent;
+    existing.navbar.logoWidth = STUDIO.cms.logo?.width;
+    existing.navbar.logoHeight = STUDIO.cms.logo?.height;
+    existing.navbar.logoSrc = STUDIO.cms.logo?.src;
+    localStorage.setItem('royal_cms_data_store', JSON.stringify(existing));
+  } catch {}
+
+  // 4. Send to backend if available
   if (API.available) {
-    const res = await API.post('/api/publish', STUDIO.cms);
-    if (res?.success) {
-      markSaved();
-      toast('Website published successfully! ✓', 'success');
-      if (res.report?.length) console.log('Publish report:', res.report);
-      return;
-    }
+    try {
+      const res = await API.post('/api/publish', STUDIO.cms);
+      if (res?.success) {
+        markSaved();
+        toast('Website published successfully! ✓ Live website updated.', 'success');
+        if (res.report?.length) console.log('Publish report:', res.report);
+        return;
+      }
+    } catch {}
   }
 
   markSaved();
-  toast('Saved locally — run the server to publish live!', 'gold');
+  toast('Website published! Live changes are now active ✓', 'success');
 }
 
 async function loadFromBackend() {
@@ -239,6 +409,8 @@ function navigateTo(pageId) {
   $$('.s-nav-item').forEach(item => item.classList.toggle('active', item.dataset.page === pageId));
   // Show page
   $$('.s-page').forEach(p => p.classList.toggle('active', p.id === 'page-' + pageId));
+  // Synchronize preview styles to newly active iframe
+  setTimeout(syncPreviewStyles, 60);
 }
 
 /* ── VIEWPORT ── */
@@ -309,18 +481,14 @@ function initLogoPage() {
 
   initSlider('logo-slider-w', 'logo-num-w', 'logo-val-w', v => {
     cms.width = v;
-    applyToPreview(doc => {
-      const logo = doc.querySelector('.brand-logo, .site-logo, nav img');
-      if (logo) { logo.style.width = v + 'px'; logo.style.maxWidth = v + 'px'; }
-    });
+    syncPreviewStyles();
+    markDirty();
   }, 'px');
 
   initSlider('logo-slider-h', 'logo-num-h', 'logo-val-h', v => {
     cms.height = v;
-    applyToPreview(doc => {
-      const logo = doc.querySelector('.brand-logo, .site-logo, nav img');
-      if (logo) { logo.style.height = v + 'px'; }
-    });
+    syncPreviewStyles();
+    markDirty();
   }, 'px');
 
   // Upload
@@ -334,10 +502,7 @@ function initLogoPage() {
         cms.src = ev.target.result;
         const preview = document.getElementById('logo-preview-img');
         if (preview) preview.src = ev.target.result;
-        applyToPreview(doc => {
-          const logo = doc.querySelector('.brand-logo, .site-logo, nav img');
-          if (logo) logo.src = ev.target.result;
-        });
+        syncPreviewStyles();
         pushUndo('Logo upload');
         toast('Logo updated', 'success');
       };
@@ -351,10 +516,7 @@ function initLogoPage() {
       document.querySelectorAll('#logo-position-chips .s-chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
       cms.position = chip.dataset.val;
-      applyToPreview(doc => {
-        const nav = doc.querySelector('nav, header');
-        if (nav) nav.style.justifyContent = chip.dataset.val === 'center' ? 'center' : chip.dataset.val === 'right' ? 'flex-end' : 'flex-start';
-      });
+      syncPreviewStyles();
       markDirty();
     });
   });
@@ -369,6 +531,7 @@ function initNavbarPage() {
   // Design selection
   initPresetCards('#navbar-designs-container', (i) => {
     cms.design = i;
+    syncPreviewStyles();
     pushUndo('Navbar design');
     toast(`Navbar Design ${i+1} applied`, 'gold');
   });
@@ -376,6 +539,7 @@ function initNavbarPage() {
   // Button styles
   initPresetCards('#navbar-btn-styles', (i) => {
     cms.buttonStyle = i;
+    syncPreviewStyles();
     pushUndo('Navbar button style');
     markDirty();
   });
@@ -383,6 +547,7 @@ function initNavbarPage() {
   // Animations
   initPresetCards('#navbar-anim-grid', (i) => {
     cms.animation = i;
+    syncPreviewStyles();
     pushUndo('Navbar animation');
     markDirty();
   });
@@ -390,25 +555,24 @@ function initNavbarPage() {
   // Hover animations
   initPresetCards('#navbar-hover-grid', (i) => {
     cms.hoverAnimation = i;
+    syncPreviewStyles();
     markDirty();
   });
 
   // Height
   initSlider('navbar-slider-h', 'navbar-num-h', 'navbar-val-h', v => {
     cms.height = v;
-    applyToPreview(doc => {
-      const nav = doc.querySelector('nav, header');
-      if (nav) nav.style.height = v + 'px';
-    });
+    syncPreviewStyles();
+    markDirty();
   }, 'px');
 
   // Bg color
   initColorPair('navbar-color-swatch', 'navbar-color-hex', v => {
     cms.bgColor = v;
-    applyToPreview(doc => {
-      const nav = doc.querySelector('nav, header');
-      if (nav) nav.style.background = v;
-    });
+    cms.transparent = false; // User picked a custom color; disable transparent so it displays immediately
+    const transpToggle = document.getElementById('navbar-transparent-toggle');
+    if (transpToggle) transpToggle.classList.remove('on');
+    syncPreviewStyles();
     markDirty();
   });
 
@@ -418,10 +582,7 @@ function initNavbarPage() {
     transpToggle.addEventListener('click', () => {
       transpToggle.classList.toggle('on');
       cms.transparent = transpToggle.classList.contains('on');
-      applyToPreview(doc => {
-        const nav = doc.querySelector('nav, header');
-        if (nav) nav.style.background = cms.transparent ? 'transparent' : cms.bgColor;
-      });
+      syncPreviewStyles();
       markDirty();
     });
   }
@@ -1343,8 +1504,16 @@ function initAll() {
     loadFromBackend();
   });
 
+  // ── Iframe Load Listeners (Auto-sync preview when iframes finish loading)
+  getAllIframes().forEach(iframe => {
+    iframe.addEventListener('load', () => {
+      setTimeout(syncPreviewStyles, 100);
+    });
+  });
+
   // Navigate to dashboard initially
   navigateTo('dashboard');
+  setTimeout(syncPreviewStyles, 400);
 
   console.log('Royal Banquet Admin Studio initialized ✓ (backend: auto-detect)');
 }

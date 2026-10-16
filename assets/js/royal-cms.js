@@ -21,6 +21,26 @@
     console.warn('[Royal CMS] Could not load localStorage data:', err);
   }
 
+  // Load published Studio customizations (only when published from studio!)
+  try {
+    const pubStr = localStorage.getItem('royal_cms_published');
+    if (pubStr) {
+      const pub = JSON.parse(pubStr);
+      cmsData.studioPublished = pub;
+      cmsData.navbar = cmsData.navbar || {};
+      if (pub.logo) {
+        if (pub.logo.width) cmsData.navbar.logoWidth = pub.logo.width;
+        if (pub.logo.height) cmsData.navbar.logoHeight = pub.logo.height;
+        if (pub.logo.src) cmsData.navbar.logoSrc = pub.logo.src;
+      }
+      if (pub.navbar) {
+        if (pub.navbar.bgColor) cmsData.navbar.bgColor = pub.navbar.bgColor;
+        if (pub.navbar.height) cmsData.navbar.height = pub.navbar.height;
+        cmsData.navbar.transparent = !!pub.navbar.transparent;
+      }
+    }
+  } catch (err) {}
+
   function deepMerge(target, source) {
     if (!source) return target;
     const output = Object.assign({}, target);
@@ -168,6 +188,21 @@
   function applyNavbar() {
     if (!cmsData.navbar) return;
     const navConfig = cmsData.navbar;
+
+    // Header bar styles
+    const siteHeader = document.querySelector('.site-header');
+    if (siteHeader) {
+      if (navConfig.transparent) {
+        siteHeader.style.setProperty('background', 'transparent', 'important');
+        siteHeader.style.setProperty('border-bottom', '1px solid rgba(255,255,255,0.12)', 'important');
+      } else if (navConfig.bgColor) {
+        siteHeader.style.setProperty('background', navConfig.bgColor, 'important');
+        siteHeader.style.setProperty('border-bottom', '1px solid rgba(198,161,91,0.25)', 'important');
+      }
+      if (navConfig.height) {
+        siteHeader.style.setProperty('min-height', `${navConfig.height}px`, 'important');
+      }
+    }
 
     // Logo update
     const brandLogo = document.querySelector('.brand-logo');
