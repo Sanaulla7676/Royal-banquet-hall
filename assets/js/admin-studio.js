@@ -566,10 +566,22 @@ function syncPreviewStyles() {
     }
   });
 
+  // Apply the editor preference to the preview only; never mutate the saved CMS state.
+  let previewCms = c;
+  if (c.settings?.animationPreviews === false) {
+    previewCms = {
+      ...c,
+      animations: { ...(c.animations || {}), activeItems: [] },
+      fontAnimations: { ...(c.fontAnimations || {}), targets: [] },
+      effects: { ...(c.effects || {}), activeItems: [] },
+      components: { ...(c.components || {}), activeItems: [] }
+    };
+  }
+
   // Also postMessage to all iframes
   getAllIframes().forEach(iframe => {
     try {
-      iframe.contentWindow?.postMessage({ type: 'STUDIO_PREVIEW_SYNC', cms: c }, '*');
+      iframe.contentWindow?.postMessage({ type: 'STUDIO_PREVIEW_SYNC', cms: previewCms }, '*');
     } catch (e) {}
   });
 }
@@ -2390,8 +2402,8 @@ function syncAllControls() {
   };
   syncPresetGroup('#navbar-designs-container',c.navbar?.design);
   syncPresetGroup('#navbar-btn-styles',c.navbar?.buttonStyle);
-  syncPresetGroup('#navbar-anim-styles',c.navbar?.animation);
-  syncPresetGroup('#navbar-hover-styles',c.navbar?.hoverAnimation);
+  syncPresetGroup('#navbar-anim-grid',c.navbar?.animation);
+  syncPresetGroup('#navbar-hover-grid',c.navbar?.hoverAnimation);
 
   // Hero
   const hs = document.getElementById('hero-slider-scale');
