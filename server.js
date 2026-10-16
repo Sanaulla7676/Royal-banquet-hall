@@ -19,7 +19,7 @@ const {
   clearSessionCookie,
   isAuthenticated,
   isSameOrigin
-} = require('./api/_lib/auth.js');
+} = require('./lib/admin-auth.js');
 
 // ── Config ────────────────────────────────────────────────────────────────
 const PORT       = process.env.PORT || 3001;
@@ -211,6 +211,11 @@ app.get('/api/status', async (req, res) => {
 });
 
 // GET /api/load-cms
+app.get('/api/admin/load-cms', requireAdminApi, async (req, res) => {
+  const data = await readCMS();
+  return res.json({ success: true, data, source: fs.existsSync(CMS_FILE) ? 'draft-file' : 'defaults' });
+});
+
 app.get('/api/load-cms', async (req, res) => {
   // Admins load the draft; public visitors receive the last published snapshot.
   if (isAuthenticated(req)) {
