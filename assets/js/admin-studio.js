@@ -1203,6 +1203,15 @@ function applyTheme(i) {
   pushUndo('Theme change');
   STUDIO.cms.theme.active = i;
   const theme = THEMES[i];
+  // Persist the theme palette into the shared CMS shape so public pages match the preview.
+  STUDIO.cms.navbar = STUDIO.cms.navbar || {};
+  STUDIO.cms.navbar.bgColor = theme.nav;
+  STUDIO.cms.navbar.transparent = false;
+  STUDIO.cms.buttons = STUDIO.cms.buttons || {};
+  STUDIO.cms.buttons.gold = STUDIO.cms.buttons.gold || {};
+  STUDIO.cms.buttons.gold.bgType = 'solid';
+  STUDIO.cms.buttons.gold.bgColor = theme.btn;
+  STUDIO.cms.buttons.gold.textColor = ['#f5f0ea', '#f8fafc', '#0a0b0d'].includes(theme.btn.toLowerCase()) ? '#171d19' : '#171d19';
   document.getElementById('theme-grid')?.querySelectorAll('.s-theme-card').forEach((c, idx) => c.classList.toggle('active', idx === i));
   applyToPreview(doc => {
     doc.documentElement.style.setProperty('--gold', theme.btn);
