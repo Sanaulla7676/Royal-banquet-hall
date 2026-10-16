@@ -200,6 +200,48 @@
     if (logoSettings.hideOnSmall === true) css += '@media(max-width:420px){.site-header .brand-logo{display:none!important}}\n';
     css += 'body{background-attachment:' + (backgroundSettings.fixed === false ? 'scroll' : 'fixed') + '!important}\n';
     css += '.rbh-logo-text-fallback{display:none;font-family:Georgia,serif;font-weight:600;color:var(--gold);line-height:1.15;max-width:130px}\n';
+    const navDesign = Math.max(0,Math.min(5,Number(navSettings.design)||0));
+    const navDesignCss = [
+      '',
+      '.site-header{backdrop-filter:blur(14px)!important;background:rgba(18,22,28,.76)!important;border-bottom:1px solid rgba(198,161,91,.25)!important}',
+      '.site-header{background:#fffdf9!important;border-bottom:1px solid rgba(23,29,25,.12)!important;color:#171d19!important}.site-header a{color:#171d19!important}',
+      '.site-header{background:transparent!important;box-shadow:none!important;border-bottom:1px solid rgba(255,255,255,.14)!important}',
+      '.site-header .nav{flex-direction:column!important;gap:6px!important;padding-top:10px!important;padding-bottom:10px!important}.site-header{background:rgba(10,11,13,.96)!important}',
+      '.site-header{background:#060708!important;border-bottom:2px solid var(--gold)!important;box-shadow:0 8px 24px rgba(0,0,0,.24)!important}'
+    ];
+    css += (navDesignCss[navDesign] || '') + '\n';
+    const buttonStyle = Math.max(0,Math.min(9,Number(navSettings.buttonStyle)||0));
+    const buttonStyles = [
+      'border-radius:999px;background:var(--gold);color:var(--ink);border:1px solid transparent',
+      'border-radius:2px;background:transparent;color:var(--gold);border:1px solid var(--gold)',
+      'border-radius:8px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--ink)',
+      'border-radius:0;background:transparent;color:inherit;border:0;border-bottom:1px solid var(--gold)',
+      'border-radius:999px;background:var(--cream);color:var(--ink);border:1px solid var(--cream)',
+      'border-radius:6px;background:transparent;color:var(--gold);border:1px solid rgba(198,161,91,.55)',
+      'border-radius:8px;background:var(--ink);color:var(--cream);border:1px solid var(--gold)',
+      'border-radius:0;background:transparent;color:inherit;border:1px dashed var(--gold)',
+      'border-radius:0;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--ink)',
+      'border-radius:999px;background:var(--gold);color:var(--ink);border:1px solid transparent;box-shadow:0 0 18px rgba(198,161,91,.48)'
+    ];
+    css += '.site-header .nav-actions .btn-gold,.site-header .nav-actions .btn{' + buttonStyles[buttonStyle] + '!important;transition:all .25s ease!important}\n';
+    const hoverStyle = Math.max(0,Math.min(9,Number(navSettings.hoverAnimation)||0));
+    const hoverCss = [
+      'transform:translateY(-2px)',
+      'text-decoration:underline;text-decoration-color:var(--gold);text-underline-offset:.3em',
+      'background:var(--gold);color:var(--ink)',
+      'box-shadow:0 0 18px rgba(198,161,91,.55)',
+      'transform:scale(1.04)',
+      'background:linear-gradient(90deg,var(--gold),var(--gold2));color:var(--ink)',
+      'border:1px solid var(--gold);background:rgba(198,161,91,.12)',
+      'filter:brightness(1.2)',
+      'transform:rotate(-1deg)',
+      'text-shadow:0 0 10px rgba(198,161,91,.75);filter:brightness(1.1)'
+    ];
+    css += '.site-header .nav-links a,.site-header .nav-actions a,.site-header .menu-toggle{transition:all .25s ease!important}.site-header .nav-links a:hover,.site-header .nav-actions a:hover,.site-header .menu-toggle:hover{' + hoverCss[hoverStyle] + '!important}\n';
+    const navAnimation = Math.max(0,Math.min(9,Number(navSettings.animation)||0));
+    const navAnimNames = ['rbhSlideDown','rbhFadeIn','rbhZoomIn','rbhShimmer','rbhNavUp','rbhRotate','rbhSlideDown','rbhNavCurtain','rbhNavFlash','rbhNavWave'];
+    css += '@keyframes rbhNavUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}@keyframes rbhNavCurtain{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0 0 0 0)}}@keyframes rbhNavFlash{0%,100%{filter:brightness(1)}40%{filter:brightness(1.8)}}@keyframes rbhNavWave{0%{transform:translateY(-10px)}50%{transform:translateY(3px)}100%{transform:translateY(0)}}\n';
+    if (navAnimation !== 0) css += '.site-header{animation:' + navAnimNames[navAnimation] + ' .7s ease both}\n';
     css += '[data-rbh-cms-motion].rbh-cms-motion-pending,[data-rbh-cms-font-motion].rbh-cms-font-pending{opacity:0!important;animation:none!important}\n';
     css += '[data-rbh-cms-motion].rbh-cms-motion-active{animation-name:var(--rbh-cms-anim)!important;animation-duration:var(--rbh-cms-duration)!important;animation-delay:var(--rbh-cms-delay)!important;animation-timing-function:cubic-bezier(.2,.7,.2,1)!important;animation-direction:var(--rbh-cms-direction)!important;animation-fill-mode:both!important;animation-iteration-count:var(--rbh-cms-iterations)!important}\n';
     css += '[data-rbh-cms-font-motion].rbh-cms-font-active{animation-name:var(--rbh-cms-font-anim)!important;animation-duration:var(--rbh-cms-font-duration)!important;animation-delay:var(--rbh-cms-font-delay)!important;animation-timing-function:ease!important;animation-fill-mode:both!important;animation-iteration-count:var(--rbh-cms-font-iterations)!important}\n';
