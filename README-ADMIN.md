@@ -22,15 +22,23 @@ npm run admin
 - **Admin Studio Dashboard:** `http://localhost:3001/admin-studio.html`
 - **Legacy Admin URL:** `http://localhost:3001/admin.html` redirects to the canonical Studio.
 
-### 2. Production environment (Vercel)
-For the Vercel project that owns `royalbanquethall.in`, set these variables in Project Settings → Environment Variables for Production, Preview and Development, then redeploy:
+### 2. Production environment (Vercel, Render, Neon and Cloudinary)
 
-- `DATABASE_URL`: connection string copied from the dedicated Neon project `royal-banquet-cms`.
-- `ADMIN_USERNAME`: your administrator login ID.
-- `ADMIN_PASSWORD`: a new, unique password. Do not reuse the former source-code password.
-- `ADMIN_SESSION_SECRET`: a random secret of at least 32 characters.
+The public website stays on Vercel. Vercel forwards /api requests to the single Node.js backend at https://royal-banquet-backend.onrender.com. Configure private values on the Render web service, not in browser code, this repository, or chat.
 
-The public website reads only the published CMS record. Save Draft writes to the shared database draft, while Publish updates both the draft and published record. If these variables are missing or a save fails, the Studio must show the actual error and must not claim that the changes were published.
+In Render Dashboard, open royal-banquet-backend → Environment and set:
+- DATABASE_URL: connection string for the existing Neon project royal-banquet-cms, database royal_banquet_cms.
+- ADMIN_USERNAME: a new administrator login ID.
+- ADMIN_PASSWORD: a new unique administrator password. Do not reuse any password previously embedded in source.
+- ADMIN_SESSION_SECRET: a random secret of at least 32 characters.
+- CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET: values from your existing Cloudinary account.
+- Optional ADMIN_ALLOWED_ORIGINS: comma-separated trusted website origins when you introduce another custom domain.
+
+Do not share the connection string, administrator password, session secret, Cloudinary API secret, or Render deploy-hook URL. Browser uploads use short-lived signed requests; the API secret stays on Render.
+
+CMS drafts, published content, and backups are stored in the existing Neon cms_state table. New images and videos are uploaded to Cloudinary, not Render's temporary filesystem. Missing configuration must result in a clear error instead of false success.
+
+After setting these variables, redeploy the Render service. The Vercel preview and production site will then call the same backend through the API proxy.
 
 ### 3. Admin access
 Sign-in is verified server-side and uses a signed HttpOnly cookie. Browser localStorage is only a local recovery copy, never proof of authentication. On the public website, the crown button / Ctrl + Shift + A shortcut can open the same server-validated sign-in flow.
