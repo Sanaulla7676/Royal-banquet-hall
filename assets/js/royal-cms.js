@@ -1670,81 +1670,31 @@
     };
   }
 
-  function handleImageUpload(file, imgElement, oldSrc, modal) {
-    showToast('Uploading to Cloudinary...', 'info');
-
-    // Convert file to base64 for server-side upload
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const base64Data = e.target.result;
-
-      // Attempt 1: Server-side upload via admin server (uses official SDK with api_secret)
-      fetch('/api/cloudinary/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          file: base64Data,
-          folder: 'royal-banquet',
-          tags: ['cms-upload', 'royal-hall']
-        })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.url) {
-          setReplacement(oldSrc, data.optimizedUrl || data.url, imgElement);
-          modal.remove();
-          showToast(`Uploaded to Cloudinary CDN! (${(data.bytes / 1024).toFixed(0)} KB, ${data.format})`, 'success');
-        } else {
-          // Server couldn't upload (maybe no api_secret), try unsigned browser upload
-          attemptUnsignedBrowserUpload(file, imgElement, oldSrc, modal, base64Data);
-        }
-      })
-      .catch(() => {
-        // Server not running or errored, try unsigned browser upload
-        attemptUnsignedBrowserUpload(file, imgElement, oldSrc, modal, base64Data);
-      });
-    };
-    reader.readAsDataURL(file);
+  async function handleImageUpload(file, imgElement, oldSrc, modal) {
+    if (!file || !file.type.startsWith('image/')) { showToast('Choose a valid image file.', 'error'); return; }
+    showToast('Requesting secure Cloudinary upload signature…', 'info');
+    try {
+      const signResponse = await fetch('/api/cloudinary/signature?resource_type=image', { credentials:'same-origin', cache:'no-store' });
+      const signed = await signResponse.json().catch(() => ({}));
+      if (!signResponse.ok || !signed.success) throw new Error(signed.message || 'Secure Cloudinary upload is not configured.');
+      const form = new FormData();
+      form.append('file',file,file.name);
+      form.append('api_key',signed.apiKey);
+      form.append('timestamp',String(signed.timestamp));
+      form.append('folder',signed.folder);
+      form.append('tags',signed.tags);
+      form.append('signature',signed.signature);
+      const response = await fetch('https://api.cloudinary.com/v1_1/'+encodeURIComponent(signed.cloudName)+'/image/upload',{method:'POST',body:form});
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.secure_url) throw new Error((result.error&&result.error.message)||'Cloudinary rejected the upload.');
+      const url=String(result.secure_url).replace('/upload/','/upload/f_auto,q_auto/');
+      setReplacement(oldSrc,url,imgElement);
+      modal.remove();
+      showToast('Image uploaded to Cloudinary and added to the draft. Use the full Studio to publish shared changes.','success');
+    } catch(error) { showToast('Cloudinary upload failed: '+(error.message||'Unknown error.'),'error'); }
   }
 
-  function attemptUnsignedBrowserUpload(file, imgElement, oldSrc, modal, base64Fallback) {
-    const cloudName = cmsData.integrations?.cloudinary?.cloudName || 'pspn79yf';
-    const uploadPreset = cmsData.integrations?.cloudinary?.uploadPreset;
 
-    if (cloudName && uploadPreset) {
-      showToast('Trying unsigned browser upload to Cloudinary...', 'info');
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', uploadPreset);
-      formData.append('folder', 'royal-banquet');
-
-      fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-        method: 'POST',
-        body: formData
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.secure_url) {
-          setReplacement(oldSrc, data.secure_url, imgElement);
-          modal.remove();
-          showToast('Uploaded via unsigned preset to Cloudinary!', 'success');
-        } else {
-          applyLocalFallback(base64Fallback, imgElement, oldSrc, modal);
-        }
-      })
-      .catch(() => {
-        applyLocalFallback(base64Fallback, imgElement, oldSrc, modal);
-      });
-    } else {
-      applyLocalFallback(base64Fallback, imgElement, oldSrc, modal);
-    }
-  }
-
-  function applyLocalFallback(dataUrl, imgElement, oldSrc, modal) {
-    showToast('Stored image locally (configure Cloudinary for CDN hosting)', 'info');
-    setReplacement(oldSrc, dataUrl, imgElement);
-    modal.remove();
-  }
 
   function setReplacement(oldSrc, newSrc, imgElement) {
     imgElement.src = newSrc;
