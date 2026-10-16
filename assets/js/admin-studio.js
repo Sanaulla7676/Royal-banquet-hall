@@ -1281,6 +1281,7 @@ function initAnimationPage() {
     card.dataset.index = i;
     card.innerHTML = `<div class="s-anim-thumb">${anim.emoji}</div><div class="s-anim-name">${anim.name}</div>`;
     card.addEventListener('click', () => {
+      pushUndo('Animation toggle');
       const idx = STUDIO.cms.animations.activeItems.indexOf(i);
       if (idx > -1) {
         STUDIO.cms.animations.activeItems.splice(idx, 1);
@@ -1289,21 +1290,63 @@ function initAnimationPage() {
         STUDIO.cms.animations.activeItems.push(i);
         card.classList.add('active');
       }
-      markDirty();
-      toast(`${anim.name} ${card.classList.contains('active') ? 'enabled' : 'disabled'}`, 'gold');
-    });
+      syncPreviewStyles();
+      toast(anim.name + ' ' + (card.classList.contains('active') ? 'enabled' : 'disabled'), 'gold');
+    });;
     grid.appendChild(card);
   });
 
-  // Controls
-  initSlider('anim-slider-speed', 'anim-num-speed', 'anim-val-speed', v => { markDirty(); }, 's');
-  initSlider('anim-slider-delay', 'anim-num-delay', 'anim-val-delay', v => { markDirty(); }, 's');
-  initSlider('anim-slider-duration', 'anim-num-duration', 'anim-val-duration', v => { markDirty(); }, 'ms');
+  // Persist animation timings, selected targets and behavior.
+  const model = STUDIO.cms.animations;
+  initSlider('anim-slider-speed', 'anim-num-speed', 'anim-val-speed', v => { model.speed = v; markDirty(); syncPreviewStyles(); }, 's');
+  initSlider('anim-slider-delay', 'anim-num-delay', 'anim-val-delay', v => { model.delay = v; markDirty(); syncPreviewStyles(); }, 's');
+  initSlider('anim-slider-duration', 'anim-num-duration', 'anim-val-duration', v => { model.duration = v; markDirty(); syncPreviewStyles(); }, 'ms');
 
-  // Target chips
   document.querySelectorAll('#anim-target-chips .s-chip').forEach(chip => {
-    chip.addEventListener('click', () => { chip.classList.toggle('active'); markDirty(); });
+    const target = chip.textContent.trim();
+    chip.classList.toggle('active', model.targets.includes(target));
+    chip.addEventListener('click', () => {
+      const index = model.targets.indexOf(target);
+      if (index >= 0 && model.targets.length > 1) {
+        model.targets.splice(index, 1);
+        chip.classList.remove('active');
+      } else if (index < 0) {
+        model.targets.push(target);
+        chip.classList.add('active');
+      }
+      markDirty();
+      syncPreviewStyles();
+    });
   });
+
+  document.querySelectorAll('#anim-direction-chips .s-chip').forEach(chip => {
+    chip.classList.toggle('active', chip.textContent.trim() === model.direction);
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#anim-direction-chips .s-chip').forEach(item => item.classList.toggle('active', item === chip));
+      model.direction = chip.textContent.trim();
+      markDirty();
+      syncPreviewStyles();
+    });
+  });
+
+  const scrollToggle = document.getElementById('anim-scroll-trigger');
+  const repeatToggle = document.getElementById('anim-repeat-toggle');
+  if (scrollToggle) {
+    scrollToggle.classList.toggle('on', !!model.scrollTrigger);
+    scrollToggle.addEventListener('click', () => {
+      model.scrollTrigger = scrollToggle.classList.toggle('on');
+      markDirty();
+      syncPreviewStyles();
+    });
+  }
+  if (repeatToggle) {
+    repeatToggle.classList.toggle('on', !!model.repeatEveryView);
+    repeatToggle.addEventListener('click', () => {
+      model.repeatEveryView = repeatToggle.classList.toggle('on');
+      markDirty();
+      syncPreviewStyles();
+    });
+  }
 }
 
 /* ══════════════════════════════════════════════════
@@ -1386,12 +1429,13 @@ function initEffectsPage() {
       <div class="s-effect-desc">${eff.cat}</div>
     `;
     card.addEventListener('click', () => {
+      pushUndo('Effect toggle');
       const idx = STUDIO.cms.effects.activeItems.indexOf(i);
       if (idx > -1) { STUDIO.cms.effects.activeItems.splice(idx, 1); card.classList.remove('active'); }
       else { STUDIO.cms.effects.activeItems.push(i); card.classList.add('active'); }
-      pushUndo('Effect toggle');
-      toast(`${eff.name} ${card.classList.contains('active') ? 'applied' : 'removed'}`, 'gold');
-    });
+      syncPreviewStyles();
+      toast(eff.name + ' ' + (card.classList.contains('active') ? 'applied' : 'removed'), 'gold');
+    });;
     grid.appendChild(card);
   });
 
@@ -1401,7 +1445,11 @@ function initEffectsPage() {
     });
   }
 
-  initSlider('effects-slider-intensity', 'effects-num-intensity', 'effects-val-intensity', v => { markDirty(); }, '%');
+  initSlider('effects-slider-intensity', 'effects-num-intensity', 'effects-val-intensity', v => {
+    STUDIO.cms.effects.intensity = v;
+    markDirty();
+    syncPreviewStyles();
+  }, '%');
 }
 
 /* ══════════════════════════════════════════════════
@@ -1488,12 +1536,13 @@ function initComponentsPage() {
       </div>
     `;
     card.addEventListener('click', () => {
+      pushUndo('Component toggle');
       const idx = STUDIO.cms.components.activeItems.indexOf(i);
       if (idx > -1) { STUDIO.cms.components.activeItems.splice(idx, 1); card.classList.remove('active'); }
       else { STUDIO.cms.components.activeItems.push(i); card.classList.add('active'); }
-      pushUndo('Component toggle');
-      toast(`${comp.name} ${card.classList.contains('active') ? 'added' : 'removed'}`, 'gold');
-    });
+      syncPreviewStyles();
+      toast(comp.name + ' ' + (card.classList.contains('active') ? 'enabled' : 'disabled') + ' for the live layout', 'gold');
+    });;
     grid.appendChild(card);
   });
 }
