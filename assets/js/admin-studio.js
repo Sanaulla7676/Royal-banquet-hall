@@ -149,6 +149,28 @@ STUDIO.cms.video = {
   posY: 50,
   ...(STUDIO.cms.video || {})
 };
+STUDIO.cms.settings = {
+  autoSave: true,
+  livePreview: true,
+  keyboardShortcuts: true,
+  animationPreviews: true,
+  confirmDestructive: true,
+  ...(STUDIO.cms.settings || {})
+};
+STUDIO.cms.logo = {
+  src:'assets/images/royal-hall-crest.webp', width:145, height:98, position:'left',
+  mobileScale:true, hideOnSmall:false, textFallback:true,
+  ...(STUDIO.cms.logo || {})
+};
+STUDIO.cms.navbar = {
+  design:0, buttonStyle:0, animation:0, hoverAnimation:0, height:72, bgColor:'#0a0b0d', transparent:true,
+  sticky:true, hamburger:true,
+  ...(STUDIO.cms.navbar || {})
+};
+STUDIO.cms.background = {
+  src:'', animation:0, posX:50, posY:50, overlayOpacity:30, overlayColor:'#000000', fixed:true, gradient:true,
+  ...(STUDIO.cms.background || {})
+};
 STUDIO.cms.hero = {
   animationSpeed: 10,
   animationDelay: 3,
@@ -164,12 +186,12 @@ if (!Array.isArray(STUDIO.cms.fontAnimations.targets)) STUDIO.cms.fontAnimations
 
 // Canonical values used by per-page Reset actions. Reset never deletes source files.
 const STUDIO_RESET_DEFAULTS = {
-  logo: { src:'assets/images/royal-hall-crest.webp', width:145, height:98, position:'left' },
-  navbar: { design:0, buttonStyle:0, animation:0, hoverAnimation:0, height:72, bgColor:'#0a0b0d', transparent:true },
+  logo: { src:'assets/images/royal-hall-crest.webp', width:145, height:98, position:'left', mobileScale:true, hideOnSmall:false, textFallback:true },
+  navbar: { design:0, buttonStyle:0, animation:0, hoverAnimation:0, height:72, bgColor:'#0a0b0d', transparent:true, sticky:true, hamburger:true },
   hero: { src:'assets/images/hero-venue.jpg', scale:100, posX:50, posY:50, height:70, animation:0, displayMode:'cover', overlayColor:'#000000', overlayOpacity:40, brightness:100, contrast:100, animationSpeed:10, animationDelay:3, blur:0, kenBurns:false, parallax:false, gradient:false, decorative:false },
   heroHeading: { text:'A Royal Celebration Awaits', animation:0, font:0, colorCombo:0, size:56, weight:800, lineHeight:1.15, letterSpacing:-1, align:'center' },
   heroSub: { text:'The Perfect Venue for Weddings, Receptions, Birthdays, Corporate Events & More.', preset:0, size:18, weight:400, lineHeight:1.6, color:'#e8eaf0', align:'center' },
-  background: { src:'', animation:0, posX:50, posY:50, overlayOpacity:30, overlayColor:'#000000' },
+  background: { src:'', animation:0, posX:50, posY:50, overlayOpacity:30, overlayColor:'#000000', fixed:true, gradient:true },
   video: { src:'', autoplay:true, loop:true, muted:true, controls:false, playsInline:true, objectFit:'cover', poster:'assets/images/hero-venue.jpg', posX:50, posY:50 },
   theme: { active:0, customColors:{ gold:'#c6a15b', background:'#0a0b0d', ink:'#171d19', cream:'#f5f0e7' } },
   buttons: { gold:{ bgType:'solid', bgColor:'#c6a15b', textColor:'#171d19', borderRadius:'999px', paddingY:'14px', paddingX:'24px', fontSize:'0.82rem', fontWeight:'700', shadow:'none', borderWidth:'1px', borderColor:'transparent', hoverEffect:'lift' } },
@@ -180,7 +202,8 @@ const STUDIO_RESET_DEFAULTS = {
   mediaLibrary:[],
   mediaLabels:{},
   hiddenMediaAssets:[],
-  imageSizing:{}
+  imageSizing:{},
+  settings:{autoSave:true,livePreview:true,keyboardShortcuts:true,animationPreviews:true,confirmDestructive:true}
 };
 
 /* ── DOM HELPERS ── */
@@ -260,6 +283,13 @@ function syncPreviewStyles() {
   const navH = c.navbar?.height || 72;
   const navBg = c.navbar?.bgColor || '#0a0b0d';
   const isTransparent = !!c.navbar?.transparent;
+  const navSticky = c.navbar?.sticky !== false;
+  const navHamburger = c.navbar?.hamburger !== false;
+  const logoMobileScale = c.logo?.mobileScale !== false;
+  const logoHideOnSmall = c.logo?.hideOnSmall === true;
+  const logoTextFallback = c.logo?.textFallback !== false;
+  const bgFixed = c.background?.fixed !== false;
+  const bgGradient = c.background?.gradient !== false;
   const customTheme = c.theme?.customColors || {};
   const themeGold = customTheme.gold || '#c6a15b';
   const themeBg = customTheme.background || navBg;
@@ -341,6 +371,33 @@ function syncPreviewStyles() {
     .site-header .nav {
       min-height: ${navH}px !important;
     }
+    .site-header {
+      position: ${navSticky ? 'sticky' : 'relative'} !important;
+      top: ${navSticky ? '0' : 'auto'} !important;
+      z-index: 1000 !important;
+    }
+    @media (max-width:760px) {
+      .site-header .menu-toggle { display: ${navHamburger ? 'block' : 'none'} !important; }
+      .site-header .nav-links {
+        display: ${navHamburger ? 'none' : 'flex'} !important;
+        position: ${navHamburger ? 'fixed' : 'static'} !important;
+        inset: ${navHamburger ? '70px 0 auto' : 'auto'} !important;
+        flex-direction: ${navHamburger ? 'column' : 'row'} !important;
+        flex-wrap: ${navHamburger ? 'nowrap' : 'wrap'} !important;
+        gap: ${navHamburger ? '0' : '6px'} !important;
+        padding: ${navHamburger ? '18px 24px 24px' : '4px'} !important;
+        background: ${navHamburger ? navBg : 'transparent'} !important;
+        box-shadow: ${navHamburger ? '0 18px 40px rgba(0,0,0,.26)' : 'none'} !important;
+      }
+      .site-header .nav-links.open { display: flex !important; }
+      .site-header .brand-logo {
+        ${logoMobileScale ? 'width:min(' + logoW + 'px,22vw)!important;height:min(' + logoH + 'px,13vw)!important;max-width:22vw!important;' : ''}
+      }
+    }
+    @media (max-width:420px) {
+      .site-header .brand-logo { ${logoHideOnSmall ? 'display:none!important;' : ''} }
+    }
+    body { background-attachment: ${bgFixed ? 'fixed' : 'scroll'} !important; }
     .hero {
       min-height: ${heroH}vh !important;
     }
@@ -404,6 +461,34 @@ function syncPreviewStyles() {
         (doc.head || doc.body).appendChild(tag);
       }
       tag.textContent = css;
+
+      // Implement the optional logo text fallback when the image fails to load.
+      doc.querySelectorAll('.site-header .brand').forEach(brand => {
+        const image = brand.querySelector('img.brand-logo');
+        if (!image) return;
+        let fallback = brand.querySelector('.rbh-logo-text-fallback');
+        if (logoTextFallback) {
+          if (!fallback) {
+            fallback = doc.createElement('span');
+            fallback.className = 'rbh-logo-text-fallback';
+            fallback.textContent = 'The Royal Hall';
+            Object.assign(fallback.style,{display:'none',fontFamily:'Georgia,serif',fontWeight:'600',color:'var(--gold)',lineHeight:'1.15',maxWidth:'130px'});
+            brand.appendChild(fallback);
+          }
+          const revealFallback = () => { if (fallback) { fallback.style.display='inline-block'; image.style.display='none'; } };
+          const restoreLogo = () => { if (fallback) fallback.style.display='none'; image.style.display='block'; };
+          if (image.dataset.rbhFallbackBound !== '1') {
+            image.addEventListener('error',revealFallback);
+            image.addEventListener('load',restoreLogo);
+            image.dataset.rbhFallbackBound='1';
+          }
+          if (image.complete && image.naturalWidth === 0) revealFallback();
+          else restoreLogo();
+        } else {
+          fallback?.remove();
+          image.style.display='block';
+        }
+      });
 
       // Render persistent hero overlay, including drafts loaded after page initialization.
       doc.querySelectorAll('.hero, .hero-section').forEach(hero => {
