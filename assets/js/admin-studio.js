@@ -14,9 +14,8 @@ const API = {
   base: '',           // Set by detectBackend()
   available: false,
   backends: [
-    { name: 'Node.js', url: 'http://localhost:3001' },
-    { name: 'PHP',     url: '' },          // Same origin via api.php
-    { name: 'Python',  url: 'http://localhost:8001' },
+    { name: 'Current deployment', url: '' },
+    { name: 'Node.js local', url: 'http://localhost:3001' },
   ],
 
   async call(method, endpoint, body = null) {
@@ -1655,7 +1654,7 @@ function initAll() {
   // Autosave every 2min without interrupting the editor with toast popups.
   setInterval(() => saveDraft({ silent: true }), 120000);
 
-  // ── Authentication Gate (Royal Hall / Royal@07)
+  // ── Authentication Gate (server-validated session)
   initAuth();
 
   // ── Connect to backend server (auto-detect Node.js / PHP / Python)
