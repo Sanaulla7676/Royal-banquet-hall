@@ -113,6 +113,30 @@ const STUDIO = {
   }
 };
 
+// Backfill fields introduced after the first local/browser drafts were created.
+STUDIO.cms.animations = {
+  activeItems: [],
+  speed: 10,
+  delay: 0,
+  duration: 500,
+  targets: ['Headings'],
+  direction: 'Normal',
+  scrollTrigger: true,
+  repeatEveryView: false,
+  ...(STUDIO.cms.animations || {})
+};
+STUDIO.cms.effects = { activeItems: [], intensity: 100, ...(STUDIO.cms.effects || {}) };
+STUDIO.cms.components = { activeItems: [], ...(STUDIO.cms.components || {}) };
+STUDIO.cms.fontAnimations = {
+  active: 0,
+  targets: ['Hero Heading'],
+  speed: 10,
+  delay: 0,
+  duration: 500,
+  repeat: 'Once',
+  ...(STUDIO.cms.fontAnimations || {})
+};
+
 /* ── DOM HELPERS ── */
 const $ = (s, ctx = document) => ctx.querySelector(s);
 const $$ = (s, ctx = document) => [...ctx.querySelectorAll(s)];
