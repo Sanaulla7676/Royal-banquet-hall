@@ -1388,20 +1388,67 @@ function initBgPage() {
   const cms = STUDIO.cms.background;
 
   const upload = document.getElementById('bg-upload');
+  const bgUrlInput = document.getElementById('bg-url-input');
+  const bgPreview = document.getElementById('bg-preview-img');
+
+  if (bgUrlInput) {
+    bgUrlInput.value = /^https:\/\//i.test(cms.src || '') || String(cms.src || '').startsWith('/') || String(cms.src || '').startsWith('assets/')
+      ? cms.src : '';
+    bgUrlInput.addEventListener('change', () => {
+      const value = bgUrlInput.value.trim();
+      if (value && !/^https:\/\//i.test(value) && !value.startsWith('/') && !value.startsWith('assets/')) {
+        toast('Use a permanent HTTPS URL or a path under assets/.', 'error');
+        bgUrlInput.value = /^https:\/\//i.test(cms.src || '') || String(cms.src || '').startsWith('/') || String(cms.src || '').startsWith('assets/') ? cms.src : '';
+        return;
+      }
+      if (/^(?:blob:|data:)/i.test(value)) {
+        toast('Temporary image URLs cannot be published. Use a permanent HTTPS/CDN URL.', 'error');
+        return;
+      }
+      pushUndo('Background image URL');
+      cms.src = value;
+      if (bgPreview) {
+        bgPreview.src = value || 'assets/images/hero-venue.jpg';
+        bgPreview.style.display = value ? 'block' : 'none';
+      }
+      markDirty();
+      syncPreviewStyles();
+    });
+  }
+
+  document.getElementById('bg-upload-zone')?.addEventListener('click',() => upload?.click());
   if (upload) {
     upload.addEventListener('change', e => {
-      const file = e.target.files[0];
+      const file = e.target.files?.[0];
       if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        toast('Choose a valid image file.', 'error');
+        upload.value = '';
+        return;
+      }
+      if (file.size > 450 * 1024) {
+        toast('Image is over 450 KB. Use a permanent Cloudinary/CDN URL instead.', 'error');
+        upload.value = '';
+        return;
+      }
       const reader = new FileReader();
       reader.onload = ev => {
-        cms.src = ev.target.result;
-        const prev = document.getElementById('bg-preview-img');
-        if (prev) { prev.src = ev.target.result; prev.style.display = 'block'; }
+        const source = String(ev.target.result || '');
+        if (!source.startsWith('data:image/')) {
+          toast('The background image could not be read.', 'error');
+          return;
+        }
+        pushUndo('Background image upload');
+        cms.src = source;
+        if (bgUrlInput) bgUrlInput.value = '';
+        if (bgPreview) { bgPreview.src = source; bgPreview.style.display = 'block'; }
         markDirty();
         syncPreviewStyles();
-        toast('Background uploaded to the current draft. Save Draft to persist it.', 'gold');
+        toast('Background added to the draft. Save Draft, then Publish when reviewed.', 'gold');
       };
+      reader.onerror = () => toast('The background image could not be read.', 'error');
       reader.readAsDataURL(file);
+      upload.value = '';
     });
   }
 
