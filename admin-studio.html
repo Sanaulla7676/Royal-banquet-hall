@@ -1120,11 +1120,15 @@
               <button class="s-change-img-btn" onclick="document.getElementById('bg-upload').click()">Change Background</button>
             </div>
             <input type="file" id="bg-upload" accept="image/*" style="display:none">
-            <div class="s-upload-zone" style="margin:0;">
-              <input type="file" accept="image/*">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <div class="s-upload-zone" id="bg-upload-zone" style="margin:0;cursor:pointer;">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               <p>Upload Background Image</p>
-              <small>JPG, PNG, WebP • Any resolution</small>
+              <small>JPG, PNG, WebP • Use a permanent URL for larger images</small>
+            </div>
+            <div class="s-fg" style="margin-top:12px;">
+              <label class="s-label" for="bg-url-input">Background image URL / site path</label>
+              <input type="url" class="s-input" id="bg-url-input" placeholder="https://res.cloudinary.com/…/image/upload/…jpg" autocomplete="url">
+              <small style="color:var(--s-text-dim);line-height:1.5;">Use a permanent HTTPS/CDN URL so every visitor can load the image.</small>
             </div>
           </div>
 
