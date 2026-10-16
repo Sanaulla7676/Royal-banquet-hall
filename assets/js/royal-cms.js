@@ -23,9 +23,10 @@
 
   // Load published Studio customizations (only when published from studio!)
   function applyStudioPublished(pub) {
-    if (!pub) return;
+    if (!pub || typeof pub !== 'object') return;
     cmsData.studioPublished = pub;
     cmsData.navbar = cmsData.navbar || {};
+
     if (pub.logo) {
       if (pub.logo.width) cmsData.navbar.logoWidth = pub.logo.width;
       if (pub.logo.height) cmsData.navbar.logoHeight = pub.logo.height;
@@ -35,9 +36,118 @@
       if (pub.navbar.bgColor) cmsData.navbar.bgColor = pub.navbar.bgColor;
       if (pub.navbar.height) cmsData.navbar.height = pub.navbar.height;
       cmsData.navbar.transparent = !!pub.navbar.transparent;
+      if (pub.navbar.cta) cmsData.navbar.cta = pub.navbar.cta;
+      if (Array.isArray(pub.navbar.links)) cmsData.navbar.links = pub.navbar.links;
     }
+
+    // Apply the same core settings that are edited in the Admin Studio to every visitor.
+    const hero = document.querySelector('.hero, .hero-section');
+    if (pub.hero) {
+      const slides = Array.from(document.querySelectorAll('.hero-slideshow [data-hero-slide]'));
+      if (pub.hero.src && slides.length) slides[0].src = pub.hero.src;
+      if (hero && Number.isFinite(Number(pub.hero.height))) {
+        hero.style.setProperty('min-height', Number(pub.hero.height) + 'vh', 'important');
+      }
+      slides.forEach(img => {
+        if (Number.isFinite(Number(pub.hero.posX)) && Number.isFinite(Number(pub.hero.posY))) {
+          img.style.objectPosition = Number(pub.hero.posX) + '% ' + Number(pub.hero.posY) + '%';
+        }
+        if (Number.isFinite(Number(pub.hero.brightness))) {
+          img.style.filter = 'brightness(' + Number(pub.hero.brightness) + '%) contrast(' +
+            (Number.isFinite(Number(pub.hero.contrast)) ? Number(pub.hero.contrast) : 100) + '%)';
+        }
+      });
+      if (hero && pub.hero.displayMode) {
+        hero.style.setProperty('--cms-hero-display-mode', pub.hero.displayMode);
+      }
+    }
+
+    if (pub.heroHeading) {
+      const heading = document.querySelector('.hero-title-primary') ||
+        document.querySelector('.hero-content h1');
+      if (heading && typeof pub.heroHeading.text === 'string') heading.textContent = pub.heroHeading.text;
+      if (heading && Number.isFinite(Number(pub.heroHeading.size))) {
+        heading.style.fontSize = Number(pub.heroHeading.size) + 'px';
+      }
+      if (heading && Number.isFinite(Number(pub.heroHeading.weight))) {
+        heading.style.fontWeight = String(Number(pub.heroHeading.weight));
+      }
+      if (heading && Number.isFinite(Number(pub.heroHeading.lineHeight))) {
+        heading.style.lineHeight = String(Number(pub.heroHeading.lineHeight));
+      }
+      if (heading && Number.isFinite(Number(pub.heroHeading.letterSpacing))) {
+        heading.style.letterSpacing = Number(pub.heroHeading.letterSpacing) + 'px';
+      }
+    }
+
+    if (pub.heroSub) {
+      const subheading = document.querySelector('.hero-content .lede') ||
+        document.querySelector('.hero-content p');
+      if (subheading && typeof pub.heroSub.text === 'string') subheading.textContent = pub.heroSub.text;
+      if (subheading && Number.isFinite(Number(pub.heroSub.size))) {
+        subheading.style.fontSize = Number(pub.heroSub.size) + 'px';
+      }
+    }
+
+    if (pub.background && pub.background.src) {
+      document.body.style.backgroundImage = 'url("' + String(pub.background.src).replace(/"/g, '%22') + '")';
+      document.body.style.backgroundPosition = Number(pub.background.posX ?? 50) + '% ' +
+        Number(pub.background.posY ?? 50) + '%';
+      document.body.style.backgroundSize = 'cover';
+    }
+
+    if (pub.video && pub.video.src) {
+      document.querySelectorAll('#site-intro video, .site-intro-video, .site-intro video').forEach(video => {
+        if (video.tagName.toLowerCase() === 'video') {
+          if (video.src !== new URL(pub.video.src, window.location.href).href) video.src = pub.video.src;
+          video.autoplay = pub.video.autoplay !== false;
+          video.loop = pub.video.loop !== false;
+          video.muted = pub.video.muted !== false;
+        } else {
+          video.dataset.src = pub.video.src;
+        }
+      });
+    }
+
+    // Theme presets are intentionally mapped here rather than requiring the editor's iframe.
+    const themePresets = [
+      { nav: '#0a0b0d', hero: '#1a1200', gold: '#c6a15b' },
+      { nav: '#0d0a1f', hero: '#1a0f2e', gold: '#f0c060' },
+      { nav: '#1a0a0f', hero: '#f5f0ea', gold: '#c0697a' },
+      { nav: '#0a1a0f', hero: '#1a2f1a', gold: '#5ca870' },
+      { nav: '#0a1020', hero: '#0f1e35', gold: '#4a9fd4' },
+      { nav: '#f5f0e7', hero: '#faf7f2', gold: '#c6a15b' },
+      { nav: '#0f0a0a', hero: '#1a0a0f', gold: '#d45050' },
+      { nav: '#111827', hero: '#f8fafc', gold: '#6b7280' },
+      { nav: '#1a0e05', hero: '#2d1a08', gold: '#e8874a' },
+      { nav: '#0a0f2e', hero: '#f0f4ff', gold: '#3b5bdb' }
+    ];
+    const activeTheme = Number(pub.theme && pub.theme.active);
+    if (Number.isInteger(activeTheme) && themePresets[activeTheme]) {
+      const theme = themePresets[activeTheme];
+      document.documentElement.style.setProperty('--gold', theme.gold);
+      if (!pub.navbar || !pub.navbar.bgColor) document.documentElement.style.setProperty('--ink', theme.nav);
+      if (hero && !pub.hero?.src) hero.style.backgroundColor = theme.hero;
+    }
+
+    // Convert the Studio button controls to the existing public-site runtime format.
+    const goldButton = pub.buttons && pub.buttons.gold;
+    if (goldButton) {
+      cmsData.buttons = cmsData.buttons || {};
+      cmsData.buttons.borderRadius = goldButton.borderRadius || '999px';
+      cmsData.buttons.padding = (goldButton.paddingY || '14px') + ' ' + (goldButton.paddingX || '24px');
+      cmsData.buttons.fontSize = goldButton.fontSize || '0.82rem';
+      if (goldButton.bgColor) cmsData.buttons.background = goldButton.bgColor;
+      if (goldButton.textColor) cmsData.buttons.textColor = goldButton.textColor;
+    }
+
     applyNavbar();
     applyThemeAndStyles();
+    applyButtons();
+    applyLayoutOverrides();
+    applyMediaReplacements();
+    applyVenueDetails();
+    applySectionOrdering();
   }
 
   try {
@@ -58,10 +168,10 @@
       if (res && res.ok) {
         const json = await res.json();
         const pub = json.data || json;
-        if (pub && (pub.logo || pub.navbar)) {
-          if (!localStorage.getItem('royal_cms_published')) {
-            applyStudioPublished(pub);
-          }
+        if (pub && (pub.logo || pub.navbar || pub.hero || pub.heroHeading)) {
+          // Server-published content is authoritative; localStorage must never pin a stale live version.
+          applyStudioPublished(pub);
+          try { localStorage.setItem('royal_cms_published', JSON.stringify(pub)); } catch {}
         }
       }
     } catch (e) {}
@@ -475,18 +585,14 @@
   // --------------------------------------------------------------------------
   // ADMIN AUTHENTICATION & IN-CONTEXT STUDIO BAR
   // --------------------------------------------------------------------------
+  let serverSessionVerified = false;
+
   function isAuthenticated() {
-    return sessionStorage.getItem(AUTH_KEY) === '1' || localStorage.getItem(AUTH_KEY) === '1';
+    return serverSessionVerified;
   }
 
   function setAuthenticated(val) {
-    if (val) {
-      sessionStorage.setItem(AUTH_KEY, '1');
-      localStorage.setItem(AUTH_KEY, '1');
-    } else {
-      sessionStorage.removeItem(AUTH_KEY);
-      localStorage.removeItem(AUTH_KEY);
-    }
+    serverSessionVerified = Boolean(val);
   }
 
   let isEditMode = false;
@@ -516,9 +622,13 @@
     // Discreet crown button in footer/corner
     injectDiscreetAdminKey();
 
-    if (isAuthenticated()) {
-      renderAdminDock();
-    }
+    fetch('/api/auth/session', { credentials: 'same-origin', cache: 'no-store' })
+      .then(async response => ({ response, data: await response.json().catch(() => ({})) }))
+      .then(({ response, data }) => {
+        setAuthenticated(Boolean(response.ok && data.success));
+        if (isAuthenticated()) renderAdminDock();
+      })
+      .catch(() => setAuthenticated(false));
   }
 
   function injectDiscreetAdminKey() {
@@ -543,46 +653,65 @@
     if (document.querySelector('.admin-login-modal')) return;
     const modal = document.createElement('div');
     modal.className = 'admin-login-modal';
-    modal.innerHTML = `
-      <div class="admin-login-card">
-        <img class="admin-login-logo" src="assets/images/royal-hall-crest.webp" alt="Royal Crest">
-        <h2 class="admin-login-title">Royal Admin Studio</h2>
-        <p class="admin-login-subtitle">Enter your admin PIN to unlock visual editing and site controls</p>
-        <form id="admin-login-form">
-          <div class="admin-form-group">
-            <input type="password" id="admin-pin-input" class="admin-input" placeholder="Admin PIN (default: royal2026)" required autofocus style="text-align:center;font-size:1.1rem;letter-spacing:0.2em;">
-          </div>
-          <button type="submit" class="admin-header-btn btn-gold" style="width:100%;justify-content:center;padding:12px;font-size:0.9rem;">
-            Unlock Admin Studio
-          </button>
-        </form>
-        <button type="button" id="admin-login-cancel" style="background:transparent;border:0;color:#9ba49e;font-size:0.78rem;margin-top:14px;cursor:pointer;">Cancel</button>
-      </div>
-    `;
+    modal.innerHTML =
+      '<div class="admin-login-card">' +
+        '<img class="admin-login-logo" src="assets/images/royal-hall-crest.webp" alt="Royal Crest">' +
+        '<h2 class="admin-login-title">Royal Admin Studio</h2>' +
+        '<p class="admin-login-subtitle">Sign in to open the protected visual editor</p>' +
+        '<form id="admin-login-form">' +
+          '<div class="admin-form-group"><input type="text" id="admin-login-username" class="admin-input" placeholder="Admin login ID" required autocomplete="username" style="text-align:center;"></div>' +
+          '<div class="admin-form-group"><input type="password" id="admin-pin-input" class="admin-input" placeholder="Admin password" required autocomplete="current-password" style="text-align:center;font-size:1.1rem;letter-spacing:0.08em;"></div>' +
+          '<div id="admin-login-error" role="alert" style="display:none;color:#ffb4a9;font-size:0.82rem;margin:10px 0;"></div>' +
+          '<button type="submit" class="admin-header-btn btn-gold" style="width:100%;justify-content:center;padding:12px;font-size:0.9rem;">Sign In</button>' +
+        '</form>' +
+        '<button type="button" id="admin-login-cancel" style="background:transparent;border:0;color:#9ba49e;font-size:0.78rem;margin-top:14px;cursor:pointer;">Cancel</button>' +
+      '</div>';
     document.body.appendChild(modal);
 
     const form = modal.querySelector('#admin-login-form');
+    const userInput = modal.querySelector('#admin-login-username');
     const input = modal.querySelector('#admin-pin-input');
+    const error = modal.querySelector('#admin-login-error');
     const cancel = modal.querySelector('#admin-login-cancel');
 
     cancel.onclick = () => modal.remove();
-    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+    modal.onclick = event => { if (event.target === modal) modal.remove(); };
 
-    form.onsubmit = (e) => {
-      e.preventDefault();
-      const entered = input.value.trim();
-      const correctPin = cmsData.auth?.adminPin || 'royal2026';
-      if (entered === correctPin) {
+    form.onsubmit = async event => {
+      event.preventDefault();
+      const submit = form.querySelector('button[type="submit"]');
+      if (submit) submit.disabled = true;
+      if (error) error.style.display = 'none';
+
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: userInput.value, password: input.value, remember: false })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.success) {
+          if (error) {
+            error.textContent = result.message || 'Sign-in failed. Check credentials and server configuration.';
+            error.style.display = 'block';
+          }
+          return;
+        }
         setAuthenticated(true);
         modal.remove();
         renderAdminDock();
-        showToast('Welcome back, Admin! Studio unlocked.', 'success');
-      } else {
-        showToast('Incorrect PIN. Try again or check defaults (royal2026)', 'error');
-        input.value = '';
-        input.focus();
+        showToast('Admin session verified. Visual editor unlocked.', 'success');
+      } catch {
+        if (error) {
+          error.textContent = 'The sign-in service is unavailable. No login was accepted.';
+          error.style.display = 'block';
+        }
+      } finally {
+        if (submit) submit.disabled = false;
       }
     };
+    setTimeout(() => userInput.focus(), 50);
   }
 
   function renderAdminDock() {
@@ -613,7 +742,15 @@
 
     dock.querySelector('#cms-btn-toggle-edit').onclick = toggleEditMode;
     dock.querySelector('#cms-btn-save-all').onclick = saveAllChanges;
-    dock.querySelector('#cms-btn-logout').onclick = () => {
+    dock.querySelector('#cms-btn-logout').onclick = async () => {
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}'
+        });
+      } catch {}
       setAuthenticated(false);
       if (isEditMode) toggleEditMode();
       dock.remove();
@@ -1092,20 +1229,10 @@
     } catch (e) {
       console.error('Failed to write to localStorage', e);
     }
-
-    // Attempt to notify local admin server if running
-    fetch('/api/save-cms', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(cmsData)
-    })
-    .then(res => res.json())
-    .then(() => {
-      showToast('All changes saved to live website and disk!', 'success');
-    })
-    .catch(() => {
-      showToast('Saved to browser storage! (To persist to git files, run npm run admin)', 'success');
-    });
+    showToast(
+      'This legacy in-context editor only saves locally. Use the full Admin Studio to save a shared draft and publish changes.',
+      'info'
+    );
   }
 
   function showToast(message, type = 'info') {
