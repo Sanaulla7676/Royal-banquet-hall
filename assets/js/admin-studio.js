@@ -136,6 +136,8 @@ STUDIO.cms.fontAnimations = {
   repeat: 'Once',
   ...(STUDIO.cms.fontAnimations || {})
 };
+if (!Array.isArray(STUDIO.cms.animations.targets)) STUDIO.cms.animations.targets = ['Headings'];
+if (!Array.isArray(STUDIO.cms.fontAnimations.targets)) STUDIO.cms.fontAnimations.targets = ['Hero Heading'];
 
 /* ── DOM HELPERS ── */
 const $ = (s, ctx = document) => ctx.querySelector(s);
@@ -360,6 +362,12 @@ function syncPreviewStyles() {
 window.STUDIO = STUDIO;
 window.syncPreviewStyles = syncPreviewStyles;
 window.saveDraft = saveDraft;
+window.saveSection = async function(sectionName) {
+  const ok = await saveDraft({ silent: true });
+  if (ok) toast(sectionName + ' saved to shared CMS storage.', 'success');
+  else toast(sectionName + ' was not saved. Check sign-in and the backend status.', 'error');
+  return ok;
+};
 window.publishLive = publishLive;
 window.pushUndo = pushUndo;
 window.toast = toast;
@@ -1582,16 +1590,41 @@ function initFontAnimPage() {
       toast(`"${name}" applied`, 'gold');
       markDirty();
       previewFontAnim(name, i);
+      syncPreviewStyles();
     });
     list.appendChild(item);
   });
 
-  initSlider('fontanim-slider-speed', 'fontanim-num-speed', 'fontanim-val-speed', v => { markDirty(); }, 's');
-  initSlider('fontanim-slider-delay', 'fontanim-num-delay', 'fontanim-val-delay', v => { markDirty(); }, 's');
-  initSlider('fontanim-slider-duration', 'fontanim-num-duration', 'fontanim-val-duration', v => { markDirty(); }, 'ms');
+  const model = STUDIO.cms.fontAnimations;
+  initSlider('fontanim-slider-speed', 'fontanim-num-speed', 'fontanim-val-speed', v => { model.speed = v; markDirty(); syncPreviewStyles(); }, 's');
+  initSlider('fontanim-slider-delay', 'fontanim-num-delay', 'fontanim-val-delay', v => { model.delay = v; markDirty(); syncPreviewStyles(); }, 's');
+  initSlider('fontanim-slider-duration', 'fontanim-num-duration', 'fontanim-val-duration', v => { model.duration = v; markDirty(); syncPreviewStyles(); }, 'ms');
 
   document.querySelectorAll('#fontanim-target-chips .s-chip').forEach(chip => {
-    chip.addEventListener('click', () => { chip.classList.toggle('active'); markDirty(); });
+    const target = chip.textContent.trim();
+    chip.classList.toggle('active', model.targets.includes(target));
+    chip.addEventListener('click', () => {
+      const idx = model.targets.indexOf(target);
+      if (idx >= 0 && model.targets.length > 1) {
+        model.targets.splice(idx, 1);
+        chip.classList.remove('active');
+      } else if (idx < 0) {
+        model.targets.push(target);
+        chip.classList.add('active');
+      }
+      markDirty();
+      syncPreviewStyles();
+    });
+  });
+
+  document.querySelectorAll('#fontanim-repeat-chips .s-chip').forEach(chip => {
+    chip.classList.toggle('active', chip.textContent.trim() === model.repeat);
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#fontanim-repeat-chips .s-chip').forEach(item => item.classList.toggle('active', item === chip));
+      model.repeat = chip.textContent.trim();
+      markDirty();
+      syncPreviewStyles();
+    });
   });
 }
 
