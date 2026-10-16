@@ -1333,10 +1333,14 @@ function initImageLibraryPage() {
     'assets/images/cake-display.jpg',
     ...Array.from({length:30},(_,i)=>'assets/images/photo-'+String(i+1).padStart(2,'0')+'.jpeg')
   ];
-  const manifestImages = Array.isArray(window.ROYAL_HALL_MEDIA?.photos)
-    ? window.ROYAL_HALL_MEDIA.photos.map(photo => typeof photo === 'string' ? photo : photo.src).filter(Boolean)
-    : fallbackImages;
+  const manifestPhotos = Array.isArray(window.ROYAL_HALL_MEDIA?.photos)
+    ? window.ROYAL_HALL_MEDIA.photos.map(photo => typeof photo === 'string' ? { src: photo, category: 'gallery', title: '' } : photo).filter(photo => photo && photo.src)
+    : fallbackImages.map(src => ({ src, category: src.toLowerCase().includes('hero') ? 'hero' : 'gallery', title: '' }));
+  const manifestImages = manifestPhotos.map(photo => photo.src);
+  const manifestCategoryMap = new Map(manifestPhotos.map(photo => [photo.src, String(photo.category || 'gallery').toLowerCase()]));
+  const manifestTitleMap = new Map(manifestPhotos.map(photo => [photo.src, String(photo.title || '')]));
   let selectedImg = null;
+  let activeFilter = 'all';
 
   const cloudNameInput = document.getElementById('cloudinary-cloud-name');
   const uploadPresetInput = document.getElementById('cloudinary-upload-preset');
@@ -1360,10 +1364,15 @@ function initImageLibraryPage() {
   function assetRecords() {
     const builtIn = manifestImages
       .filter(src => typeof src === 'string' && !cms.hiddenMediaAssets.includes(src))
-      .map(src => ({ id: 'builtin:' + src, src, name: cms.mediaLabels[src] || src.split('/').pop(), builtin: true }));
+      .map(src => ({
+        id: 'builtin:' + src, src,
+        name: cms.mediaLabels[src] || manifestTitleMap.get(src) || src.split('/').pop(),
+        category: manifestCategoryMap.get(src) || (src.toLowerCase().includes('hero') ? 'hero' : 'gallery'),
+        builtin: true
+      }));
     const custom = cms.mediaLibrary
       .filter(asset => asset && typeof asset.src === 'string')
-      .map(asset => ({ ...asset, builtin: false }));
+      .map(asset => ({ ...asset, category: String(asset.category || 'gallery').toLowerCase(), builtin: false }));
     return [...builtIn, ...custom];
   }
 
@@ -1398,11 +1407,18 @@ function initImageLibraryPage() {
 
   function renderLibrary() {
     grid.innerHTML = '';
-    const records = assetRecords();
+    const allRecords = assetRecords();
+    const records = allRecords.filter(record => {
+      if (activeFilter === 'all') return true;
+      if (activeFilter === 'hero') return record.category === 'hero' || /hero|banner/i.test(record.name || '');
+      if (activeFilter === 'events') return /event|birthday|wedding|stage|party|catering/i.test((record.category || '') + ' ' + (record.name || ''));
+      return !(/event|birthday|wedding|stage|party|catering/i.test((record.category || '') + ' ' + (record.name || '')));
+    });
     records.forEach(record => {
       const item = document.createElement('div');
       item.className = 's-img-item';
       item.dataset.src = record.src;
+      item.dataset.category = record.category || 'gallery';
       const img = document.createElement('img');
       img.src = record.src;
       img.alt = record.name || 'Royal Banquet Hall asset';
@@ -1478,6 +1494,19 @@ function initImageLibraryPage() {
   }
 
   renderLibrary();
+  document.querySelectorAll('#page-image-library .s-panel-scroll .s-chips .s-chip').forEach(chip => {
+    const text = chip.textContent.trim().toLowerCase();
+    const filter = text.startsWith('all') ? 'all' : text;
+    chip.addEventListener('click', () => {
+      activeFilter = filter;
+      document.querySelectorAll('#page-image-library .s-panel-scroll .s-chips .s-chip').forEach(other => other.classList.toggle('active', other === chip));
+      const allChip = Array.from(document.querySelectorAll('#page-image-library .s-panel-scroll .s-chips .s-chip')).find(other => other.textContent.trim().toLowerCase().startsWith('all'));
+      if (allChip) allChip.textContent = 'All (' + assetRecords().length + ')';
+      renderLibrary();
+    });
+  });
+  const allChip = Array.from(document.querySelectorAll('#page-image-library .s-panel-scroll .s-chips .s-chip')).find(chip => chip.textContent.trim().toLowerCase().startsWith('all'));
+  if (allChip) allChip.textContent = 'All (' + assetRecords().length + ')';
 
   const upload = document.getElementById('img-lib-upload');
   if (upload) {
@@ -1530,6 +1559,7 @@ function initImageLibraryPage() {
             src,
             name,
             source:useCloudinary ? 'cloudinary' : 'browser',
+            category:'gallery',
             createdAt:new Date().toISOString()
           });
           markDirty();
