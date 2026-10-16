@@ -21,6 +21,271 @@
     console.warn('[Royal CMS] Could not load localStorage data:', err);
   }
 
+  // Shared CSS/animation layer for the published 13-section Studio.
+  let advancedMotionObserver = null;
+  const advancedMotionOriginals = new WeakMap();
+
+  function applyStudioAdvancedStyles(pub) {
+    if (!pub || typeof pub !== 'object') return;
+
+    // Restore inline values from the last run before applying the latest draft/publish message.
+    if (advancedMotionObserver) {
+      advancedMotionObserver.disconnect();
+      advancedMotionObserver = null;
+    }
+    document.querySelectorAll('[data-rbh-cms-motion], [data-rbh-cms-font-motion]').forEach(node => {
+      const original = advancedMotionOriginals.get(node);
+      if (original) {
+        if (original.animation) node.style.animation = original.animation;
+        else node.style.removeProperty('animation');
+        if (original.opacity) node.style.opacity = original.opacity;
+        else node.style.removeProperty('opacity');
+        advancedMotionOriginals.delete(node);
+      } else {
+        node.style.removeProperty('animation');
+        node.style.removeProperty('opacity');
+      }
+      node.classList.remove('rbh-cms-motion-pending', 'rbh-cms-motion-active', 'rbh-cms-font-pending', 'rbh-cms-font-active');
+      node.removeAttribute('data-rbh-cms-motion');
+      node.removeAttribute('data-rbh-cms-font-motion');
+    });
+
+    const styleId = 'royal-cms-studio-advanced-styles';
+    let styleTag = document.getElementById(styleId);
+    if (!styleTag) {
+      styleTag = document.createElement('style');
+      styleTag.id = styleId;
+      document.head.appendChild(styleTag);
+    }
+
+    const keyframes = [
+      '@keyframes rbhFadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}',
+      '@keyframes rbhSlideDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}',
+      '@keyframes rbhSlideLeft{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}',
+      '@keyframes rbhSlideRight{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:translateX(0)}}',
+      '@keyframes rbhZoomIn{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:scale(1)}}',
+      '@keyframes rbhZoomOut{from{opacity:0;transform:scale(1.12)}to{opacity:1;transform:scale(1)}}',
+      '@keyframes rbhBounce{0%{opacity:0;transform:translateY(18px) scale(.96)}65%{opacity:1;transform:translateY(-4px) scale(1.01)}100%{transform:translateY(0) scale(1)}}',
+      '@keyframes rbhFlipX{from{opacity:0;transform:rotateX(70deg)}to{opacity:1;transform:rotateX(0)}}',
+      '@keyframes rbhFlipY{from{opacity:0;transform:rotateY(70deg)}to{opacity:1;transform:rotateY(0)}}',
+      '@keyframes rbhRotate{from{opacity:0;transform:rotate(-8deg) scale(.94)}to{opacity:1;transform:rotate(0) scale(1)}}',
+      '@keyframes rbhShake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-3px)}40%,80%{transform:translateX(3px)}}',
+      '@keyframes rbhPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}',
+      '@keyframes rbhWobble{0%,100%{transform:rotate(0)}25%{transform:rotate(-2deg)}75%{transform:rotate(2deg)}}',
+      '@keyframes rbhSwing{20%{transform:rotate(6deg)}40%{transform:rotate(-4deg)}60%{transform:rotate(2deg)}80%{transform:rotate(-1deg)}100%{transform:rotate(0)}}',
+      '@keyframes rbhTada{0%{transform:scale(1)}10%,20%{transform:scale(.94) rotate(-3deg)}30%,50%,70%,90%{transform:scale(1.06) rotate(3deg)}40%,60%,80%{transform:scale(1.06) rotate(-3deg)}100%{transform:scale(1) rotate(0)}}',
+      '@keyframes rbhRubber{0%{transform:scale(1)}30%{transform:scaleX(1.18) scaleY(.84)}40%{transform:scaleX(.84) scaleY(1.15)}60%{transform:scaleX(1.08) scaleY(.92)}100%{transform:scale(1)}}',
+      '@keyframes rbhHeartbeat{0%,28%,56%,100%{transform:scale(1)}14%,42%{transform:scale(1.08)}}',
+      '@keyframes rbhBlurIn{from{opacity:0;filter:blur(10px)}to{opacity:1;filter:blur(0)}}',
+      '@keyframes rbhFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}',
+      '@keyframes rbhSkew{from{opacity:0;transform:skewX(12deg) translateX(-12px)}to{opacity:1;transform:skewX(0) translateX(0)}}',
+      '@keyframes rbhRoll{from{opacity:0;transform:translateX(-24px) rotate(-14deg)}to{opacity:1;transform:translateX(0) rotate(0)}}',
+      '@keyframes rbhLightSpeed{from{opacity:0;transform:translateX(35px) skewX(-14deg)}to{opacity:1;transform:translateX(0) skewX(0)}}',
+      '@keyframes rbhShimmer{0%,100%{filter:brightness(1)}50%{filter:brightness(1.25)}}',
+      '@keyframes rbhGlitch{0%,100%{transform:translate(0)}20%{transform:translate(-2px,1px)}40%{transform:translate(2px,-1px)}60%{transform:translate(-1px,-1px)}80%{transform:translate(1px,1px)}}',
+      '@keyframes rbhJack{0%{opacity:0;transform:scale(.1) rotate(20deg)}50%{transform:rotate(-8deg)}70%{transform:rotate(3deg)}100%{opacity:1;transform:scale(1) rotate(0)}}',
+      '@keyframes rbhHinge{0%{transform:rotate(0);transform-origin:top left}20%,60%{transform:rotate(70deg);transform-origin:top left}40%,80%{transform:rotate(55deg);transform-origin:top left}100%{transform:translateY(0);transform-origin:top left}}'
+    ];
+
+    const animationNames = [
+      'rbhFadeIn','rbhFadeIn','rbhSlideDown','rbhSlideLeft','rbhSlideRight',
+      'rbhZoomIn','rbhZoomOut','rbhBounce','rbhFlipX','rbhFlipY','rbhRotate',
+      'rbhShake','rbhPulse','rbhWobble','rbhSwing','rbhTada','rbhRubber',
+      'rbhWobble','rbhHeartbeat','rbhZoomIn','rbhFadeIn','rbhFadeIn',
+      'rbhGlitch','rbhBlurIn','rbhFloat','rbhSkew','rbhRoll','rbhLightSpeed',
+      'rbhFadeIn','rbhSlideDown','rbhSlideLeft','rbhSlideRight','rbhHinge',
+      'rbhJack','rbhRoll','rbhZoomIn','rbhZoomIn','rbhZoomIn','rbhZoomIn','rbhTada'
+    ];
+    const targetSelectors = {
+      'Headings': '.hero-content h1,h1,h2,h3,.section-title,.eyebrow',
+      'Images': 'main img:not([data-hero-slide]),main video,.gallery-grid img',
+      'Buttons': '.btn,.btn-gold,.btn-dark,.btn-outline,.nav-actions a,button',
+      'Cards': '.card,.service-card,.feature-card,.event-card,.package-card,.testimonial-card,.review-card',
+      'Sections': 'main > section,main .section',
+      'Text': 'main p,main li,.lede'
+    };
+    const animationConfig = pub.animations && typeof pub.animations === 'object' ? pub.animations : {};
+    const activeAnimations = Array.isArray(animationConfig.activeItems)
+      ? animationConfig.activeItems.filter(n => Number.isInteger(n) && n >= 0 && n < animationNames.length)
+      : [];
+    const activeTargets = Array.isArray(animationConfig.targets)
+      ? animationConfig.targets.filter(target => Object.prototype.hasOwnProperty.call(targetSelectors, target))
+      : ['Headings'];
+    const duration = Math.max(100, Math.min(10000, Number(animationConfig.duration) || 500));
+    const delay = Math.max(0, Math.min(30000, (Number(animationConfig.delay) || 0) * 100));
+    const directionText = String(animationConfig.direction || 'Normal').toLowerCase();
+    const direction = ['normal','reverse','alternate'].includes(directionText) ? directionText : 'normal';
+    const repeatOnView = animationConfig.repeatEveryView === true;
+    const triggerOnScroll = animationConfig.scrollTrigger !== false;
+
+    const fontConfig = pub.fontAnimations && typeof pub.fontAnimations === 'object' ? pub.fontAnimations : {};
+    const fontTargets = Array.isArray(fontConfig.targets)
+      ? fontConfig.targets.filter(target => ['Hero Heading','Subheading','Section Title','Body Text','CTA Button'].includes(target))
+      : ['Hero Heading'];
+    const fontTargetSelectors = {
+      'Hero Heading': '.hero-content h1,.hero-title-primary',
+      'Subheading': '.hero-content .lede,.hero-content p',
+      'Section Title': 'main section h2,.section-title',
+      'Body Text': 'main p,main li',
+      'CTA Button': '.hero-content a.btn,.btn-gold,.btn-outline'
+    };
+    const fontAnimIndex = Number.isInteger(Number(fontConfig.active)) ? Math.max(0, Math.min(39, Number(fontConfig.active))) : 0;
+    const fontAnimNames = [
+      'rbhFadeIn','rbhWobble','rbhShimmer','rbhPulse','rbhShimmer','rbhBounce','rbhBounce','rbhBlurIn',
+      'rbhLightSpeed','rbhFadeIn','rbhFadeIn','rbhSlideUp','rbhRotate','rbhSwing','rbhFlipY',
+      'rbhPulse','rbhPulse','rbhShimmer','rbhFadeIn','rbhFadeIn','rbhFlipX','rbhWobble','rbhGlitch','rbhGlitch',
+      'rbhZoomIn','rbhJack','rbhFadeIn','rbhPulse','rbhWobble','rbhRoll','rbhShimmer','rbhPulse',
+      'rbhBlurIn','rbhFadeIn','rbhFadeIn','rbhFadeIn','rbhSlideDown','rbhBounce','rbhFloat','rbhFadeIn'
+    ];
+    const fontDuration = Math.max(100, Math.min(10000, Number(fontConfig.duration) || 500));
+    const fontDelay = Math.max(0, Math.min(30000, (Number(fontConfig.delay) || 0) * 100));
+    const fontRepeat = String(fontConfig.repeat || 'Once');
+
+    const effectConfig = pub.effects && typeof pub.effects === 'object' ? pub.effects : {};
+    const effectItems = Array.isArray(effectConfig.activeItems)
+      ? effectConfig.activeItems.filter(n => Number.isInteger(n) && n >= 0 && n <= 41)
+      : [];
+    const intensity = Math.max(0, Math.min(2, (Number(effectConfig.intensity) || 100) / 100));
+    const effectsCss = {
+      0: '.site-header,.card,.service-card,.feature-card{background-color:rgba(255,255,255,.08)!important;backdrop-filter:blur(' + (6 * intensity) + 'px)!important}',
+      1: 'h1,h2,h3{ text-shadow:0 0 ' + (12 * intensity) + 'px rgba(198,161,91,.55)!important}',
+      2: '.card,.service-card,.feature-card,.event-card,.package-card{border:1px solid transparent!important;box-shadow:0 0 0 1px rgba(198,161,91,.5),0 8px 26px rgba(0,0,0,.12)!important}',
+      3: '.card,.service-card,.feature-card,.event-card,.package-card,.testimonial-card{box-shadow:0 ' + (8 * intensity) + 'px ' + (26 * intensity) + 'px rgba(0,0,0,.22)!important}',
+      4: '.site-header{backdrop-filter:blur(' + (10 * intensity) + 'px)!important}',
+      5: 'h1,h2,.section-title{animation:rbhShimmer 3s ease-in-out infinite}',
+      6: '.card,.service-card,.feature-card,.event-card,.package-card,.btn{transition:transform .25s ease,box-shadow .25s ease!important}.card:hover,.service-card:hover,.feature-card:hover,.event-card:hover,.package-card:hover,.btn:hover{transform:translateY(-2px)!important}',
+      7: '.card:hover,.service-card:hover,.feature-card:hover,.event-card:hover,.package-card:hover{transform:scale(1.025)!important}',
+      8: 'main img{filter:saturate(' + (1 + .35 * intensity) + ')!important}',
+      9: '.hero-media:after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse,transparent 45%,rgba(0,0,0,' + (.32 * intensity) + '))}',
+      10: '.site-header,.card,.service-card{background:rgba(255,255,255,.12)!important;backdrop-filter:blur(' + (8 * intensity) + 'px)!important}',
+      13: '.hero-media:after{content:"";position:absolute;inset:0;pointer-events:none;background:rgba(20,14,4,' + (.15 * intensity) + ')}',
+      14: '.card,.service-card,.feature-card{box-shadow:inset 0 0 ' + (16 * intensity) + 'px rgba(0,0,0,.18)!important}',
+      15: '.card,.service-card,.feature-card{box-shadow:inset 0 0 ' + (12 * intensity) + 'px rgba(0,0,0,.24)!important}',
+      16: 'h1,h2,h3{ text-shadow:1px 2px 0 rgba(0,0,0,.18)!important}',
+      17: 'h1,h2,.section-title{ text-decoration:underline;text-decoration-color:var(--gold);text-underline-offset:.18em}',
+      18: 'h1,h2,h3{ -webkit-text-stroke:.35px currentColor}',
+      22: 'h1,h2,h3,.section-title{background:linear-gradient(90deg,currentColor,var(--gold),currentColor);background-size:200% 100%;background-clip:text;-webkit-background-clip:text;color:transparent!important;animation:rbhShimmer 4s linear infinite}',
+      23: '.btn-gold,.nav-actions .btn-gold{box-shadow:0 0 ' + (18 * intensity) + 'px rgba(198,161,91,.55)!important}',
+      25: '.site-header{position:sticky!important;top:0;z-index:90!important}',
+      27: '.hero .hero-content{backdrop-filter:blur(' + (10 * intensity) + 'px);background:rgba(0,0,0,.12);border-radius:12px;padding:12px}',
+      28: '.site-header{position:sticky!important;top:0;z-index:90!important}',
+      31: 'blockquote,.quote-block{border-left:3px solid var(--gold)!important;padding-left:1.2rem!important}',
+      35: '.cta-banner,.cta-section{background:linear-gradient(135deg,var(--ink),var(--gold2))!important;color:var(--cream)!important}'
+    };
+    let css = keyframes.join('\n') + '\n';
+    css += '[data-rbh-cms-motion].rbh-cms-motion-pending,[data-rbh-cms-font-motion].rbh-cms-font-pending{opacity:0!important;animation:none!important}\n';
+    css += '[data-rbh-cms-motion].rbh-cms-motion-active{animation-name:var(--rbh-cms-anim)!important;animation-duration:var(--rbh-cms-duration)!important;animation-delay:var(--rbh-cms-delay)!important;animation-timing-function:cubic-bezier(.2,.7,.2,1)!important;animation-direction:var(--rbh-cms-direction)!important;animation-fill-mode:both!important;animation-iteration-count:var(--rbh-cms-iterations)!important}\n';
+    css += '[data-rbh-cms-font-motion].rbh-cms-font-active{animation-name:var(--rbh-cms-font-anim)!important;animation-duration:var(--rbh-cms-font-duration)!important;animation-delay:var(--rbh-cms-font-delay)!important;animation-timing-function:ease!important;animation-fill-mode:both!important;animation-iteration-count:var(--rbh-cms-font-iterations)!important}\n';
+    effectItems.forEach(index => { if (effectsCss[index]) css += effectsCss[index] + '\n'; });
+    styleTag.textContent = css;
+
+    function prepareNode(node, attr, keyframe, seconds, waitMs, directionValue, iterations, pendingClass, activeClass) {
+      if (!advancedMotionOriginals.has(node)) {
+        advancedMotionOriginals.set(node, {
+          animation: node.style.animation,
+          opacity: node.style.opacity
+        });
+      }
+      node.setAttribute(attr, keyframe);
+      if (attr === 'data-rbh-cms-motion') {
+        node.style.setProperty('--rbh-cms-anim', keyframe);
+        node.style.setProperty('--rbh-cms-duration', seconds + 'ms');
+        node.style.setProperty('--rbh-cms-delay', waitMs + 'ms');
+        node.style.setProperty('--rbh-cms-direction', directionValue);
+        node.style.setProperty('--rbh-cms-iterations', String(iterations));
+      } else {
+        node.style.setProperty('--rbh-cms-font-anim', keyframe);
+        node.style.setProperty('--rbh-cms-font-duration', seconds + 'ms');
+        node.style.setProperty('--rbh-cms-font-delay', waitMs + 'ms');
+        node.style.setProperty('--rbh-cms-font-iterations', String(iterations));
+      }
+      node.classList.add(pendingClass);
+    }
+
+    function queryTarget(selector) {
+      try { return Array.from(document.querySelectorAll(selector)).slice(0, 80); }
+      catch { return []; }
+    }
+
+    if (activeAnimations.length && activeTargets.length) {
+      const unique = new Map();
+      activeTargets.forEach((target, targetIndex) => {
+        const keyframe = animationNames[activeAnimations[targetIndex % activeAnimations.length]];
+        queryTarget(targetSelectors[target]).forEach(node => { if (!unique.has(node)) unique.set(node, keyframe); });
+      });
+      for (const [node, keyframe] of unique.entries()) {
+        prepareNode(node,'data-rbh-cms-motion',keyframe,duration,delay,direction,1,'rbh-cms-motion-pending','rbh-cms-motion-active');
+      }
+    }
+
+    if (fontTargets.length && fontAnimIndex >= 0) {
+      const seen = new Set();
+      fontTargets.forEach(target => {
+        queryTarget(fontTargetSelectors[target]).forEach(node => {
+          if (seen.has(node)) return;
+          seen.add(node);
+          let iterations = 1;
+          let wait = fontDelay;
+          if (fontRepeat === 'Loop') iterations = 'infinite';
+          prepareNode(node,'data-rbh-cms-font-motion',fontAnimNames[fontAnimIndex],fontDuration,wait,'normal',iterations,'rbh-cms-font-pending','rbh-cms-font-active');
+        });
+      });
+    }
+
+    const scrollNodes = Array.from(document.querySelectorAll('[data-rbh-cms-motion].rbh-cms-motion-pending, [data-rbh-cms-font-motion].rbh-cms-font-pending'));
+    const shouldRevealOnScroll = triggerOnScroll && activeAnimations.length > 0;
+    if (scrollNodes.length && 'IntersectionObserver' in window && shouldRevealOnScroll) {
+      advancedMotionObserver = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          const node = entry.target;
+          if (entry.isIntersecting) {
+            node.classList.remove('rbh-cms-motion-pending', 'rbh-cms-font-pending');
+            node.classList.add(node.hasAttribute('data-rbh-cms-motion') ? 'rbh-cms-motion-active' : 'rbh-cms-font-active');
+            if (!repeatOnView) advancedMotionObserver.unobserve(node);
+          } else if (repeatOnView) {
+            node.classList.remove('rbh-cms-motion-active','rbh-cms-font-active');
+            node.classList.add(node.hasAttribute('data-rbh-cms-motion') ? 'rbh-cms-motion-pending' : 'rbh-cms-font-pending');
+          }
+        });
+      }, { threshold: 0.12 });
+      scrollNodes.forEach(node => advancedMotionObserver.observe(node));
+    } else {
+      scrollNodes.forEach(node => {
+        node.classList.remove('rbh-cms-motion-pending', 'rbh-cms-font-pending');
+        node.classList.add(node.hasAttribute('data-rbh-cms-motion') ? 'rbh-cms-motion-active' : 'rbh-cms-font-active');
+      });
+    }
+
+    // Visual component presets apply to compatible existing elements. Components that need new
+    // content are treated as styling presets, not fabricated content.
+    const componentItems = pub.components && Array.isArray(pub.components.activeItems) ? pub.components.activeItems : [];
+    const componentCss = {
+      0: '.btn-gold,.nav-actions .btn-gold{box-shadow:0 5px 22px rgba(198,161,91,.3)!important}',
+      1: '.btn-outline{border:1px solid var(--gold)!important;background:transparent!important}',
+      2: '.badge,.eyebrow,.pill{border-radius:999px!important}',
+      3: '.badge,.eyebrow{background:var(--gold)!important;color:var(--ink)!important}',
+      4: '.service-card,.feature-card,.event-card{border-radius:14px!important}',
+      5: '.features,.feature-grid{gap:1.5rem!important}',
+      6: '.testimonial-card,.review-card,blockquote{border-radius:12px!important;padding:1.2rem!important}',
+      7: '.package-card,.pricing-card{border:1px solid var(--gold)!important;border-radius:14px!important}',
+      8: '.gallery-grid{gap:12px!important}',
+      9: '.gallery-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}',
+      10: 'main section{border-bottom:1px solid var(--line)}',
+      11: 'main section h2,.section-title{position:relative;text-decoration:underline;text-decoration-color:var(--gold);text-underline-offset:.3em}',
+      14: '.feature-card{box-shadow:0 8px 22px rgba(198,161,91,.12)!important}',
+      16: '.package-card,.pricing-card{padding:1.5rem!important}',
+      22: 'details summary{cursor:pointer;color:var(--gold)}',
+      25: '.social-links a{border-radius:999px!important}',
+      28: '.site-header{position:sticky!important;top:0;z-index:90!important}',
+      30: '.back-to-top{position:fixed!important;right:18px!important;bottom:18px!important;z-index:100!important}',
+      32: 'blockquote{border-left:3px solid var(--gold)!important;padding-left:1rem!important}',
+      35: '.cta-banner,.cta-section{padding:2rem!important;background:linear-gradient(135deg,var(--ink),var(--gold2))!important;color:var(--cream)!important}',
+      38: '.highlight-strip{border-left:3px solid var(--gold)!important;padding:1rem!important}',
+      39: '.floating-action,.floating-cta{position:fixed!important;right:18px!important;bottom:80px!important;z-index:101!important}'
+    };
+    componentItems.forEach(index => { if (componentCss[index]) styleTag.textContent += '\n' + componentCss[index]; });
+  }
+
   // Load published Studio customizations (only when published from studio!)
   function applyStudioPublished(pub) {
     if (!pub || typeof pub !== 'object') return;
