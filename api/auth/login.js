@@ -3,7 +3,7 @@ const {
   credentialsMatch,
   setSessionCookie,
   isSameOrigin
-} = require('../_lib/auth.js');
+} = require('../../lib/admin-auth.js');
 
 module.exports = function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store, max-age=0');
