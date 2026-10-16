@@ -56,6 +56,28 @@ const API = {
   },
 };
 
+
+async function uploadMediaToCloudinary(file) {
+  if (!studioAuthenticated) throw new Error('Sign in to upload media.');
+  if (!API.available) throw new Error('The shared backend is unavailable.');
+  const resourceType = file && file.type && file.type.startsWith('video/') ? 'video' : 'image';
+  const response = await fetch('/api/cloudinary/signature?resource_type=' + encodeURIComponent(resourceType), { credentials: 'same-origin', cache: 'no-store' });
+  const signed = await response.json().catch(() => ({}));
+  if (!response.ok || !signed.success) throw new Error(signed.message || 'Cloudinary signing is not configured on Render.');
+  const form = new FormData();
+  form.append('file', file, file.name);
+  form.append('api_key', signed.apiKey);
+  form.append('timestamp', String(signed.timestamp));
+  form.append('folder', signed.folder);
+  form.append('tags', signed.tags);
+  form.append('signature', signed.signature);
+  const uploadedResponse = await fetch('https://api.cloudinary.com/v1_1/' + encodeURIComponent(signed.cloudName) + '/' + resourceType + '/upload', { method: 'POST', body: form });
+  const payload = await uploadedResponse.json().catch(() => ({}));
+  if (!uploadedResponse.ok || !payload.secure_url) throw new Error((payload.error && payload.error.message) || 'Cloudinary rejected the upload.');
+  const url = resourceType === 'image' ? String(payload.secure_url).replace('/upload/', '/upload/f_auto,q_auto/') : payload.secure_url;
+  return { url, secureUrl: payload.secure_url, publicId: payload.public_id, bytes: payload.bytes, format: payload.format, resourceType };
+}
+
 async function detectBackend() {
   for (const b of API.backends) {
     try {
@@ -927,42 +949,26 @@ function initLogoPage() {
     });
   });
 
-  // Upload
   const uploadInput = document.getElementById('logo-upload');
   if (uploadInput) {
-    uploadInput.addEventListener('change', e => {
-      const file = e.target.files[0];
+    uploadInput.addEventListener('change', async event => {
+      const file = event.target.files && event.target.files[0];
       if (!file) return;
-      if (file.size > 450 * 1024) {
-        toast('Logo file is over 450 KB. Optimize it first or use a permanent CDN URL.', 'error');
-        uploadInput.value = '';
-        return;
-      }
-      if (!file.type.startsWith('image/')) {
-        toast('Choose a valid image file.', 'error');
-        uploadInput.value = '';
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = ev => {
-        const source = String(ev.target.result || '');
-        if (!source.startsWith('data:image/')) {
-          toast('The logo file could not be read.', 'error');
-          return;
-        }
-        pushUndo('Logo upload');
-        STUDIO.cms.logo.src = source;
-        if (logoUrlInput) logoUrlInput.value = source;
-        const preview = document.getElementById('logo-preview-img');
-        if (preview) preview.src = source;
-        syncPreviewStyles();
-        markDirty();
-        toast('Logo added to the draft. Save Draft, then Publish when reviewed.', 'gold');
-      };
-      reader.onerror = () => toast('The logo file could not be read.', 'error');
-      reader.readAsDataURL(file);
+      if (!file.type.startsWith('image/') || file.size > 15 * 1024 * 1024) { toast('Choose an image file smaller than 15 MB.', 'error'); uploadInput.value = ''; return; }
+      uploadInput.disabled = true;
+      try {
+        const uploaded = await uploadMediaToCloudinary(file);
+        pushUndo('Logo upload'); STUDIO.cms.logo.src = uploaded.url;
+        if (logoUrlInput) logoUrlInput.value = uploaded.url;
+        const preview = document.getElementById('logo-preview-img'); if (preview) preview.src = uploaded.url;
+        syncPreviewStyles(); markDirty();
+        toast('Logo uploaded to Cloudinary. Save Draft, then Publish.', 'success');
+      } catch (error) { toast('Logo upload failed: ' + (error.message || 'Unknown error.'), 'error'); }
+      finally { uploadInput.disabled = false; uploadInput.value = ''; }
     });
   }
+
+
 
   // Position chips
   document.querySelectorAll('#logo-position-chips .s-chip').forEach(chip => {
@@ -1082,27 +1088,26 @@ function initNavbarPage() {
 function initHeroImagePage() {
   const cms = STUDIO.cms.hero;
 
-  // Upload
   const upload = document.getElementById('hero-img-upload');
   if (upload) {
-    upload.addEventListener('change', e => {
-      const file = e.target.files[0];
+    upload.addEventListener('change', async event => {
+      const file = event.target.files && event.target.files[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => {
-        cms.src = ev.target.result;
-        const prev = document.getElementById('hero-img-preview');
-        if (prev) prev.src = ev.target.result;
-        applyToPreview(doc => {
-          const hero = doc.querySelector('.hero, .hero-section, [class*=hero]');
-          if (hero) hero.style.backgroundImage = `url(${ev.target.result})`;
-        });
-        pushUndo('Hero image upload');
-        toast('Hero image updated', 'success');
-      };
-      reader.readAsDataURL(file);
+      if (!file.type.startsWith('image/') || file.size > 15 * 1024 * 1024) { toast('Choose an image file smaller than 15 MB.', 'error'); upload.value = ''; return; }
+      upload.disabled = true;
+      try {
+        const uploaded = await uploadMediaToCloudinary(file);
+        pushUndo('Hero image upload'); cms.src = uploaded.url;
+        const preview = document.getElementById('hero-img-preview'); if (preview) preview.src = uploaded.url;
+        applyToPreview(doc => { const hero = doc.querySelector('.hero, .hero-section, [class*=hero]'); if (hero) hero.style.backgroundImage = 'url("' + uploaded.url + '")'; });
+        syncPreviewStyles(); markDirty();
+        toast('Hero image uploaded to Cloudinary. Save Draft, then Publish.', 'success');
+      } catch (error) { toast('Hero image upload failed: ' + (error.message || 'Unknown error.'), 'error'); }
+      finally { upload.disabled = false; upload.value = ''; }
     });
   }
+
+
 
   // Scale
   initSlider('hero-slider-scale', 'hero-num-scale', 'hero-val-scale', v => {
@@ -1406,67 +1411,38 @@ function initBgPage() {
   const upload = document.getElementById('bg-upload');
   const bgUrlInput = document.getElementById('bg-url-input');
   const bgPreview = document.getElementById('bg-preview-img');
-
   if (bgUrlInput) {
-    bgUrlInput.value = /^https:\/\//i.test(cms.src || '') || String(cms.src || '').startsWith('/') || String(cms.src || '').startsWith('assets/')
-      ? cms.src : '';
+    bgUrlInput.value = /^https:\/\//i.test(cms.src || '') || String(cms.src || '').startsWith('/') || String(cms.src || '').startsWith('assets/') ? cms.src : '';
     bgUrlInput.addEventListener('change', () => {
       const value = bgUrlInput.value.trim();
       if (value && !/^https:\/\//i.test(value) && !value.startsWith('/') && !value.startsWith('assets/')) {
-        toast('Use a permanent HTTPS URL or a path under assets/.', 'error');
-        bgUrlInput.value = /^https:\/\//i.test(cms.src || '') || String(cms.src || '').startsWith('/') || String(cms.src || '').startsWith('assets/') ? cms.src : '';
-        return;
+        toast('Use a permanent HTTPS URL or a path under assets/.', 'error'); bgUrlInput.value = cms.src || ''; return;
       }
-      if (/^(?:blob:|data:)/i.test(value)) {
-        toast('Temporary image URLs cannot be published. Use a permanent HTTPS/CDN URL.', 'error');
-        return;
-      }
-      pushUndo('Background image URL');
       cms.src = value;
-      if (bgPreview) {
-        bgPreview.src = value || 'assets/images/hero-venue.jpg';
-        bgPreview.style.display = value ? 'block' : 'none';
-      }
-      markDirty();
-      syncPreviewStyles();
+      if (bgPreview) { bgPreview.src = value; bgPreview.style.display = value ? 'block' : 'none'; }
+      markDirty(); syncPreviewStyles();
+    });
+  }
+  document.getElementById('bg-upload-zone')?.addEventListener('click', () => upload && upload.click());
+  if (upload) {
+    upload.addEventListener('change', async event => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/') || file.size > 15 * 1024 * 1024) { toast('Choose an image file smaller than 15 MB.', 'error'); upload.value = ''; return; }
+      upload.disabled = true;
+      try {
+        const uploaded = await uploadMediaToCloudinary(file);
+        pushUndo('Background image upload'); cms.src = uploaded.url;
+        if (bgUrlInput) bgUrlInput.value = uploaded.url;
+        if (bgPreview) { bgPreview.src = uploaded.url; bgPreview.style.display = 'block'; }
+        markDirty(); syncPreviewStyles();
+        toast('Background uploaded to Cloudinary. Save Draft, then Publish.', 'success');
+      } catch (error) { toast('Background upload failed: ' + (error.message || 'Unknown error.'), 'error'); }
+      finally { upload.disabled = false; upload.value = ''; }
     });
   }
 
-  document.getElementById('bg-upload-zone')?.addEventListener('click',() => upload?.click());
-  if (upload) {
-    upload.addEventListener('change', e => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      if (!file.type.startsWith('image/')) {
-        toast('Choose a valid image file.', 'error');
-        upload.value = '';
-        return;
-      }
-      if (file.size > 450 * 1024) {
-        toast('Image is over 450 KB. Use a permanent Cloudinary/CDN URL instead.', 'error');
-        upload.value = '';
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = ev => {
-        const source = String(ev.target.result || '');
-        if (!source.startsWith('data:image/')) {
-          toast('The background image could not be read.', 'error');
-          return;
-        }
-        pushUndo('Background image upload');
-        cms.src = source;
-        if (bgUrlInput) bgUrlInput.value = '';
-        if (bgPreview) { bgPreview.src = source; bgPreview.style.display = 'block'; }
-        markDirty();
-        syncPreviewStyles();
-        toast('Background added to the draft. Save Draft, then Publish when reviewed.', 'gold');
-      };
-      reader.onerror = () => toast('The background image could not be read.', 'error');
-      reader.readAsDataURL(file);
-      upload.value = '';
-    });
-  }
+
 
   initPresetCards('#bg-anim-grid', (i) => { cms.animation = i; pushUndo('Background animation'); toast(`BG Animation ${i+1} applied`, 'gold'); });
 
@@ -1556,26 +1532,25 @@ function initVideoPage() {
   }
 
   if (upload) {
-    upload.addEventListener('change', e => {
-      const file = e.target.files[0];
+    upload.addEventListener('change', async event => {
+      const file = event.target.files && event.target.files[0];
       if (!file) return;
-      if (!/^video\//i.test(file.type) || file.size > 50 * 1024 * 1024) {
-        toast('Choose a video under 50MB in a browser-supported format.', 'error');
-        upload.value = '';
-        return;
-      }
-      // Object URLs are intentionally preview-only; saving a blob: URL breaks after refresh.
-      const temporaryUrl = URL.createObjectURL(file);
-      if (videoEl) {
-        videoEl.src = temporaryUrl;
-        videoEl.style.display = 'block';
-        applyVideoPreview();
-        videoEl.load();
-      }
-      if (noVideo) noVideo.style.display = 'none';
-      toast('Local preview ready. Paste a permanent HTTPS/CDN video URL before saving.', 'gold');
+      if (!file.type.startsWith('video/') || file.size > 50 * 1024 * 1024) { toast('Choose a supported video smaller than 50 MB.', 'error'); upload.value = ''; return; }
+      upload.disabled = true;
+      try {
+        const uploaded = await uploadMediaToCloudinary(file);
+        pushUndo('Video upload'); cms.src = uploaded.url;
+        if (sourceUrl) sourceUrl.value = uploaded.url;
+        if (videoEl) { videoEl.src = uploaded.url; videoEl.style.display = 'block'; applyVideoPreview(); videoEl.load(); }
+        if (noVideo) noVideo.style.display = 'none';
+        markDirty(); syncPreviewStyles();
+        toast('Video uploaded to Cloudinary. Save Draft, then Publish.', 'success');
+      } catch (error) { toast('Video upload failed: ' + (error.message || 'Unknown error.'), 'error'); }
+      finally { upload.disabled = false; upload.value = ''; }
     });
   }
+
+
 
   // Every playback control writes a field in the saved CMS and updates the local preview.
   const videoToggleMap = {
@@ -1646,24 +1621,23 @@ function initImageLibraryPage() {
   let selectedImg = null;
   let activeFilter = 'all';
 
-  const cloudNameInput = document.getElementById('cloudinary-cloud-name');
-  const uploadPresetInput = document.getElementById('cloudinary-upload-preset');
-  const cloudCfg = cms.integrations.cloudinary;
-  if (cloudNameInput) cloudNameInput.value = cloudCfg.cloudName || '';
-  if (uploadPresetInput) uploadPresetInput.value = cloudCfg.uploadPreset || '';
-
-  document.getElementById('btn-cloudinary-config-save')?.addEventListener('click', () => {
-    const cloudName = (cloudNameInput?.value || '').trim();
-    const uploadPreset = (uploadPresetInput?.value || '').trim();
-    if (cloudName && !/^[a-z0-9_-]+$/i.test(cloudName)) {
-      toast('Cloud name must contain only letters, numbers, underscores or hyphens.', 'error');
-      return;
-    }
-    cms.integrations.cloudinary.cloudName = cloudName;
-    cms.integrations.cloudinary.uploadPreset = uploadPreset;
-    markDirty();
-    toast('Cloudinary settings stored in the current draft. Save Draft to persist them.', 'gold');
+  document.getElementById('btn-cloudinary-config-save')?.addEventListener('click', async () => {
+    const status = document.getElementById('cloudinary-connection-status'), button = document.getElementById('btn-cloudinary-config-save');
+    if (button) button.disabled = true;
+    if (status) status.textContent = 'Checking server-side Cloudinary connection…';
+    try {
+      const response = await fetch('/api/cloudinary/status', { credentials:'same-origin', cache:'no-store' });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.connected) throw new Error(result.message || 'Cloudinary is not configured on Render.');
+      if (status) status.textContent = 'Connected: ' + result.cloudName;
+      toast('Cloudinary connection verified: ' + result.cloudName, 'success');
+    } catch (error) {
+      if (status) status.textContent = error.message || 'Cloudinary connection failed.';
+      toast('Cloudinary is not ready: ' + (error.message || 'Connection failed.'), 'error');
+    } finally { if (button) button.disabled = false; }
   });
+
+
 
   function assetRecords() {
     const builtIn = manifestImages
@@ -1818,86 +1792,24 @@ function initImageLibraryPage() {
     upload.addEventListener('change', async event => {
       const files = Array.from(event.target.files || []);
       if (!files.length) return;
-      const cloudName = (cms.integrations.cloudinary.cloudName || '').trim();
-      const uploadPreset = (cms.integrations.cloudinary.uploadPreset || '').trim();
-      const useCloudinary = /^[a-z0-9_-]+$/i.test(cloudName) && Boolean(uploadPreset);
-      for (const file of files) {
-        if (!file.type.startsWith('image/')) {
-          toast(file.name + ' is not an image and was skipped.', 'error');
-          continue;
+      upload.disabled = true;
+      let uploadedCount = 0;
+      try {
+        for (const file of files) {
+          if (!file.type.startsWith('image/') || file.size > 15 * 1024 * 1024) { toast(file.name + ' is not a supported image under 15 MB; skipped.', 'error'); continue; }
+          try {
+            const uploaded = await uploadMediaToCloudinary(file);
+            pushUndo('Add Cloudinary media');
+            cms.mediaLibrary.push({id:'cloudinary-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),src:uploaded.url,publicId:uploaded.publicId,name:file.name,source:'cloudinary',category:'gallery',createdAt:new Date().toISOString()});
+            uploadedCount += 1; markDirty(); renderLibrary();
+          } catch (error) { toast(file.name+' upload failed: '+(error.message||'Unknown error.'),'error'); }
         }
-        try {
-          let src = '';
-          let name = file.name;
-          if (useCloudinary) {
-            const form = new FormData();
-            form.append('file',file);
-            form.append('upload_preset',uploadPreset);
-            form.append('folder','royal-banquet-hall');
-            const response = await fetch('https://api.cloudinary.com/v1_1/' + encodeURIComponent(cloudName) + '/image/upload', {
-              method:'POST',
-              body:form
-            });
-            const payload = await response.json().catch(() => ({}));
-            if (!response.ok || !payload.secure_url) throw new Error(payload.error?.message || 'Cloudinary upload failed.');
-            src = payload.secure_url;
-            name = file.name;
-          } else {
-            if (file.size > 500 * 1024) {
-              toast(file.name + ' is over 500 KB. Configure Cloudinary above or upload a smaller optimized image.', 'error');
-              continue;
-            }
-            const currentSize = new Blob([JSON.stringify(cms.mediaLibrary)]).size;
-            if (currentSize > 1800000) {
-              toast('Browser fallback storage is nearly full. Configure Cloudinary for more images.', 'error');
-              continue;
-            }
-            src = await new Promise((resolve,reject) => {
-              const reader = new FileReader();
-              reader.onload = () => resolve(String(reader.result || ''));
-              reader.onerror = () => reject(new Error('Could not read the image file.'));
-              reader.readAsDataURL(file);
-            });
-          }
-          cms.mediaLibrary.push({
-            id:'custom-' + Date.now() + '-' + Math.random().toString(36).slice(2,8),
-            src,
-            name,
-            source:useCloudinary ? 'cloudinary' : 'browser',
-            category:'gallery',
-            createdAt:new Date().toISOString()
-          });
-          markDirty();
-          renderLibrary();
-          toast(name + ' added. Save Draft to keep the library change.', 'gold');
-        } catch (error) {
-          toast(file.name + ' upload failed: ' + (error.message || 'Unknown error.'), 'error');
-        }
-      }
-      upload.value = '';
+        if(uploadedCount) toast(uploadedCount+' image(s) uploaded to Cloudinary. Save Draft, then Publish.','success');
+      } finally { upload.disabled = false; upload.value = ''; }
     });
   }
 
-  // Apply display dimensions, without pretending that the source file was physically cropped/resized.
-  document.getElementById('btn-imglib-apply-size')?.addEventListener('click',() => {
-    if (!selectedImg) {
-      toast('Select an image first.', 'error');
-      return;
-    }
-    const width = Number(document.getElementById('imglib-num-w')?.value);
-    const height = Number(document.getElementById('imglib-num-h')?.value);
-    if (!Number.isFinite(width) || !Number.isFinite(height) || width < 100 || height < 100 || width > 3000 || height > 3000) {
-      toast('Width and height must be between 100 and 3000 pixels.', 'error');
-      return;
-    }
-    pushUndo('Image display size');
-    cms.imageSizing[selectedImg] = { width, height, objectFit:'cover' };
-    const preview = document.getElementById('selected-img-preview');
-    if (preview) { preview.style.maxWidth = width + 'px'; preview.style.maxHeight = height + 'px'; }
-    markDirty();
-    syncPreviewStyles();
-    toast('Display size saved in the draft. The source file was not re-encoded.', 'gold');
-  });
+
 
   initSlider('imglib-slider-w', 'imglib-num-w', 'imglib-val-w',v => {
     const label = document.getElementById('imglib-val-w');
