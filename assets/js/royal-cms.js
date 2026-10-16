@@ -27,6 +27,9 @@
 
   function applyStudioAdvancedStyles(pub) {
     if (!pub || typeof pub !== 'object') return;
+    const navSettings = pub.navbar && typeof pub.navbar === 'object' ? pub.navbar : {};
+    const logoSettings = pub.logo && typeof pub.logo === 'object' ? pub.logo : {};
+    const backgroundSettings = pub.background && typeof pub.background === 'object' ? pub.background : {};
 
     // Restore inline values from the last run before applying the latest draft/publish message.
     if (advancedMotionObserver) {
@@ -173,11 +176,35 @@
       35: '.cta-banner,.cta-section{background:linear-gradient(135deg,var(--ink),var(--gold2))!important;color:var(--cream)!important}'
     };
     let css = keyframes.join('\n') + '\n';
+    const navBackground = typeof navSettings.bgColor === 'string' &&
+      (/^#[0-9a-f]{3,8}$/i.test(navSettings.bgColor) || /^rgba?\([0-9., %]+\)$/i.test(navSettings.bgColor) || navSettings.bgColor === 'transparent')
+      ? navSettings.bgColor : '#0a0b0d';
+    css += '.site-header{position:' + (navSettings.sticky === false ? 'relative' : 'sticky') + '!important;top:' +
+      (navSettings.sticky === false ? 'auto' : '0') + '!important;z-index:1000!important}\n';
+    css += '@media(max-width:760px){.site-header .menu-toggle{display:' +
+      (navSettings.hamburger === false ? 'none' : 'block') + '!important}.site-header .nav-links{display:' +
+      (navSettings.hamburger === false ? 'flex' : 'none') + '!important;position:' +
+      (navSettings.hamburger === false ? 'static' : 'fixed') + '!important;inset:' +
+      (navSettings.hamburger === false ? 'auto' : '70px 0 auto') + '!important;flex-direction:' +
+      (navSettings.hamburger === false ? 'row' : 'column') + '!important;flex-wrap:' +
+      (navSettings.hamburger === false ? 'wrap' : 'nowrap') + '!important;gap:' +
+      (navSettings.hamburger === false ? '6px' : '0') + '!important;padding:' +
+      (navSettings.hamburger === false ? '4px' : '18px 24px 24px') + '!important;background:' +
+      (navSettings.hamburger === false ? 'transparent' : navBackground) + '!important;box-shadow:' +
+      (navSettings.hamburger === false ? 'none' : '0 18px 40px rgba(0,0,0,.26)') +
+      '!important}.site-header .nav-links.open{display:flex!important}}\n';
+    css += '@media(max-width:760px){.site-header .brand-logo{' +
+      (logoSettings.mobileScale === false ? '' : 'width:min(' + Math.max(60,Math.min(500,Number(logoSettings.width)||145)) +
+       'px,22vw)!important;height:min(' + Math.max(30,Math.min(260,Number(logoSettings.height)||98)) +
+       'px,13vw)!important;max-width:22vw!important;') + '}}\n';
+    if (logoSettings.hideOnSmall === true) css += '@media(max-width:420px){.site-header .brand-logo{display:none!important}}\n';
+    css += 'body{background-attachment:' + (backgroundSettings.fixed === false ? 'scroll' : 'fixed') + '!important}\n';
+    css += '.rbh-logo-text-fallback{display:none;font-family:Georgia,serif;font-weight:600;color:var(--gold);line-height:1.15;max-width:130px}\n';
     css += '[data-rbh-cms-motion].rbh-cms-motion-pending,[data-rbh-cms-font-motion].rbh-cms-font-pending{opacity:0!important;animation:none!important}\n';
     css += '[data-rbh-cms-motion].rbh-cms-motion-active{animation-name:var(--rbh-cms-anim)!important;animation-duration:var(--rbh-cms-duration)!important;animation-delay:var(--rbh-cms-delay)!important;animation-timing-function:cubic-bezier(.2,.7,.2,1)!important;animation-direction:var(--rbh-cms-direction)!important;animation-fill-mode:both!important;animation-iteration-count:var(--rbh-cms-iterations)!important}\n';
     css += '[data-rbh-cms-font-motion].rbh-cms-font-active{animation-name:var(--rbh-cms-font-anim)!important;animation-duration:var(--rbh-cms-font-duration)!important;animation-delay:var(--rbh-cms-font-delay)!important;animation-timing-function:ease!important;animation-fill-mode:both!important;animation-iteration-count:var(--rbh-cms-font-iterations)!important}\n';
     effectItems.forEach(index => { if (effectsCss[index]) css += effectsCss[index] + '\n'; });
-    css += '@media (prefers-reduced-motion: reduce){[data-rbh-cms-motion].rbh-cms-motion-active,[data-rbh-cms-font-motion].rbh-cms-font-active{animation:none!important;transition:none!important}}\\n';
+    css += '@media (prefers-reduced-motion: reduce){[data-rbh-cms-motion].rbh-cms-motion-active,[data-rbh-cms-font-motion].rbh-cms-font-active{animation:none!important;transition:none!important}}\n';
     styleTag.textContent = css;
 
     function prepareNode(node, attr, keyframe, seconds, waitMs, directionValue, iterations, pendingClass, activeClass) {
@@ -290,6 +317,31 @@
       39: '.floating-action,.floating-cta{position:fixed!important;right:18px!important;bottom:80px!important;z-index:101!important}'
     };
     componentItems.forEach(index => { if (componentCss[index]) styleTag.textContent += '\n' + componentCss[index]; });
+
+    document.querySelectorAll('.site-header .brand').forEach(brand => {
+      const image = brand.querySelector('img.brand-logo, img');
+      if (!image) return;
+      let fallback = brand.querySelector('.rbh-logo-text-fallback');
+      if (logoSettings.textFallback !== false) {
+        if (!fallback) {
+          fallback = document.createElement('span');
+          fallback.className = 'rbh-logo-text-fallback';
+          fallback.textContent = 'The Royal Hall';
+          brand.appendChild(fallback);
+        }
+        const showFallback = () => { if (fallback) { fallback.style.display='inline-block'; image.style.display='none'; } };
+        const showImage = () => { if (fallback) fallback.style.display='none'; image.style.display=''; };
+        if (image.dataset.rbhFallbackBound !== '1') {
+          image.addEventListener('error',showFallback);
+          image.addEventListener('load',showImage);
+          image.dataset.rbhFallbackBound='1';
+        }
+        if (image.complete && image.naturalWidth === 0) showFallback();
+      } else {
+        fallback?.remove();
+        image.style.display='';
+      }
+    });
 
     const sizing = pub.imageSizing && typeof pub.imageSizing === 'object' ? pub.imageSizing : {};
     const normalizedSizeMap = new Map();
@@ -473,14 +525,19 @@
         const alpha = Math.max(0,Math.min(100,Number(pub.background.overlayOpacity ?? 0))) / 100;
         const hex = color.slice(1);
         const overlay = 'rgba(' + parseInt(hex.slice(0,2),16) + ',' + parseInt(hex.slice(2,4),16) + ',' + parseInt(hex.slice(4,6),16) + ',' + alpha + ')';
-        document.body.style.backgroundImage = 'linear-gradient(' + overlay + ',' + overlay + '),url("' + String(pub.background.src).replace(/"/g, '%22') + '")';
+        const imageUrl = 'url("' + String(pub.background.src).replace(/"/g, '%22') + '")';
+        document.body.style.backgroundImage = pub.background.gradient === false
+          ? (alpha > 0 ? 'linear-gradient(' + overlay + ',' + overlay + '),' + imageUrl : imageUrl)
+          : 'linear-gradient(135deg,' + overlay + ',transparent 78%),' + imageUrl;
         document.body.style.backgroundPosition = Number(pub.background.posX ?? 50) + '% ' + Number(pub.background.posY ?? 50) + '%';
         document.body.style.backgroundSize = 'cover';
+        document.body.style.backgroundAttachment = pub.background.fixed === false ? 'scroll' : 'fixed';
       } else {
         // An empty background in a published reset must clear the previous inline override.
         document.body.style.removeProperty('background-image');
         document.body.style.removeProperty('background-position');
         document.body.style.removeProperty('background-size');
+        document.body.style.removeProperty('background-attachment');
       }
     }
 
