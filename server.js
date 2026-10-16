@@ -12,6 +12,17 @@ const multer     = require('multer');
 const path       = require('path');
 const fs         = require('fs');
 const fsp        = require('fs/promises');
+const crypto     = require('node:crypto');
+const { neon }   = require('@neondatabase/serverless');
+const { v2: cloudinary } = require('cloudinary');
+const {
+  authConfig,
+  credentialsMatch,
+  setSessionCookie,
+  clearSessionCookie,
+  isAuthenticated,
+  isSameOrigin
+} = require('./lib/admin-auth.js');
 
 // ── Config ────────────────────────────────────────────────────────────────
 const PORT       = process.env.PORT || 3001;
@@ -30,7 +41,7 @@ const app = express();
 app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(BASE_DIR));        // Serve static website files
+// Static website files are served by Vercel. Render exposes API routes only.
 
 // ── Multer (file uploads) ─────────────────────────────────────────────────
 const imgStorage = multer.diskStorage({
@@ -62,6 +73,16 @@ const uploadVid = multer({
   }
 });
 
+const cloudUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg','image/png','image/webp','image/gif','image/svg+xml','video/mp4','video/webm','video/ogg','video/quicktime'];
+    cb(null, allowed.includes(file.mimetype));
+  }
+});
+
+
 // ── Default CMS ───────────────────────────────────────────────────────────
 const DEFAULT_CMS = {
   logo:           { src: 'assets/images/royal-hall-crest.webp', width: 145, height: 98, position: 'left' },
@@ -79,26 +100,84 @@ const DEFAULT_CMS = {
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────
-async function readCMS() {
-  try {
-    if (!fs.existsSync(CMS_FILE)) return { ...DEFAULT_CMS };
-    const raw = await fsp.readFile(CMS_FILE, 'utf-8');
-    return JSON.parse(raw);
-  } catch {
-    return { ...DEFAULT_CMS };
-  }
-}
 
-async function writeCMS(data) {
-  // Auto-backup
-  if (fs.existsSync(CMS_FILE)) {
-    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0,19);
-    await fsp.copyFile(CMS_FILE, path.join(BACKUP_DIR, `backup_${ts}.json`));
-    await pruneBackups(20);
-  }
-  data._meta = { saved_at: new Date().toISOString(), version: '1.0', server: 'node' };
-  await fsp.writeFile(CMS_FILE, JSON.stringify(data, null, 2), 'utf-8');
+let databaseClient = null;
+let schemaPromise = null;
+function serviceError(message, statusCode = 503) { const error = new Error(message); error.statusCode = statusCode; return error; }
+function hasDatabase() { return Boolean(process.env.DATABASE_URL); }
+function getDatabase() {
+  if (!hasDatabase()) throw serviceError('Persistent CMS storage is not configured. Set DATABASE_URL in Render.');
+  if (!databaseClient) databaseClient = neon(process.env.DATABASE_URL);
+  return databaseClient;
 }
+async function ensureSchema() {
+  const db = getDatabase();
+  if (!schemaPromise) schemaPromise = db.query('CREATE TABLE IF NOT EXISTS public.cms_state (key TEXT PRIMARY KEY, data JSONB NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())').catch(error => { schemaPromise = null; throw error; });
+  await schemaPromise;
+  return db;
+}
+async function queryRows(sql, params = []) {
+  const result = await (await ensureSchema()).query(sql, params);
+  if (Array.isArray(result)) return result;
+  return Array.isArray(result && result.rows) ? result.rows : [];
+}
+async function getRecord(key) {
+  const rows = await queryRows('SELECT key,data,updated_at FROM public.cms_state WHERE key=$1 LIMIT 1',[key]);
+  if (!rows.length) return null;
+  const row=rows[0];
+  if (typeof row.data==='string') { try { row.data=JSON.parse(row.data); } catch {} }
+  return row;
+}
+async function putRecord(key,data) {
+  await queryRows('INSERT INTO public.cms_state (key,data,updated_at) VALUES ($1,$2::jsonb,NOW()) ON CONFLICT (key) DO UPDATE SET data=EXCLUDED.data,updated_at=NOW()',[key,JSON.stringify(data)]);
+}
+async function backupDraft() {
+  const current=await getRecord('draft');
+  if (!current) return;
+  await putRecord('backup:'+Date.now()+':'+crypto.randomUUID(),current.data);
+  await queryRows("DELETE FROM public.cms_state WHERE key LIKE 'backup:%' AND key NOT IN (SELECT key FROM public.cms_state WHERE key LIKE 'backup:%' ORDER BY updated_at DESC LIMIT 20)");
+}
+function cloneJson(value) { return JSON.parse(JSON.stringify(value)); }
+async function readCMS() {
+  if (hasDatabase()) { const row=await getRecord('draft'); return row?row.data:cloneJson(DEFAULT_CMS); }
+  if (process.env.NODE_ENV==='production') throw serviceError('Persistent CMS storage is not configured. Set DATABASE_URL in Render.');
+  try { if (!fs.existsSync(CMS_FILE)) return cloneJson(DEFAULT_CMS); return JSON.parse(await fsp.readFile(CMS_FILE,'utf-8')); } catch { return cloneJson(DEFAULT_CMS); }
+}
+async function writeCMS(data,options={}) {
+  if (!data||typeof data!=='object'||Array.isArray(data)) throw serviceError('CMS payload must be a JSON object.',400);
+  const saved=cloneJson(data);
+  saved._meta={saved_at:new Date().toISOString(),version:'2.0',server:hasDatabase()?'neon-postgres':'local-development'};
+  if (hasDatabase()) { if(options.backup!==false) await backupDraft(); await putRecord('draft',saved); return saved; }
+  if (process.env.NODE_ENV==='production') throw serviceError('Persistent CMS storage is not configured. Nothing was saved.');
+  if (fs.existsSync(CMS_FILE)) { const ts=new Date().toISOString().replace(/[:.]/g,'-').slice(0,19); await fsp.copyFile(CMS_FILE,path.join(BACKUP_DIR,'backup_'+ts+'.json')); await pruneBackups(20); }
+  await fsp.writeFile(CMS_FILE,JSON.stringify(saved,null,2),'utf-8');
+  return saved;
+}
+async function readPublished() {
+  if (hasDatabase()) { const row=await getRecord('published'); return row?row.data:null; }
+  if (process.env.NODE_ENV==='production') return null;
+  try { return JSON.parse(await fsp.readFile(path.join(DATA_DIR,'published.json'),'utf-8')); } catch { return null; }
+}
+function cloudinaryConfig() {
+  return {cloudName:process.env.CLOUDINARY_CLOUD_NAME||'',apiKey:process.env.CLOUDINARY_API_KEY||'',apiSecret:process.env.CLOUDINARY_API_SECRET||''};
+}
+function configureCloudinary() {
+  const cfg=cloudinaryConfig();
+  if(!(cfg.cloudName&&cfg.apiKey&&cfg.apiSecret)) throw serviceError('Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET in Render.');
+  cloudinary.config({cloud_name:cfg.cloudName,api_key:cfg.apiKey,api_secret:cfg.apiSecret,secure:true});
+  return cfg;
+}
+function cloudUploadBuffer(file,type) {
+  configureCloudinary();
+  return new Promise((resolve,reject)=>{
+    const stream=cloudinary.uploader.upload_stream({folder:'royal-banquet',resource_type:type,use_filename:true,unique_filename:true,overwrite:false,tags:'royal-banquet,cms-upload'},(err,result)=>err?reject(err):resolve(result));
+    stream.end(file.buffer);
+  });
+}
+function optimizedCloudUrl(id) { configureCloudinary(); return cloudinary.url(id,{secure:true,fetch_format:'auto',quality:'auto'}); }
+function isAllowedCloudPublicId(id) { return String(id||'').startsWith('royal-banquet/')||String(id||'').startsWith('royal-banquet-hall/'); }
+function isWithinDirectory(root,target) { const r=path.resolve(root),t=path.resolve(target); return t.startsWith(r+path.sep); }
+
 
 async function pruneBackups(keep = 20) {
   const files = (await fsp.readdir(BACKUP_DIR))
@@ -122,100 +201,188 @@ function scanImages(dir) {
     });
 }
 
+
+function cloudinaryUploadSignature(req,res) {
+  try {
+    const cfg=configureCloudinary(), resourceType=String(req.query.resource_type||'image').toLowerCase();
+    if(!['image','video'].includes(resourceType)) return res.status(400).json({success:false,message:'Resource type must be image or video.'});
+    const timestamp=Math.floor(Date.now()/1000), params={folder:'royal-banquet',tags:'royal-banquet,cms-upload',timestamp};
+    const signature=cloudinary.utils.api_sign_request(params,cfg.apiSecret);
+    res.setHeader('Cache-Control','no-store, max-age=0');
+    return res.json({success:true,cloudName:cfg.cloudName,apiKey:cfg.apiKey,timestamp,folder:params.folder,tags:params.tags,signature,resourceType});
+  } catch(error) { return res.status(error.statusCode||503).json({success:false,message:error.message}); }
+}
+
 // ── API Routes ────────────────────────────────────────────────────────────
 
-// POST /api/auth/login
-app.post('/api/auth/login', (req, res) => {
-  const { username, password } = req.body || {};
-  const cleanUser = (username || '').replace(/[\u00A0\u200B\u200E\s]+/g, ' ').trim().toLowerCase();
-  const cleanPass = (password || '').trim();
-
-  const validUser = cleanUser === 'royal hall' || cleanUser === 'royalhall';
-  const validPass = cleanPass === 'Royal@07' || cleanPass === 'Royal@O7' || cleanPass === 'Royal@o7';
-
-  if (validUser && validPass) {
-    return res.json({
-      success: true,
-      message: 'Authentication successful',
-      user: { id: 'Royal Hall', role: 'Administrator' },
-      token: 'royal_auth_' + Date.now()
+// Authentication is shared with the Vercel serverless API; no credentials are hard-coded in source.
+function requireAdminApi(req, res, next) {
+  if (!isSameOrigin(req)) {
+    return res.status(403).json({ success: false, message: 'Cross-origin request rejected.' });
+  }
+  if (!authConfig().configured) {
+    return res.status(503).json({
+      success: false,
+      message: 'Admin authentication is not configured. Set ADMIN_USERNAME, ADMIN_PASSWORD and ADMIN_SESSION_SECRET.'
     });
   }
+  if (!isAuthenticated(req)) {
+    return res.status(401).json({ success: false, message: 'Your admin session expired. Sign in again.' });
+  }
+  return next();
+}
 
-  return res.status(401).json({
-    success: false,
-    message: 'Invalid Login ID or Password'
+app.post('/api/auth/login', (req, res) => {
+  if (!isSameOrigin(req)) {
+    return res.status(403).json({ success: false, message: 'Cross-origin sign-in rejected.' });
+  }
+  if (!authConfig().configured) {
+    return res.status(503).json({
+      success: false,
+      message: 'Admin sign-in is not configured. Set ADMIN_USERNAME, ADMIN_PASSWORD and ADMIN_SESSION_SECRET.'
+    });
+  }
+  const body = req.body || {};
+  if (!credentialsMatch(body.username, body.password)) {
+    return res.status(401).json({ success: false, message: 'Invalid Login ID or password.' });
+  }
+  setSessionCookie(req, res, body.remember === true);
+  return res.json({
+    success: true,
+    message: 'Authentication successful.',
+    user: { id: process.env.ADMIN_USERNAME, role: 'Administrator' }
   });
+});
+
+app.get('/api/auth/session', (req, res) => {
+  if (!authConfig().configured) {
+    return res.status(503).json({
+      success: false,
+      message: 'Admin authentication is not configured. Set ADMIN_USERNAME, ADMIN_PASSWORD and ADMIN_SESSION_SECRET.'
+    });
+  }
+  if (!isAuthenticated(req)) return res.status(401).json({ success: false, message: 'Not signed in.' });
+  return res.json({ success: true, user: { id: process.env.ADMIN_USERNAME, role: 'Administrator' } });
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  if (!isSameOrigin(req)) {
+    return res.status(403).json({ success: false, message: 'Cross-origin request rejected.' });
+  }
+  clearSessionCookie(req, res);
+  return res.json({ success: true, message: 'Signed out.' });
+});
+
+// Signed Cloudinary uploads; the API secret never leaves Render.
+app.get('/api/cloudinary/signature',requireAdminApi,cloudinaryUploadSignature);
+app.get('/api/cloudinary/status',requireAdminApi,async(req,res)=>{
+  const cfg=cloudinaryConfig();
+  if(!(cfg.cloudName&&cfg.apiKey&&cfg.apiSecret)) return res.json({success:true,connected:false,configured:false,message:'Set Cloudinary environment variables in Render.'});
+  try { configureCloudinary(); const ping=await cloudinary.api.ping(); return res.json({success:true,connected:true,configured:true,cloudName:cfg.cloudName,status:ping.status}); }
+  catch { return res.status(502).json({success:false,connected:false,configured:true,message:'Cloudinary connection failed. Check Render environment variables.'}); }
+});
+app.get('/api/cloudinary/list',requireAdminApi,async(req,res)=>{
+  try {
+    configureCloudinary();
+    const results=await Promise.all(['royal-banquet/','royal-banquet-hall/'].map(prefix=>cloudinary.api.resources({type:'upload',prefix,max_results:100,resource_type:'image'})));
+    const assets=new Map();
+    for(const result of results) for(const item of result.resources||[]) assets.set(item.public_id,{public_id:item.public_id,url:item.secure_url,optimizedUrl:optimizedCloudUrl(item.public_id),format:item.format,bytes:item.bytes,width:item.width,height:item.height,created_at:item.created_at,source:'cloudinary'});
+    const images=Array.from(assets.values()).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
+    return res.json({success:true,count:images.length,images});
+  } catch(error) { return res.status(error.statusCode||502).json({success:false,message:error.message}); }
+});
+app.post('/api/cloudinary/delete',requireAdminApi,async(req,res)=>{
+  try {
+    configureCloudinary();
+    const id=String((req.body||{}).public_id||''),type=String((req.body||{}).resource_type||'image');
+    if(!isAllowedCloudPublicId(id)) return res.status(400).json({success:false,message:'Only Royal Banquet Hall assets can be deleted.'});
+    if(!['image','video'].includes(type)) return res.status(400).json({success:false,message:'Resource type must be image or video.'});
+    const result=await cloudinary.uploader.destroy(id,{resource_type:type,invalidate:true});
+    if(!['ok','not found'].includes(result.result)) return res.status(502).json({success:false,message:'Cloudinary did not confirm deletion.'});
+    return res.json({success:result.result==='ok',result:result.result,public_id:id});
+  } catch(error) { return res.status(error.statusCode||502).json({success:false,message:error.message}); }
+});
+app.post('/api/cloudinary/upload',requireAdminApi,async(req,res)=>{
+  try {
+    configureCloudinary();
+    const dataUrl=String((req.body||{}).file||'');
+    if(!/^data:(image|video)\/[a-zA-Z0-9.+-]+;base64,/.test(dataUrl)) return res.status(400).json({success:false,message:'Upload must be a base64 image or video data URL.'});
+    const type=dataUrl.startsWith('data:video/')?'video':'image';
+    const result=await cloudinary.uploader.upload(dataUrl,{folder:'royal-banquet',resource_type:type,tags:'royal-banquet,cms-upload'});
+    const url=type==='image'?optimizedCloudUrl(result.public_id):result.secure_url;
+    return res.json({success:true,url,secure_url:result.secure_url,optimizedUrl:url,public_id:result.public_id,resource_type:type,format:result.format,bytes:result.bytes,width:result.width,height:result.height});
+  } catch(error) { return res.status(error.statusCode||502).json({success:false,message:error.message}); }
 });
 
 // GET /api/status
-app.get('/api/status', async (req, res) => {
-  const backups = fs.existsSync(BACKUP_DIR) ? fs.readdirSync(BACKUP_DIR).filter(f => f.endsWith('.json')).length : 0;
-  const uploads = fs.existsSync(path.join(UPLOAD_DIR, 'images')) ? scanImages(path.join(UPLOAD_DIR, 'images')).length : 0;
-  let publishedAt = null;
-  try { publishedAt = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'published.json'), 'utf-8')).published_at; } catch {}
-  res.json({
-    success:     true,
-    server:      `Node.js ${process.version}`,
-    cms_exists:  fs.existsSync(CMS_FILE),
-    cms_modified:fs.existsSync(CMS_FILE) ? fs.statSync(CMS_FILE).mtime : null,
-    backups,
-    uploads,
-    published_at:publishedAt,
-    timestamp:   new Date().toISOString(),
-  });
+app.get('/api/status',(req,res)=>{
+  const cfg=cloudinaryConfig();
+  res.setHeader('Cache-Control','no-store, max-age=0');
+  return res.json({success:true,server:'Render Node.js '+process.version,storageConfigured:hasDatabase(),storage:hasDatabase()?'Neon PostgreSQL':'not configured',authConfigured:authConfig().configured,cloudinaryConfigured:Boolean(cfg.cloudName&&cfg.apiKey&&cfg.apiSecret),timestamp:new Date().toISOString()});
 });
+
+
 
 // GET /api/load-cms
-app.get('/api/load-cms', async (req, res) => {
-  const data = await readCMS();
-  res.json({ success: true, data, source: fs.existsSync(CMS_FILE) ? 'file' : 'defaults' });
+app.get('/api/admin/load-cms',requireAdminApi,async(req,res)=>{
+  try { return res.json({success:true,data:await readCMS(),source:hasDatabase()?'neon-draft':'local-development'}); }
+  catch(error) { return res.status(error.statusCode||503).json({success:false,message:error.message}); }
 });
+
+
+
+app.get('/api/load-cms',async(req,res)=>{
+  try {
+    if(isAuthenticated(req)) return res.json({success:true,data:await readCMS(),source:hasDatabase()?'neon-draft':'local-development'});
+    const snapshot=await readPublished();
+    if(snapshot&&snapshot.cms&&typeof snapshot.cms==='object') return res.json({success:true,data:snapshot.cms,source:hasDatabase()?'neon-published':'published-file',updatedAt:snapshot.published_at||null});
+    return res.json({success:true,data:{},source:'no-published-cms'});
+  } catch(error) { return res.status(error.statusCode||503).json({success:false,message:error.message}); }
+});
+
+
 
 // POST /api/save-cms
-app.post('/api/save-cms', async (req, res) => {
-  try {
-    await writeCMS(req.body);
-    res.json({ success: true, message: 'CMS saved', timestamp: new Date().toISOString() });
-  } catch (e) {
-    res.status(500).json({ success: false, error: e.message });
-  }
+app.post('/api/save-cms',requireAdminApi,async(req,res)=>{
+  try { const saved=await writeCMS(req.body); return res.json({success:true,message:'CMS draft saved.',source:hasDatabase()?'neon-postgres':'local-development',timestamp:saved._meta.saved_at}); }
+  catch(error) { return res.status(error.statusCode||500).json({success:false,message:error.message}); }
 });
+
+
 
 // POST /api/publish
-app.post('/api/publish', async (req, res) => {
+app.post('/api/publish',requireAdminApi,async(req,res)=>{
   try {
-    await writeCMS(req.body);
-    const report = [
-      `Logo: width=${req.body.logo?.width}px src=${req.body.logo?.src}`,
-      `Theme #${req.body.theme?.active ?? 0} applied`,
-      `Hero: ${req.body.hero?.src} | height=${req.body.hero?.height}vh`,
-      `Font Animation #${req.body.fontAnimations?.active ?? 0}`,
-    ];
-    const snapshot = { published_at: new Date().toISOString(), cms: req.body, report };
-    await fsp.writeFile(path.join(DATA_DIR, 'published.json'), JSON.stringify(snapshot, null, 2));
-    res.json({ success: true, message: 'Published!', published_at: new Date().toISOString(), report });
-  } catch (e) {
-    res.status(500).json({ success: false, error: e.message });
-  }
+    const saved=await writeCMS(req.body), publishedAt=new Date().toISOString();
+    const snapshot={published_at:publishedAt,cms:saved,report:['Logo '+(saved.logo&&saved.logo.src),'Theme '+((saved.theme&&saved.theme.active)??0),'Hero '+(saved.hero&&saved.hero.src)]};
+    if(hasDatabase()) await putRecord('published',snapshot);
+    else { if(process.env.NODE_ENV==='production') throw serviceError('Persistent CMS storage is not configured. Nothing was published.'); await fsp.writeFile(path.join(DATA_DIR,'published.json'),JSON.stringify(snapshot,null,2)); }
+    return res.json({success:true,message:'Published to shared CMS storage.',published_at:publishedAt,report:snapshot.report});
+  } catch(error) { return res.status(error.statusCode||500).json({success:false,message:error.message}); }
 });
 
-// POST /api/upload-image
-app.post('/api/upload-image', uploadImg.single('image'), (req, res) => {
-  if (!req.file) return res.status(400).json({ success: false, error: 'No image uploaded' });
-  const rel = path.relative(BASE_DIR, req.file.path).replace(/\\/g, '/');
-  res.json({ success: true, message: 'Image uploaded', file: req.file.filename, path: rel, size: req.file.size, url: `/${rel}` });
+
+
+// API media uploads go to Cloudinary, not Render's temporary filesystem.
+app.post('/api/upload-image',requireAdminApi,cloudUpload.single('image'),async(req,res)=>{
+  try {
+    if(!req.file||!req.file.mimetype.startsWith('image/')) return res.status(400).json({success:false,message:'Choose an image file.'});
+    const result=await cloudUploadBuffer(req.file,'image'),url=optimizedCloudUrl(result.public_id);
+    return res.json({success:true,message:'Image uploaded to Cloudinary.',file:req.file.originalname,path:result.public_id,size:result.bytes,url,public_id:result.public_id,secure_url:result.secure_url});
+  } catch(error) { return res.status(error.statusCode||502).json({success:false,message:error.message}); }
+});
+app.post('/api/upload-video',requireAdminApi,cloudUpload.single('video'),async(req,res)=>{
+  try {
+    if(!req.file||!req.file.mimetype.startsWith('video/')) return res.status(400).json({success:false,message:'Choose a video file.'});
+    const result=await cloudUploadBuffer(req.file,'video');
+    return res.json({success:true,message:'Video uploaded to Cloudinary.',file:req.file.originalname,path:result.public_id,size:result.bytes,url:result.secure_url,public_id:result.public_id,secure_url:result.secure_url});
+  } catch(error) { return res.status(error.statusCode||502).json({success:false,message:error.message}); }
 });
 
-// POST /api/upload-video
-app.post('/api/upload-video', uploadVid.single('video'), (req, res) => {
-  if (!req.file) return res.status(400).json({ success: false, error: 'No video uploaded' });
-  const rel = path.relative(BASE_DIR, req.file.path).replace(/\\/g, '/');
-  res.json({ success: true, message: 'Video uploaded', file: req.file.filename, path: rel, size: req.file.size, url: `/${rel}` });
-});
+
 
 // GET /api/list-images
-app.get('/api/list-images', (req, res) => {
+app.get('/api/list-images', requireAdminApi, (req, res) => {
   const imgs = [
     ...scanImages(path.join(BASE_DIR, 'assets', 'images')),
     ...scanImages(path.join(UPLOAD_DIR, 'images')),
@@ -224,12 +391,12 @@ app.get('/api/list-images', (req, res) => {
 });
 
 // DELETE /api/delete-image
-app.delete('/api/delete-image', async (req, res) => {
+app.delete('/api/delete-image', requireAdminApi, async (req, res) => {
   const { filePath } = req.body;
   if (!filePath) return res.status(400).json({ success: false, error: 'No path provided' });
   const abs = path.resolve(BASE_DIR, filePath);
   // Security check
-  if (!abs.startsWith(path.resolve(UPLOAD_DIR))) {
+  if (!isWithinDirectory(UPLOAD_DIR, abs)) {
     return res.status(403).json({ success: false, error: 'Access denied' });
   }
   try {
@@ -241,11 +408,11 @@ app.delete('/api/delete-image', async (req, res) => {
 });
 
 // POST /api/rename-image
-app.post('/api/rename-image', async (req, res) => {
+app.post('/api/rename-image', requireAdminApi, async (req, res) => {
   const { filePath, newName } = req.body;
   if (!filePath || !newName) return res.status(400).json({ success: false, error: 'Missing params' });
   const abs    = path.resolve(BASE_DIR, filePath);
-  if (!abs.startsWith(path.resolve(UPLOAD_DIR))) return res.status(403).json({ success: false, error: 'Access denied' });
+  if (!isWithinDirectory(UPLOAD_DIR, abs)) return res.status(403).json({ success: false, error: 'Access denied' });
   const dir    = path.dirname(abs);
   const ext    = path.extname(abs);
   const safe   = newName.replace(/[^a-zA-Z0-9._-]/g, '_').toLowerCase();
@@ -259,43 +426,53 @@ app.post('/api/rename-image', async (req, res) => {
 });
 
 // GET /api/backups
-app.get('/api/backups', async (req, res) => {
-  const files = fs.existsSync(BACKUP_DIR)
-    ? fs.readdirSync(BACKUP_DIR)
-        .filter(f => f.endsWith('.json'))
-        .map(f => { const st = fs.statSync(path.join(BACKUP_DIR, f)); return { file: f, date: st.mtime, size: st.size }; })
-        .sort((a, b) => new Date(b.date) - new Date(a.date))
-    : [];
-  res.json({ success: true, count: files.length, backups: files });
+app.get('/api/backups',requireAdminApi,async(req,res)=>{
+  try {
+    if(hasDatabase()) {
+      const rows=await queryRows("SELECT key,data,updated_at FROM public.cms_state WHERE key LIKE 'backup:%' ORDER BY updated_at DESC LIMIT 20");
+      const backups=rows.map(row=>({file:row.key,date:row.updated_at,size:Buffer.byteLength(JSON.stringify(row.data||{}))}));
+      return res.json({success:true,count:backups.length,backups,source:'neon-postgres'});
+    }
+    if(process.env.NODE_ENV==='production') throw serviceError('Persistent CMS storage is not configured.');
+    const backups=fs.existsSync(BACKUP_DIR)?fs.readdirSync(BACKUP_DIR).filter(file=>file.endsWith('.json')).map(file=>{const st=fs.statSync(path.join(BACKUP_DIR,file));return {file,date:st.mtime,size:st.size};}).sort((a,b)=>new Date(b.date)-new Date(a.date)):[];
+    return res.json({success:true,count:backups.length,backups,source:'local-development'});
+  } catch(error) { return res.status(error.statusCode||500).json({success:false,message:error.message}); }
 });
+
+
 
 // POST /api/restore
-app.post('/api/restore', async (req, res) => {
-  const { file } = req.body;
-  if (!file) return res.status(400).json({ success: false, error: 'No file specified' });
-  const src = path.join(BACKUP_DIR, path.basename(file));
-  if (!fs.existsSync(src)) return res.status(404).json({ success: false, error: 'Backup not found' });
+app.post('/api/restore',requireAdminApi,async(req,res)=>{
+  const file=String((req.body||{}).file||'');
+  if(!file) return res.status(400).json({success:false,message:'Select a backup first.'});
   try {
-    JSON.parse(fs.readFileSync(src, 'utf-8'));
-    await fsp.copyFile(src, CMS_FILE);
-    res.json({ success: true, message: `Restored from ${file}`, restored_at: new Date().toISOString() });
-  } catch (e) {
-    res.status(500).json({ success: false, error: e.message });
-  }
+    if(hasDatabase()) {
+      if(!file.startsWith('backup:')) return res.status(400).json({success:false,message:'Invalid database backup key.'});
+      const backup=await getRecord(file);
+      if(!backup) return res.status(404).json({success:false,message:'Backup not found.'});
+      await backupDraft(); await putRecord('draft',backup.data);
+      return res.json({success:true,message:'Draft restored from Neon backup.',restored_at:new Date().toISOString()});
+    }
+    if(process.env.NODE_ENV==='production') throw serviceError('Persistent CMS storage is not configured.');
+    const src=path.join(BACKUP_DIR,path.basename(file));
+    if(!fs.existsSync(src)) return res.status(404).json({success:false,message:'Backup not found.'});
+    JSON.parse(fs.readFileSync(src,'utf-8')); await fsp.copyFile(src,CMS_FILE);
+    return res.json({success:true,message:'Draft restored from local backup.',restored_at:new Date().toISOString()});
+  } catch(error) { return res.status(error.statusCode||500).json({success:false,message:error.message}); }
 });
+
+
 
 // POST /api/reset
-app.post('/api/reset', async (req, res) => {
-  if (fs.existsSync(CMS_FILE)) {
-    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0,19);
-    await fsp.copyFile(CMS_FILE, path.join(BACKUP_DIR, `pre_reset_${ts}.json`));
-    await fsp.unlink(CMS_FILE);
-  }
-  res.json({ success: true, message: 'CMS reset to defaults. Backup created.' });
+app.post('/api/reset',requireAdminApi,async(req,res)=>{
+  try { await writeCMS(DEFAULT_CMS); return res.json({success:true,message:'Draft reset to defaults. Previous draft backup retained.'}); }
+  catch(error) { return res.status(error.statusCode||500).json({success:false,message:error.message}); }
 });
 
+
+
 // GET /api/image-stats
-app.get('/api/image-stats', (req, res) => {
+app.get('/api/image-stats', requireAdminApi, (req, res) => {
   const allImgs = [
     ...scanImages(path.join(BASE_DIR, 'assets', 'images')),
     ...scanImages(path.join(UPLOAD_DIR, 'images')),

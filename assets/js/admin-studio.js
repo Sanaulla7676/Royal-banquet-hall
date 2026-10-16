@@ -14,9 +14,8 @@ const API = {
   base: '',           // Set by detectBackend()
   available: false,
   backends: [
-    { name: 'Node.js', url: 'http://localhost:3001' },
-    { name: 'PHP',     url: '' },          // Same origin via api.php
-    { name: 'Python',  url: 'http://localhost:8001' },
+    { name: 'Current deployment', url: '' },
+    { name: 'Node.js local', url: 'http://localhost:3001' },
   ],
 
   async call(method, endpoint, body = null) {
@@ -27,10 +26,20 @@ const API = {
         headers: { 'Content-Type': 'application/json' },
       };
       if (body) opts.body = JSON.stringify(body);
+      opts.credentials = 'same-origin';
       const res = await fetch(this.base + endpoint, opts);
-      return await res.json();
-    } catch {
-      return null;
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return {
+          ...payload,
+          success: false,
+          httpStatus: res.status,
+          message: payload.message || payload.error || ('Request failed (' + res.status + ').')
+        };
+      }
+      return payload;
+    } catch (error) {
+      return { success: false, message: 'Network request failed.', detail: error?.message || '' };
     }
   },
 
@@ -47,18 +56,43 @@ const API = {
   },
 };
 
+
+async function uploadMediaToCloudinary(file) {
+  if (!API.available) throw new Error('The shared backend is unavailable.');
+  const resourceType = file && file.type && file.type.startsWith('video/') ? 'video' : 'image';
+  const response = await fetch('/api/cloudinary/signature?resource_type=' + encodeURIComponent(resourceType), { credentials: 'same-origin', cache: 'no-store' });
+  const signed = await response.json().catch(() => ({}));
+  if (!response.ok || !signed.success) throw new Error(signed.message || 'Cloudinary signing is not configured on Render.');
+  const form = new FormData();
+  form.append('file', file, file.name);
+  form.append('api_key', signed.apiKey);
+  form.append('timestamp', String(signed.timestamp));
+  form.append('folder', signed.folder);
+  form.append('tags', signed.tags);
+  form.append('signature', signed.signature);
+  const uploadedResponse = await fetch('https://api.cloudinary.com/v1_1/' + encodeURIComponent(signed.cloudName) + '/' + resourceType + '/upload', { method: 'POST', body: form });
+  const payload = await uploadedResponse.json().catch(() => ({}));
+  if (!uploadedResponse.ok || !payload.secure_url) throw new Error((payload.error && payload.error.message) || 'Cloudinary rejected the upload.');
+  const url = resourceType === 'image' ? String(payload.secure_url).replace('/upload/', '/upload/f_auto,q_auto/') : payload.secure_url;
+  return { url, secureUrl: payload.secure_url, publicId: payload.public_id, bytes: payload.bytes, format: payload.format, resourceType };
+}
+
 async function detectBackend() {
   for (const b of API.backends) {
     try {
       const url = b.url ? `${b.url}/api/status` : '/api/status';
-      const res = await fetch(url, { signal: AbortSignal.timeout(1500) });
+      const res = await fetch(url, { signal: AbortSignal.timeout(1500), credentials: 'same-origin', cache: 'no-store' });
       if (res.ok) {
         API.base      = b.url;
         API.available = true;
         const data    = await res.json();
-        console.log(`✓ Connected to ${b.name} backend at ${b.url || 'same origin'}`);
-        toast(`Backend: ${b.name} server connected`, 'success');
+        console.log('Connected to ' + b.name + ' backend at ' + (b.url || 'same origin'));
         updateServerBadge(b.name, data);
+        if (data.storageConfigured === false) {
+          toast('Backend detected, but shared CMS storage is not configured.', 'gold');
+        } else {
+          toast('Backend: ' + b.name + ' server connected', 'success');
+        }
         return;
       }
     } catch { /* try next */ }
@@ -76,6 +110,8 @@ function updateServerBadge(serverName, data) {
 }
 
 /* ── STATE ── */
+let studioAuthenticated = false;
+
 const STUDIO = {
   currentPage: 'dashboard',
   viewport: 'desktop',
@@ -96,6 +132,99 @@ const STUDIO = {
     components: { activeItems: [] },
     fontAnimations: { active: 0, targets: {} }
   }
+};
+
+// Backfill fields introduced after the first local/browser drafts were created.
+STUDIO.cms.animations = {
+  activeItems: [],
+  speed: 10,
+  delay: 0,
+  duration: 500,
+  targets: ['Headings'],
+  direction: 'Normal',
+  scrollTrigger: true,
+  repeatEveryView: false,
+  ...(STUDIO.cms.animations || {})
+};
+STUDIO.cms.effects = { activeItems: [], intensity: 100, ...(STUDIO.cms.effects || {}) };
+STUDIO.cms.components = { activeItems: [], ...(STUDIO.cms.components || {}) };
+STUDIO.cms.fontAnimations = {
+  active: 0,
+  targets: ['Hero Heading'],
+  speed: 10,
+  delay: 0,
+  duration: 500,
+  repeat: 'Once',
+  ...(STUDIO.cms.fontAnimations || {})
+};
+STUDIO.cms.video = {
+  src: '',
+  autoplay: true,
+  loop: true,
+  muted: true,
+  controls: false,
+  playsInline: true,
+  objectFit: 'cover',
+  poster: 'assets/images/hero-venue.jpg',
+  posX: 50,
+  posY: 50,
+  ...(STUDIO.cms.video || {})
+};
+STUDIO.cms.settings = {
+  autoSave: true,
+  livePreview: true,
+  keyboardShortcuts: true,
+  animationPreviews: true,
+  confirmDestructive: true,
+  ...(STUDIO.cms.settings || {})
+};
+STUDIO.cms.logo = {
+  src:'assets/images/royal-hall-crest.webp', width:145, height:98, position:'left',
+  mobileScale:true, hideOnSmall:false, textFallback:true,
+  ...(STUDIO.cms.logo || {})
+};
+STUDIO.cms.navbar = {
+  design:0, buttonStyle:0, animation:0, hoverAnimation:0, height:72, bgColor:'#0a0b0d', transparent:true,
+  sticky:true, hamburger:true,
+  ...(STUDIO.cms.navbar || {})
+};
+STUDIO.cms.background = {
+  src:'', animation:0, posX:50, posY:50, overlayOpacity:30, overlayColor:'#000000', fixed:true, gradient:true,
+  ...(STUDIO.cms.background || {})
+};
+STUDIO.cms.hero = {
+  animationSpeed: 10,
+  animationDelay: 3,
+  blur: 0,
+  kenBurns: false,
+  parallax: false,
+  gradient: false,
+  decorative: false,
+  ...(STUDIO.cms.hero || {})
+};
+if (!Array.isArray(STUDIO.cms.animations.targets)) STUDIO.cms.animations.targets = ['Headings'];
+if (!Array.isArray(STUDIO.cms.fontAnimations.targets)) STUDIO.cms.fontAnimations.targets = ['Hero Heading'];
+
+// Canonical values used by per-page Reset actions. Reset never deletes source files.
+const STUDIO_RESET_DEFAULTS = {
+  logo: { src:'assets/images/royal-hall-crest.webp', width:145, height:98, position:'left', mobileScale:true, hideOnSmall:false, textFallback:true },
+  navbar: { design:0, buttonStyle:0, animation:0, hoverAnimation:0, height:72, bgColor:'#0a0b0d', transparent:true, sticky:true, hamburger:true },
+  hero: { src:'assets/images/hero-venue.jpg', scale:100, posX:50, posY:50, height:70, animation:0, displayMode:'cover', overlayColor:'#000000', overlayOpacity:40, brightness:100, contrast:100, animationSpeed:10, animationDelay:3, blur:0, kenBurns:false, parallax:false, gradient:false, decorative:false },
+  heroHeading: { text:'A Royal Celebration Awaits', animation:0, font:0, colorCombo:0, size:56, weight:800, lineHeight:1.15, letterSpacing:-1, align:'center' },
+  heroSub: { text:'The Perfect Venue for Weddings, Receptions, Birthdays, Corporate Events & More.', preset:0, size:18, weight:400, lineHeight:1.6, color:'#e8eaf0', align:'center' },
+  background: { src:'', animation:0, posX:50, posY:50, overlayOpacity:30, overlayColor:'#000000', fixed:true, gradient:true },
+  video: { src:'', autoplay:true, loop:true, muted:true, controls:false, playsInline:true, objectFit:'cover', poster:'assets/images/hero-venue.jpg', posX:50, posY:50 },
+  theme: { active:0, customColors:{ gold:'#c6a15b', background:'#0a0b0d', ink:'#171d19', cream:'#f5f0e7' } },
+  buttons: { gold:{ bgType:'solid', bgColor:'#c6a15b', textColor:'#171d19', borderRadius:'999px', paddingY:'14px', paddingX:'24px', fontSize:'0.82rem', fontWeight:'700', shadow:'none', borderWidth:'1px', borderColor:'transparent', hoverEffect:'lift' } },
+  animations: { activeItems:[], speed:10, delay:0, duration:500, targets:['Headings'], direction:'Normal', scrollTrigger:true, repeatEveryView:false },
+  effects: { activeItems:[], intensity:100 },
+  components: { activeItems:[] },
+  fontAnimations: { active:0, targets:['Hero Heading'], speed:10, delay:0, duration:500, repeat:'Once' },
+  mediaLibrary:[],
+  mediaLabels:{},
+  hiddenMediaAssets:[],
+  imageSizing:{},
+  settings:{autoSave:true,livePreview:true,keyboardShortcuts:true,animationPreviews:true,confirmDestructive:true}
 };
 
 /* ── DOM HELPERS ── */
@@ -166,6 +295,7 @@ function applyToPreview(fn) {
 function syncPreviewStyles() {
   const c = STUDIO.cms;
   if (!c) return;
+  if (c.settings && c.settings.livePreview === false) return;
 
   const logoW = c.logo?.width || 145;
   const logoH = c.logo?.height || 98;
@@ -175,6 +305,31 @@ function syncPreviewStyles() {
   const navH = c.navbar?.height || 72;
   const navBg = c.navbar?.bgColor || '#0a0b0d';
   const isTransparent = !!c.navbar?.transparent;
+  const navSticky = c.navbar?.sticky !== false;
+  const navHamburger = c.navbar?.hamburger !== false;
+  const logoMobileScale = c.logo?.mobileScale !== false;
+  const logoHideOnSmall = c.logo?.hideOnSmall === true;
+  const logoTextFallback = c.logo?.textFallback !== false;
+  const bgFixed = c.background?.fixed !== false;
+  const bgGradient = c.background?.gradient !== false;
+  const bgSource = typeof c.background?.src === 'string' ? c.background.src.trim() : '';
+  const bgOverlayHex = /^#[0-9a-f]{6}$/i.test(c.background?.overlayColor || '') ? c.background.overlayColor : '#000000';
+  const bgOverlayOpacity = Math.max(0,Math.min(100,Number(c.background?.overlayOpacity ?? 30))) / 100;
+  const bgOverlayRgb = [1,3,5].map(index => parseInt(bgOverlayHex.slice(index,index+2),16)).join(',');
+  const bgOverlayCss = 'rgba(' + bgOverlayRgb + ',' + bgOverlayOpacity + ')';
+  const bgSafeUrl = bgSource.replace(/["\\\r\n]/g, character => encodeURIComponent(character));
+  const bgImageCss = bgSource
+    ? (bgGradient
+      ? 'linear-gradient(135deg,' + bgOverlayCss + ',transparent 78%),url("' + bgSafeUrl + '")'
+      : (bgOverlayOpacity > 0
+        ? 'linear-gradient(' + bgOverlayCss + ',' + bgOverlayCss + '),url("' + bgSafeUrl + '")'
+        : 'url("' + bgSafeUrl + '")'))
+    : '';
+  const customTheme = c.theme?.customColors || {};
+  const themeGold = customTheme.gold || '#c6a15b';
+  const themeBg = customTheme.background || navBg;
+  const themeInk = customTheme.ink || '#171d19';
+  const themeCream = customTheme.cream || '#f5f0e7';
 
   const heroH = c.hero?.height || 70;
   const heroScale = c.hero?.scale || 100;
@@ -182,12 +337,34 @@ function syncPreviewStyles() {
   const heroPosY = c.hero?.posY ?? 50;
   const heroBrightness = c.hero?.brightness ?? 100;
   const heroContrast = c.hero?.contrast ?? 100;
+  const heroBlur = c.hero?.blur ?? 0;
+  const heroDisplayMode = c.hero?.displayMode || 'cover';
+  const overlayColor = /^#[0-9a-f]{6}$/i.test(c.hero?.overlayColor || '') ? c.hero.overlayColor : '#000000';
+  const overlayOpacity = Math.max(0, Math.min(100, Number(c.hero?.overlayOpacity ?? 40)));
 
   const headingSize = c.heroHeading?.size || 56;
   const headingWeight = c.heroHeading?.weight || 800;
   const headingLH = c.heroHeading?.lineHeight || 1.15;
   const headingLS = c.heroHeading?.letterSpacing || -1;
   const headingText = c.heroHeading?.text;
+  const headingFontIndex = Number(c.heroHeading?.font ?? 0);
+  const headingFonts = [
+    "'Playfair Display', Georgia, serif", "'Plus Jakarta Sans', Arial, sans-serif",
+    "Georgia, serif", "'Courier New', monospace", "Impact, sans-serif",
+    "Georgia, serif", "Arial, sans-serif", "Arial Black, Arial, sans-serif",
+    "'Times New Roman', serif", "'Playfair Display', Georgia, serif"
+  ];
+  const headingColors = [
+    ['#c6a15b','#e8c87a'],['#ffffff','#f0f0f0'],['#ff6b6b','#ee5a24'],['#a29bfe','#6c5ce7'],
+    ['#00cec9','#0984e3'],['#55efc4','#00b894'],['#fd79a8','#e84393'],['#fdcb6e','#e17055'],
+    ['#636e72','#2d3436'],['#e67e22','#d35400'],['#1abc9c','#16a085'],['#9b59b6','#8e44ad'],
+    ['#2c3e50','#34495e'],['#c0392b','#e74c3c'],['#f39c12','#f1c40f'],['#ecf0f1','#bdc3c7'],
+    ['#3498db','#2980b9'],['#27ae60','#229954'],['#ff4757','#ff6b81'],['#ffeaa7','#fdcb6e'],
+    ['#5f27cd','#341f97'],['#ee5a24','#c0392b'],['#00d2d3','#0abde3'],['#8395a7','#576574'],
+    ['#f368e0','#e056d7'],['#01a3a4','#048a81'],['#d63031','#6c0303'],['#6ab04c','#badc58'],
+    ['#e55039','#f0b27a'],['#1e3799','#0c2461']
+  ];
+  const headingColorPair = headingColors[Math.max(0,Math.min(29,Number(c.heroHeading?.colorCombo)||0))];
 
   const subSize = c.heroSub?.size || 18;
   const subWeight = c.heroSub?.weight || 400;
@@ -197,6 +374,15 @@ function syncPreviewStyles() {
   // Injected CSS with maximum specificity
   const css = `
     /* ── STUDIO LIVE PREVIEW STYLES ── */
+    :root {
+      --gold: ${themeGold} !important;
+      --gold2: ${themeGold} !important;
+      --ink: ${themeInk} !important;
+      --ink2: ${themeBg} !important;
+      --cream: ${themeCream} !important;
+      --paper: ${themeBg} !important;
+      --bg: ${themeBg} !important;
+    }
     .site-header .brand-logo,
     .brand img,
     .site-logo,
@@ -220,27 +406,71 @@ function syncPreviewStyles() {
     .site-header .nav {
       min-height: ${navH}px !important;
     }
+    .site-header {
+      position: ${navSticky ? 'sticky' : 'relative'} !important;
+      top: ${navSticky ? '0' : 'auto'} !important;
+      z-index: 1000 !important;
+    }
+    @media (max-width:760px) {
+      .site-header .menu-toggle { display: ${navHamburger ? 'block' : 'none'} !important; }
+      .site-header .nav-links {
+        display: ${navHamburger ? 'none' : 'flex'} !important;
+        position: ${navHamburger ? 'fixed' : 'static'} !important;
+        inset: ${navHamburger ? '70px 0 auto' : 'auto'} !important;
+        flex-direction: ${navHamburger ? 'column' : 'row'} !important;
+        flex-wrap: ${navHamburger ? 'nowrap' : 'wrap'} !important;
+        gap: ${navHamburger ? '0' : '6px'} !important;
+        padding: ${navHamburger ? '18px 24px 24px' : '4px'} !important;
+        background: ${navHamburger ? navBg : 'transparent'} !important;
+        box-shadow: ${navHamburger ? '0 18px 40px rgba(0,0,0,.26)' : 'none'} !important;
+      }
+      .site-header .nav-links.open { display: flex !important; }
+      .site-header .brand-logo {
+        ${logoMobileScale ? 'width:min(' + logoW + 'px,22vw)!important;height:min(' + logoH + 'px,13vw)!important;max-width:22vw!important;' : ''}
+      }
+    }
+    @media (max-width:420px) {
+      .site-header .brand-logo { ${logoHideOnSmall ? 'display:none!important;' : ''} }
+    }
+    body {
+      background-attachment: ${bgFixed ? 'fixed' : 'scroll'} !important;
+      ${bgImageCss ? 'background-image:' + bgImageCss + ' !important;background-position:' + Number(c.background.posX ?? 50) + '% ' + Number(c.background.posY ?? 50) + '% !important;background-size:cover !important;' : ''}
+    }
     .hero {
       min-height: ${heroH}vh !important;
     }
-    .hero-media img, .hero-slide {
+    .hero-media img, .hero-slide, .hero-slideshow [data-hero-slide] {
       object-position: ${heroPosX}% ${heroPosY}% !important;
-      transform: scale(${heroScale / 100}) !important;
-      filter: brightness(${heroBrightness / 100}) contrast(${heroContrast / 100}) !important;
+      object-fit: ${heroDisplayMode} !important;
+      scale: ${heroScale / 100} !important;
+      filter: brightness(${heroBrightness / 100}) contrast(${heroContrast / 100}) blur(${heroBlur}px) !important;
+      ${c.hero?.kenBurns ? 'animation: rbhStudioKenBurns ' + Math.max(1000,Number(c.hero.animationSpeed||10)*1000) + 'ms ease-in-out ' + Math.max(0,Number(c.hero.animationDelay||0)*100) + 'ms infinite alternate !important;' : ''}
+      ${c.hero?.parallax ? 'transform: translateY(-1.5%) !important;' : ''}
     }
+    ${c.hero?.gradient ? '.hero-media::after,.hero-slideshow::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(135deg,rgba(0,0,0,.28),transparent 70%);}' : ''}
+    ${c.hero?.decorative ? '.hero-content{outline:1px solid rgba(198,161,91,.58);outline-offset:12px;}' : ''}
     .hero-content h1,
     .hero-title-primary,
     .hero-title-accent {
+      font-family: ${headingFonts[headingFontIndex] || headingFonts[0]} !important;
       font-size: ${headingSize}px !important;
       font-weight: ${headingWeight} !important;
       line-height: ${headingLH} !important;
       letter-spacing: ${headingLS}px !important;
+      text-align: ${c.heroHeading?.align || 'center'} !important;
+      background-image: linear-gradient(110deg,${headingColorPair[0]},${headingColorPair[1]}) !important;
+      background-clip: text !important;
+      -webkit-background-clip: text !important;
+      color: transparent !important;
     }
-    .hero-content .lede {
+    .hero-content .lede, .hero-content p {
       font-size: ${subSize}px !important;
       font-weight: ${subWeight} !important;
       line-height: ${subLH} !important;
+      text-align: ${c.heroSub?.align || 'center'} !important;
+      ${c.heroSub?.color ? 'color:' + c.heroSub.color + ' !important;' : ''}
     }
+    @keyframes rbhStudioKenBurns { from { transform:scale(1.02) } to { transform:scale(1.12) } }
     #site-intro, .site-intro {
       display: none !important;
       opacity: 0 !important;
@@ -269,6 +499,57 @@ function syncPreviewStyles() {
         (doc.head || doc.body).appendChild(tag);
       }
       tag.textContent = css;
+
+      // Implement the optional logo text fallback when the image fails to load.
+      doc.querySelectorAll('.site-header .brand').forEach(brand => {
+        const image = brand.querySelector('img.brand-logo');
+        if (!image) return;
+        let fallback = brand.querySelector('.rbh-logo-text-fallback');
+        if (logoTextFallback) {
+          if (!fallback) {
+            fallback = doc.createElement('span');
+            fallback.className = 'rbh-logo-text-fallback';
+            fallback.textContent = 'The Royal Hall';
+            Object.assign(fallback.style,{display:'none',fontFamily:'Georgia,serif',fontWeight:'600',color:'var(--gold)',lineHeight:'1.15',maxWidth:'130px'});
+            brand.appendChild(fallback);
+          }
+          const revealFallback = () => { if (fallback) { fallback.style.display='inline-block'; image.style.display='none'; } };
+          const restoreLogo = () => { if (fallback) fallback.style.display='none'; image.style.display='block'; };
+          if (image.dataset.rbhFallbackBound !== '1') {
+            image.addEventListener('error',revealFallback);
+            image.addEventListener('load',restoreLogo);
+            image.dataset.rbhFallbackBound='1';
+          }
+          if (image.complete && image.naturalWidth === 0) revealFallback();
+          else restoreLogo();
+        } else {
+          fallback?.remove();
+          image.style.display='block';
+        }
+      });
+
+      // Render persistent hero overlay, including drafts loaded after page initialization.
+      doc.querySelectorAll('.hero, .hero-section').forEach(hero => {
+        const mediaLayer = hero.querySelector('.hero-media, .hero-slideshow') || hero;
+        let overlay = mediaLayer.querySelector(':scope > .rbh-studio-preview-overlay');
+        if (overlayOpacity > 0 || c.hero?.gradient) {
+          if (!overlay) {
+            overlay = doc.createElement('div');
+            overlay.className = 'rbh-studio-preview-overlay';
+            overlay.setAttribute('aria-hidden', 'true');
+            Object.assign(overlay.style, {position:'absolute', inset:'0', width:'100%', height:'100%', pointerEvents:'none', zIndex:'2', transition:'background .15s ease'});
+            if (!mediaLayer.style.position && mediaLayer === hero) hero.style.position = 'relative';
+            mediaLayer.appendChild(overlay);
+          }
+          const hex = overlayColor.slice(1);
+          const rgba = 'rgba(' + parseInt(hex.slice(0,2),16) + ',' + parseInt(hex.slice(2,4),16) + ',' + parseInt(hex.slice(4,6),16) + ',' + (overlayOpacity/100) + ')';
+          overlay.style.background = c.hero?.gradient ? 'linear-gradient(135deg,' + rgba + ',transparent 78%)' : rgba;
+        } else if (overlay) {
+          overlay.remove();
+        }
+        const content = hero.querySelector('.hero-content');
+        if (content) { content.style.position = 'relative'; content.style.zIndex = '3'; }
+      });
 
       // Update Header elements directly
       const headers = doc.querySelectorAll('.site-header');
@@ -299,28 +580,57 @@ function syncPreviewStyles() {
         if (slides.length && slides[0].src !== c.hero.src) slides[0].src = c.hero.src;
       }
       if (headingText) {
-        const h1 = doc.querySelector('.hero-title-primary') || doc.querySelector('.hero-content h1');
-        if (h1 && h1.textContent !== headingText) h1.textContent = headingText;
+        const h1 = doc.querySelector('.hero-content h1') || doc.querySelector('.hero-title-primary');
+        if (h1) {
+          const primary = h1.querySelector('.hero-title-primary');
+          const accent = h1.querySelector('.hero-title-accent');
+          const words = String(headingText).trim().split(/\s+/);
+          if (primary && accent && words.length) {
+            accent.textContent = words.pop() || '';
+            primary.textContent = words.join(' ') + (words.length ? ' ' : '');
+          } else if (h1.textContent !== headingText) {
+            h1.textContent = headingText;
+          }
+        }
       }
       if (subText) {
-        const lede = doc.querySelector('.hero-content .lede');
+        const lede = doc.querySelector('.hero-content .lede') || doc.querySelector('.hero-content p');
         if (lede && lede.textContent !== subText) lede.textContent = subText;
+        if (lede && c.heroSub?.color) lede.style.color = c.heroSub.color;
       }
     } catch (e) {
       // Ignored
     }
   });
 
+  // Apply the editor preference to the preview only; never mutate the saved CMS state.
+  let previewCms = c;
+  if (c.settings?.animationPreviews === false) {
+    previewCms = {
+      ...c,
+      animations: { ...(c.animations || {}), activeItems: [] },
+      fontAnimations: { ...(c.fontAnimations || {}), targets: [] },
+      effects: { ...(c.effects || {}), activeItems: [] },
+      components: { ...(c.components || {}), activeItems: [] }
+    };
+  }
+
   // Also postMessage to all iframes
   getAllIframes().forEach(iframe => {
     try {
-      iframe.contentWindow?.postMessage({ type: 'STUDIO_PREVIEW_SYNC', cms: c }, '*');
+      iframe.contentWindow?.postMessage({ type: 'STUDIO_PREVIEW_SYNC', cms: previewCms }, '*');
     } catch (e) {}
   });
 }
 window.STUDIO = STUDIO;
 window.syncPreviewStyles = syncPreviewStyles;
 window.saveDraft = saveDraft;
+window.saveSection = async function(sectionName) {
+  const ok = await saveDraft({ silent: true });
+  if (ok) toast(sectionName + ' saved to shared CMS storage.', 'success');
+  else toast(sectionName + ' was not saved. Check sign-in and the backend status.', 'error');
+  return ok;
+};
 window.publishLive = publishLive;
 window.pushUndo = pushUndo;
 window.toast = toast;
@@ -386,32 +696,67 @@ function markSaved() {
 }
 
 /* ── SAVE ── */
-async function saveDraft() {
-  // Always write to localStorage as fallback
+async function saveDraft(options = {}) {
+  const silent = options.silent === true;
+  // Keep a local recovery copy, but never call it a server save.
   localStorage.setItem('rbh_studio_cms', JSON.stringify(STUDIO.cms));
 
-  if (API.available) {
-    const res = await API.post('/api/save-cms', STUDIO.cms);
-    if (res?.success) {
-      markSaved();
-      toast('Draft saved ✓ (server + browser)', 'success');
-      return;
-    }
+  if (!studioAuthenticated) {
+    markSaved();
+    const signedOutText = $('#save-status-text');
+    if (signedOutText) signedOutText.textContent = 'Sign in to save';
+    if (!silent) toast('Sign in before saving a shared draft.', 'error');
+    return false;
   }
 
-  // Offline fallback
-  markSaved();
-  toast('Draft saved to browser — start server for cloud save', 'gold');
+  if (!API.available) {
+    markSaved();
+    const txt = $('#save-status-text');
+    if (txt) txt.textContent = 'Local draft only';
+    if (!silent) toast('Draft kept in this browser only. The shared backend is unavailable.', 'gold');
+    return false;
+  }
+
+  const res = await API.post('/api/save-cms', STUDIO.cms);
+  if (res?.success) {
+    markSaved();
+    if (!silent) toast('Draft saved to shared CMS storage.', 'success');
+    return true;
+  }
+
+  const txt = $('#save-status-text');
+  if (txt) txt.textContent = 'Server save failed';
+  STUDIO.dirty = true;
+  const message = res?.message || res?.error || 'The server rejected the save.';
+  if (!silent) toast('Local recovery copy kept. Server save failed: ' + message, 'error');
+  return false;
 }
 
 async function publishLive() {
-  // 1. Save draft
+  // Save a browser recovery copy, but do not label it published yet.
   localStorage.setItem('rbh_studio_cms', JSON.stringify(STUDIO.cms));
 
-  // 2. Publish to live website store
-  localStorage.setItem('royal_cms_published', JSON.stringify(STUDIO.cms));
+  if (!studioAuthenticated) {
+    toast('Sign in before publishing live changes.', 'error');
+    return false;
+  }
 
-  // 3. Sync to legacy store for backward compatibility
+  if (!API.available) {
+    markDirty();
+    toast('Nothing was published. The shared backend is unavailable.', 'error');
+    return false;
+  }
+
+  const res = await API.post('/api/publish', STUDIO.cms);
+  if (!res?.success) {
+    markDirty();
+    const message = res?.message || res?.error || 'The server rejected publishing.';
+    toast('Publishing failed. No live changes were confirmed: ' + message, 'error');
+    return false;
+  }
+
+  // Only record local published state after the server confirms the publish.
+  localStorage.setItem('royal_cms_published', JSON.stringify(STUDIO.cms));
   try {
     const existing = JSON.parse(localStorage.getItem('royal_cms_data_store') || '{}');
     existing.navbar = existing.navbar || {};
@@ -424,33 +769,40 @@ async function publishLive() {
     localStorage.setItem('royal_cms_data_store', JSON.stringify(existing));
   } catch {}
 
-  // 4. Send to backend if available
-  if (API.available) {
-    try {
-      const res = await API.post('/api/publish', STUDIO.cms);
-      if (res?.success) {
-        markSaved();
-        toast('Website published successfully! ✓ Live website updated.', 'success');
-        if (res.report?.length) console.log('Publish report:', res.report);
-        return;
-      }
-    } catch {}
-  }
-
   markSaved();
-  toast('Website published! Live changes are now active ✓', 'success');
+  toast('Published to shared CMS storage. Public pages will load the published settings.', 'success');
+  if (res.report?.length) console.log('Publish report:', res.report);
+  return true;
 }
 
 async function loadFromBackend() {
-  if (!API.available) return;
-  const res = await API.get('/api/load-cms');
-  if (res?.success && res.data) {
-    // Merge backend CMS into current state
+  if (!API.available) return false;
+  const res = await API.get('/api/admin/load-cms');
+  if (res?.success && res.data && Object.keys(res.data).length) {
+    // A saved server draft is authoritative. Rebuilding from defaults first avoids
+    // stale keys from this browser silently overwriting settings deleted in the CMS.
+    STUDIO.cms = copyCmsValue(STUDIO_RESET_DEFAULTS);
     mergeIntoCMS(res.data);
+    STUDIO.cms.hero = { ...STUDIO_RESET_DEFAULTS.hero, ...(STUDIO.cms.hero || {}) };
+    STUDIO.cms.heroHeading = { ...STUDIO_RESET_DEFAULTS.heroHeading, ...(STUDIO.cms.heroHeading || {}) };
+    STUDIO.cms.heroSub = { ...STUDIO_RESET_DEFAULTS.heroSub, ...(STUDIO.cms.heroSub || {}) };
+    STUDIO.cms.video = { ...STUDIO_RESET_DEFAULTS.video, ...(STUDIO.cms.video || {}) };
+    STUDIO.cms.theme = { ...STUDIO_RESET_DEFAULTS.theme, ...(STUDIO.cms.theme || {}) };
+    STUDIO.cms.theme.customColors = { ...STUDIO_RESET_DEFAULTS.theme.customColors, ...(STUDIO.cms.theme.customColors || {}) };
+    STUDIO.cms.integrations = STUDIO.cms.integrations || {};
+    STUDIO.cms.integrations.cloudinary = STUDIO.cms.integrations.cloudinary || {};
+    STUDIO.cms.mediaLibrary = Array.isArray(STUDIO.cms.mediaLibrary) ? STUDIO.cms.mediaLibrary : [];
+    STUDIO.cms.mediaLabels = STUDIO.cms.mediaLabels && typeof STUDIO.cms.mediaLabels === 'object' ? STUDIO.cms.mediaLabels : {};
+    STUDIO.cms.hiddenMediaAssets = Array.isArray(STUDIO.cms.hiddenMediaAssets) ? STUDIO.cms.hiddenMediaAssets : [];
+    STUDIO.cms.imageSizing = STUDIO.cms.imageSizing && typeof STUDIO.cms.imageSizing === 'object' ? STUDIO.cms.imageSizing : {};
     localStorage.setItem('rbh_studio_cms', JSON.stringify(STUDIO.cms));
     syncAllControls();
-    console.log('✓ CMS loaded from backend');
+    window.refreshMediaLibrary?.();
+    syncPreviewStyles();
+    console.log('CMS draft loaded from shared storage');
+    return true;
   }
+  return false;
 }
 
 /* ── TOAST ── */
@@ -556,24 +908,66 @@ function initLogoPage() {
     markDirty();
   }, 'px');
 
-  // Upload
-  const uploadInput = document.getElementById('logo-upload');
-  if (uploadInput) {
-    uploadInput.addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => {
-        STUDIO.cms.logo.src = ev.target.result;
-        const preview = document.getElementById('logo-preview-img');
-        if (preview) preview.src = ev.target.result;
-        syncPreviewStyles();
-        pushUndo('Logo upload');
-        toast('Logo updated', 'success');
-      };
-      reader.readAsDataURL(file);
+  // Text URL/path field and persistent responsive preferences.
+  const logoUrlInput = document.getElementById('logo-url-input');
+  if (logoUrlInput) {
+    logoUrlInput.value = STUDIO.cms.logo.src || 'assets/images/royal-hall-crest.webp';
+    logoUrlInput.addEventListener('change', () => {
+      const value = logoUrlInput.value.trim();
+      if (!value || /^(?:blob:|data:)/i.test(value) ||
+          (!/^https:\/\//i.test(value) && !value.startsWith('/') && !value.startsWith('assets/'))) {
+        toast('Use a permanent HTTPS URL or a site path under assets/.', 'error');
+        logoUrlInput.value = STUDIO.cms.logo.src || 'assets/images/royal-hall-crest.webp';
+        return;
+      }
+      pushUndo('Logo URL');
+      STUDIO.cms.logo.src = value;
+      const preview = document.getElementById('logo-preview-img');
+      if (preview) preview.src = value;
+      syncPreviewStyles();
+      markDirty();
     });
   }
+
+  const logoToggleMap = {
+    'logo-mobile-scale-toggle':'mobileScale',
+    'logo-hide-xs-toggle':'hideOnSmall',
+    'logo-text-fallback-toggle':'textFallback'
+  };
+  Object.entries(logoToggleMap).forEach(([id,property]) => {
+    const toggle = document.getElementById(id);
+    if (!toggle) return;
+    toggle.classList.toggle('on', STUDIO.cms.logo[property] !== false &&
+      (property !== 'hideOnSmall' || STUDIO.cms.logo[property] === true));
+    toggle.addEventListener('click', () => {
+      pushUndo('Logo ' + property);
+      STUDIO.cms.logo[property] = !toggle.classList.contains('on');
+      toggle.classList.toggle('on', STUDIO.cms.logo[property]);
+      syncPreviewStyles();
+      markDirty();
+    });
+  });
+
+  const uploadInput = document.getElementById('logo-upload');
+  if (uploadInput) {
+    uploadInput.addEventListener('change', async event => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/') || file.size > 15 * 1024 * 1024) { toast('Choose an image file smaller than 15 MB.', 'error'); uploadInput.value = ''; return; }
+      uploadInput.disabled = true;
+      try {
+        const uploaded = await uploadMediaToCloudinary(file);
+        pushUndo('Logo upload'); STUDIO.cms.logo.src = uploaded.url;
+        if (logoUrlInput) logoUrlInput.value = uploaded.url;
+        const preview = document.getElementById('logo-preview-img'); if (preview) preview.src = uploaded.url;
+        syncPreviewStyles(); markDirty();
+        toast('Logo uploaded to Cloudinary. Save Draft, then Publish.', 'success');
+      } catch (error) { toast('Logo upload failed: ' + (error.message || 'Unknown error.'), 'error'); }
+      finally { uploadInput.disabled = false; uploadInput.value = ''; }
+    });
+  }
+
+
 
   // Position chips
   document.querySelectorAll('#logo-position-chips .s-chip').forEach(chip => {
@@ -593,6 +987,7 @@ function initLogoPage() {
 function initNavbarPage() {
   // Design selection
   initPresetCards('#navbar-designs-container', (i) => {
+    pushUndo('Navbar design');
     STUDIO.cms.navbar.design = i;
     const designColors = ['#0a0b0d', 'rgba(18,22,28,0.75)', '#ffffff', 'transparent', '#12151c', '#060708'];
     if (i === 3) {
@@ -612,28 +1007,29 @@ function initNavbarPage() {
       }
     }
     syncPreviewStyles();
-    pushUndo('Navbar design');
+    markDirty();
     toast(`Navbar Design ${i+1} applied`, 'gold');
   });
 
   // Button styles
   initPresetCards('#navbar-btn-styles', (i) => {
+    pushUndo('Navbar button style');
     STUDIO.cms.navbar.buttonStyle = i;
     syncPreviewStyles();
-    pushUndo('Navbar button style');
     markDirty();
   });
 
   // Animations
   initPresetCards('#navbar-anim-grid', (i) => {
+    pushUndo('Navbar animation');
     STUDIO.cms.navbar.animation = i;
     syncPreviewStyles();
-    pushUndo('Navbar animation');
     markDirty();
   });
 
   // Hover animations
   initPresetCards('#navbar-hover-grid', (i) => {
+    pushUndo('Navbar hover animation');
     STUDIO.cms.navbar.hoverAnimation = i;
     syncPreviewStyles();
     markDirty();
@@ -656,6 +1052,23 @@ function initNavbarPage() {
     markDirty();
   });
 
+  const navToggleMap = {
+    'navbar-sticky-toggle':'sticky',
+    'navbar-hamburger-toggle':'hamburger'
+  };
+  Object.entries(navToggleMap).forEach(([id,property]) => {
+    const toggle = document.getElementById(id);
+    if (!toggle) return;
+    toggle.classList.toggle('on', STUDIO.cms.navbar[property] !== false);
+    toggle.addEventListener('click', () => {
+      pushUndo('Navbar ' + property);
+      STUDIO.cms.navbar[property] = !toggle.classList.contains('on');
+      toggle.classList.toggle('on', STUDIO.cms.navbar[property]);
+      syncPreviewStyles();
+      markDirty();
+    });
+  });
+
   // Transparent toggle
   const transpToggle = document.getElementById('navbar-transparent-toggle');
   if (transpToggle) {
@@ -674,27 +1087,26 @@ function initNavbarPage() {
 function initHeroImagePage() {
   const cms = STUDIO.cms.hero;
 
-  // Upload
   const upload = document.getElementById('hero-img-upload');
   if (upload) {
-    upload.addEventListener('change', e => {
-      const file = e.target.files[0];
+    upload.addEventListener('change', async event => {
+      const file = event.target.files && event.target.files[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => {
-        cms.src = ev.target.result;
-        const prev = document.getElementById('hero-img-preview');
-        if (prev) prev.src = ev.target.result;
-        applyToPreview(doc => {
-          const hero = doc.querySelector('.hero, .hero-section, [class*=hero]');
-          if (hero) hero.style.backgroundImage = `url(${ev.target.result})`;
-        });
-        pushUndo('Hero image upload');
-        toast('Hero image updated', 'success');
-      };
-      reader.readAsDataURL(file);
+      if (!file.type.startsWith('image/') || file.size > 15 * 1024 * 1024) { toast('Choose an image file smaller than 15 MB.', 'error'); upload.value = ''; return; }
+      upload.disabled = true;
+      try {
+        const uploaded = await uploadMediaToCloudinary(file);
+        pushUndo('Hero image upload'); cms.src = uploaded.url;
+        const preview = document.getElementById('hero-img-preview'); if (preview) preview.src = uploaded.url;
+        applyToPreview(doc => { const hero = doc.querySelector('.hero, .hero-section, [class*=hero]'); if (hero) hero.style.backgroundImage = 'url("' + uploaded.url + '")'; });
+        syncPreviewStyles(); markDirty();
+        toast('Hero image uploaded to Cloudinary. Save Draft, then Publish.', 'success');
+      } catch (error) { toast('Hero image upload failed: ' + (error.message || 'Unknown error.'), 'error'); }
+      finally { upload.disabled = false; upload.value = ''; }
     });
   }
+
+
 
   // Scale
   initSlider('hero-slider-scale', 'hero-num-scale', 'hero-val-scale', v => {
@@ -776,36 +1188,82 @@ function initHeroImagePage() {
 
   function applyOverlay() {
     applyToPreview(doc => {
-      const overlay = doc.querySelector('.hero-overlay, .hero::after, [class*=overlay]');
-      if (overlay) {
-        const c = cms.overlayColor;
-        const a = cms.overlayOpacity / 100;
-        const hex = c.replace('#','');
-        const r = parseInt(hex.substring(0,2),16);
-        const g = parseInt(hex.substring(2,4),16);
-        const b = parseInt(hex.substring(4,6),16);
-        overlay.style.background = `rgba(${r},${g},${b},${a})`;
-      }
       const hero = doc.querySelector('.hero, .hero-section');
-      if (hero) hero.style.filter = `brightness(${cms.brightness/100}) contrast(${cms.contrast/100})`;
+      if (!hero) return;
+      let media = hero.querySelector('.hero-media, .hero-slideshow');
+      if (!media) media = hero;
+      let overlay = media.querySelector(':scope > .rbh-studio-preview-overlay');
+      if (!overlay) {
+        overlay = doc.createElement('div');
+        overlay.className = 'rbh-studio-preview-overlay';
+        overlay.setAttribute('aria-hidden', 'true');
+        Object.assign(overlay.style, {
+          position: 'absolute',
+          inset: '0',
+          width: '100%',
+          height: '100%',
+          pointerEvents: 'none',
+          zIndex: '2',
+          transition: 'background .15s ease'
+        });
+        if (window.getComputedStyle && media !== hero) media.style.position = 'absolute';
+        else if (media === hero && !hero.style.position) hero.style.position = 'relative';
+        media.appendChild(overlay);
+      }
+      const color = /^#[0-9a-f]{6}$/i.test(cms.overlayColor || '') ? cms.overlayColor : '#000000';
+      const alpha = Math.max(0, Math.min(100, Number(cms.overlayOpacity) || 0)) / 100;
+      overlay.style.background = color + Math.round(alpha * 255).toString(16).padStart(2, '0');
+      hero.querySelectorAll('.hero-media img, .hero-slideshow [data-hero-slide], .hero-media video').forEach(mediaImage => {
+        mediaImage.style.filter =
+          'brightness(' + Math.max(0, Number(cms.brightness) || 100) / 100 + ') ' +
+          'contrast(' + Math.max(0, Number(cms.contrast) || 100) / 100 + ') ' +
+          'blur(' + Math.max(0, Number(cms.blur) || 0) + 'px)';
+      });
+      const content = hero.querySelector('.hero-content');
+      if (content) {
+        content.style.position = 'relative';
+        content.style.zIndex = '3';
+      }
     });
+    syncPreviewStyles();
     markDirty();
   }
 
-  // Advanced toggles
-  ['hero-ken-burns', 'hero-parallax', 'hero-gradient', 'hero-decorative'].forEach(id => {
-    const t = document.getElementById(id + '-toggle');
-    if (t) t.addEventListener('click', () => { t.classList.toggle('on'); markDirty(); });
+  // Advanced hero toggles are stateful and are applied to the same live preview as the basic controls.
+  const heroToggleState = {
+    'hero-ken-burns': 'kenBurns',
+    'hero-parallax': 'parallax',
+    'hero-gradient': 'gradient',
+    'hero-decorative': 'decorative'
+  };
+  Object.entries(heroToggleState).forEach(([id, property]) => {
+    const toggle = document.getElementById(id + '-toggle');
+    if (!toggle) return;
+    toggle.classList.toggle('on', !!cms[property]);
+    toggle.addEventListener('click', () => {
+      pushUndo('Hero ' + property);
+      cms[property] = toggle.classList.toggle('on');
+      syncPreviewStyles();
+      markDirty();
+    });
   });
 
-  // Anim speed / delay / blur
-  initSlider('hero-slider-animspeed', 'hero-num-animspeed', 'hero-val-animspeed', v => { markDirty(); }, 's');
-  initSlider('hero-slider-animdelay', 'hero-num-animdelay', 'hero-val-animdelay', v => { markDirty(); }, 's');
+  // Persist the timings and blur; these values must survive save/reload.
+  initSlider('hero-slider-animspeed', 'hero-num-animspeed', 'hero-val-animspeed', v => {
+    cms.animationSpeed = v;
+    syncPreviewStyles();
+    markDirty();
+  }, 's');
+  initSlider('hero-slider-animdelay', 'hero-num-animdelay', 'hero-val-animdelay', v => {
+    cms.animationDelay = v;
+    syncPreviewStyles();
+    markDirty();
+  }, 's');
   initSlider('hero-slider-blur', 'hero-num-blur', 'hero-val-blur', v => {
-    applyToPreview(doc => {
-      const hero = doc.querySelector('.hero img, .hero-bg');
-      if (hero) hero.style.filter = `blur(${v}px)`;
-    });
+    cms.blur = v;
+    applyOverlay();
+    syncPreviewStyles();
+    markDirty();
   }, 'px');
 }
 
@@ -821,16 +1279,27 @@ function initHeroHeadingPage() {
     textInput.oninput = () => {
       cms.text = textInput.value;
       applyToPreview(doc => {
-        const h = doc.querySelector('.hero h1, .hero-title, [class*=hero-heading], [class*=hero-title]');
-        if (h) h.textContent = cms.text;
+        const h = doc.querySelector('.hero-content h1') || doc.querySelector('.hero h1, .hero-title, [class*=hero-heading], [class*=hero-title]');
+        if (h) {
+          const primary = h.querySelector('.hero-title-primary');
+          const accent = h.querySelector('.hero-title-accent');
+          const words = String(cms.text).trim().split(/\s+/);
+          if (primary && accent && words.length) {
+            accent.textContent = words.pop() || '';
+            primary.textContent = words.join(' ') + (words.length ? ' ' : '');
+          } else {
+            h.textContent = cms.text;
+          }
+        }
       });
+      syncPreviewStyles();
       markDirty();
     };
   }
 
-  initPresetCards('#heading-anim-grid', (i) => { cms.animation = i; pushUndo('Heading animation'); toast(`Animation ${i+1} applied`, 'gold'); });
-  initPresetCards('#heading-font-grid', (i) => { cms.font = i; pushUndo('Heading font'); markDirty(); });
-  initPresetCards('#heading-color-grid', (i) => { cms.colorCombo = i; pushUndo('Heading color'); markDirty(); });
+  initPresetCards('#heading-anim-grid', (i) => { pushUndo('Heading animation'); cms.animation = i; syncPreviewStyles(); markDirty(); toast(`Animation ${i+1} applied`, 'gold'); });
+  initPresetCards('#heading-font-grid', (i) => { pushUndo('Heading font'); cms.font = i; syncPreviewStyles(); markDirty(); });
+  initPresetCards('#heading-color-grid', (i) => { pushUndo('Heading color'); cms.colorCombo = i; syncPreviewStyles(); markDirty(); });
 
   initSlider('heading-slider-size', 'heading-num-size', 'heading-val-size', v => {
     cms.size = v;
@@ -861,10 +1330,12 @@ function initHeroHeadingPage() {
     chip.addEventListener('click', () => {
       document.querySelectorAll('#heading-align-chips .s-chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
+      cms.align = chip.dataset.val;
       applyToPreview(doc => {
-        const h = doc.querySelector('.hero h1, .hero-title');
-        if (h) h.style.textAlign = chip.dataset.val;
+        const h = doc.querySelector('.hero-content h1') || doc.querySelector('.hero h1, .hero-title');
+        if (h) h.style.textAlign = cms.align;
       });
+      syncPreviewStyles();
       markDirty();
     });
   });
@@ -889,7 +1360,7 @@ function initHeroSubPage() {
     };
   }
 
-  initPresetCards('#sub-preset-grid', (i) => { cms.preset = i; pushUndo('Sub preset'); markDirty(); });
+  initPresetCards('#sub-preset-grid', (i) => { pushUndo('Sub preset'); cms.preset = i; syncPreviewStyles(); markDirty(); });
 
   initSlider('sub-slider-size', 'sub-num-size', 'sub-val-size', v => {
     cms.size = v;
@@ -901,6 +1372,7 @@ function initHeroSubPage() {
 
   initSlider('sub-slider-lh', 'sub-num-lh', 'sub-val-lh', v => {
     cms.lineHeight = v / 100;
+    syncPreviewStyles();
     markDirty();
   });
 
@@ -908,19 +1380,23 @@ function initHeroSubPage() {
     chip.addEventListener('click', () => {
       document.querySelectorAll('#sub-align-chips .s-chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
+      cms.align = chip.dataset.val;
       applyToPreview(doc => {
-        const h = doc.querySelector('.hero p, .hero-subtitle');
-        if (h) h.style.textAlign = chip.dataset.val;
+        const h = doc.querySelector('.hero-content .lede') || doc.querySelector('.hero p, .hero-subtitle');
+        if (h) h.style.textAlign = cms.align;
       });
+      syncPreviewStyles();
       markDirty();
     });
   });
 
   initColorPair('sub-color-swatch', 'sub-color-hex', v => {
+    cms.color = v;
     applyToPreview(doc => {
-      const h = doc.querySelector('.hero p, .hero-subtitle');
+      const h = doc.querySelector('.hero-content .lede') || doc.querySelector('.hero p, .hero-subtitle');
       if (h) h.style.color = v;
     });
+    syncPreviewStyles();
     markDirty();
   });
 }
@@ -932,29 +1408,62 @@ function initBgPage() {
   const cms = STUDIO.cms.background;
 
   const upload = document.getElementById('bg-upload');
+  const bgUrlInput = document.getElementById('bg-url-input');
+  const bgPreview = document.getElementById('bg-preview-img');
+  if (bgUrlInput) {
+    bgUrlInput.value = /^https:\/\//i.test(cms.src || '') || String(cms.src || '').startsWith('/') || String(cms.src || '').startsWith('assets/') ? cms.src : '';
+    bgUrlInput.addEventListener('change', () => {
+      const value = bgUrlInput.value.trim();
+      if (value && !/^https:\/\//i.test(value) && !value.startsWith('/') && !value.startsWith('assets/')) {
+        toast('Use a permanent HTTPS URL or a path under assets/.', 'error'); bgUrlInput.value = cms.src || ''; return;
+      }
+      cms.src = value;
+      if (bgPreview) { bgPreview.src = value; bgPreview.style.display = value ? 'block' : 'none'; }
+      markDirty(); syncPreviewStyles();
+    });
+  }
+  document.getElementById('bg-upload-zone')?.addEventListener('click', () => upload && upload.click());
   if (upload) {
-    upload.addEventListener('change', e => {
-      const file = e.target.files[0];
+    upload.addEventListener('change', async event => {
+      const file = event.target.files && event.target.files[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => {
-        cms.src = ev.target.result;
-        const prev = document.getElementById('bg-preview-img');
-        if (prev) { prev.src = ev.target.result; prev.style.display = 'block'; }
-        markDirty();
-        toast('Background uploaded', 'success');
-      };
-      reader.readAsDataURL(file);
+      if (!file.type.startsWith('image/') || file.size > 15 * 1024 * 1024) { toast('Choose an image file smaller than 15 MB.', 'error'); upload.value = ''; return; }
+      upload.disabled = true;
+      try {
+        const uploaded = await uploadMediaToCloudinary(file);
+        pushUndo('Background image upload'); cms.src = uploaded.url;
+        if (bgUrlInput) bgUrlInput.value = uploaded.url;
+        if (bgPreview) { bgPreview.src = uploaded.url; bgPreview.style.display = 'block'; }
+        markDirty(); syncPreviewStyles();
+        toast('Background uploaded to Cloudinary. Save Draft, then Publish.', 'success');
+      } catch (error) { toast('Background upload failed: ' + (error.message || 'Unknown error.'), 'error'); }
+      finally { upload.disabled = false; upload.value = ''; }
     });
   }
 
+
+
   initPresetCards('#bg-anim-grid', (i) => { cms.animation = i; pushUndo('Background animation'); toast(`BG Animation ${i+1} applied`, 'gold'); });
 
-  initSlider('bg-slider-posx', 'bg-num-posx', 'bg-val-posx', v => { cms.posX = v; markDirty(); }, '%');
-  initSlider('bg-slider-posy', 'bg-num-posy', 'bg-val-posy', v => { cms.posY = v; markDirty(); }, '%');
-  initSlider('bg-slider-opacity', 'bg-num-opacity', 'bg-val-opacity', v => { cms.overlayOpacity = v; markDirty(); }, '%');
+  initSlider('bg-slider-posx', 'bg-num-posx', 'bg-val-posx', v => { cms.posX = v; syncPreviewStyles(); markDirty(); }, '%');
+  initSlider('bg-slider-posy', 'bg-num-posy', 'bg-val-posy', v => { cms.posY = v; syncPreviewStyles(); markDirty(); }, '%');
+  initSlider('bg-slider-opacity', 'bg-num-opacity', 'bg-val-opacity', v => { cms.overlayOpacity = v; syncPreviewStyles(); markDirty(); }, '%');
 
-  initColorPair('bg-overlay-swatch', 'bg-overlay-hex', v => { markDirty(); });
+  initColorPair('bg-overlay-swatch', 'bg-overlay-hex', v => { cms.overlayColor = v; syncPreviewStyles(); markDirty(); });
+
+  const bgToggleMap = {'bg-fixed-toggle':'fixed','bg-gradient-toggle':'gradient'};
+  Object.entries(bgToggleMap).forEach(([id,property]) => {
+    const toggle = document.getElementById(id);
+    if (!toggle) return;
+    toggle.classList.toggle('on', cms[property] !== false);
+    toggle.addEventListener('click', () => {
+      pushUndo('Background ' + property);
+      cms[property] = !toggle.classList.contains('on');
+      toggle.classList.toggle('on', cms[property]);
+      syncPreviewStyles();
+      markDirty();
+    });
+  });
 }
 
 /* ══════════════════════════════════════════════════
@@ -964,129 +1473,353 @@ function initVideoPage() {
   const cms = STUDIO.cms.video;
 
   const upload = document.getElementById('video-upload');
-  if (upload) {
-    upload.addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const url = URL.createObjectURL(file);
-      cms.src = url;
-      const videoEl = document.getElementById('video-preview-el');
-      const noVideo = document.getElementById('video-no-video');
-      if (videoEl) { videoEl.src = url; videoEl.style.display = 'block'; videoEl.load(); }
-      if (noVideo) noVideo.style.display = 'none';
+  const videoEl = document.getElementById('video-preview-el');
+  const noVideo = document.getElementById('video-no-video');
+  const sourceUrl = document.getElementById('video-source-url');
+  const posterInput = document.getElementById('video-poster-url');
+  const applyVideoPreview = () => {
+    if (!videoEl) return;
+    videoEl.autoplay = cms.autoplay !== false;
+    videoEl.loop = cms.loop !== false;
+    videoEl.muted = cms.muted !== false;
+    videoEl.controls = cms.controls === true;
+    videoEl.playsInline = cms.playsInline !== false;
+    videoEl.objectFit = cms.objectFit || 'cover';
+    videoEl.style.objectFit = cms.objectFit || 'cover';
+    videoEl.style.objectPosition = (Number(cms.posX ?? 50)) + '% ' + (Number(cms.posY ?? 50)) + '%';
+    if (cms.poster) videoEl.poster = cms.poster;
+  };
+
+  if (sourceUrl) {
+    sourceUrl.value = /^https?:\/\//i.test(cms.src || '') || String(cms.src || '').startsWith('/') || String(cms.src || '').startsWith('assets/')
+      ? cms.src : '';
+    sourceUrl.addEventListener('change', () => {
+      const value = sourceUrl.value.trim();
+      if (value && !/^https?:\/\//i.test(value) && !value.startsWith('/') && !value.startsWith('assets/')) {
+        toast('Use an HTTPS video URL or a path inside assets/.', 'error');
+        return;
+      }
+      if (value.startsWith('blob:') || value.startsWith('data:')) {
+        toast('Temporary/local URLs cannot be published. Use a persistent HTTPS/CDN URL.', 'error');
+        return;
+      }
+      cms.src = value;
+      if (videoEl) {
+        if (value) {
+          videoEl.src = value;
+          videoEl.style.display = 'block';
+          videoEl.load();
+          if (noVideo) noVideo.style.display = 'none';
+        } else {
+          videoEl.removeAttribute('src');
+          videoEl.style.display = 'none';
+          if (noVideo) noVideo.style.display = '';
+        }
+      }
       markDirty();
-      toast('Video uploaded', 'success');
+      syncPreviewStyles();
     });
   }
 
-  // Playback toggles
-  ['video-autoplay', 'video-loop', 'video-muted'].forEach(id => {
+  if (posterInput) {
+    posterInput.value = cms.poster || 'assets/images/hero-venue.jpg';
+    posterInput.addEventListener('change', () => {
+      cms.poster = posterInput.value.trim();
+      applyVideoPreview();
+      markDirty();
+    });
+  }
+
+  if (upload) {
+    upload.addEventListener('change', async event => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('video/') || file.size > 50 * 1024 * 1024) { toast('Choose a supported video smaller than 50 MB.', 'error'); upload.value = ''; return; }
+      upload.disabled = true;
+      try {
+        const uploaded = await uploadMediaToCloudinary(file);
+        pushUndo('Video upload'); cms.src = uploaded.url;
+        if (sourceUrl) sourceUrl.value = uploaded.url;
+        if (videoEl) { videoEl.src = uploaded.url; videoEl.style.display = 'block'; applyVideoPreview(); videoEl.load(); }
+        if (noVideo) noVideo.style.display = 'none';
+        markDirty(); syncPreviewStyles();
+        toast('Video uploaded to Cloudinary. Save Draft, then Publish.', 'success');
+      } catch (error) { toast('Video upload failed: ' + (error.message || 'Unknown error.'), 'error'); }
+      finally { upload.disabled = false; upload.value = ''; }
+    });
+  }
+
+
+
+  // Every playback control writes a field in the saved CMS and updates the local preview.
+  const videoToggleMap = {
+    'video-autoplay': 'autoplay',
+    'video-loop': 'loop',
+    'video-muted': 'muted',
+    'video-controls': 'controls',
+    'video-inline': 'playsInline'
+  };
+  Object.entries(videoToggleMap).forEach(([id, property]) => {
     const t = document.getElementById(id + '-toggle');
-    if (t) {
-      if (cms[id.replace('video-', '')]) t.classList.add('on');
-      t.addEventListener('click', () => {
-        t.classList.toggle('on');
-        cms[id.replace('video-', '')] = t.classList.contains('on');
-        const videoEl = document.getElementById('video-preview-el');
-        if (videoEl) {
-          videoEl.autoplay = cms.autoplay;
-          videoEl.loop = cms.loop;
-          videoEl.muted = cms.muted;
-        }
-        markDirty();
-      });
-    }
+    if (!t) return;
+    t.classList.toggle('on', cms[property] !== false && (property !== 'controls' || cms.controls === true));
+    t.addEventListener('click', () => {
+      pushUndo('Video ' + property);
+      cms[property] = !t.classList.contains('on');
+      t.classList.toggle('on', cms[property]);
+      applyVideoPreview();
+      markDirty();
+      syncPreviewStyles();
+    });
   });
 
-  initSlider('video-slider-posx', 'video-num-posx', 'video-val-posx', v => { cms.posX = v; markDirty(); }, '%');
-  initSlider('video-slider-posy', 'video-num-posy', 'video-val-posy', v => { cms.posY = v; markDirty(); }, '%');
+  document.querySelectorAll('#page-video .s-display-modes .s-mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === (cms.objectFit || 'cover'));
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#page-video .s-display-modes .s-mode-btn').forEach(other => other.classList.toggle('active', other === btn));
+      cms.objectFit = btn.dataset.mode;
+      applyVideoPreview();
+      markDirty();
+      syncPreviewStyles();
+    });
+  });
+
+  initSlider('video-slider-posx', 'video-num-posx', 'video-val-posx', v => { cms.posX = v; applyVideoPreview(); markDirty(); syncPreviewStyles(); }, '%');
+  initSlider('video-slider-posy', 'video-num-posy', 'video-val-posy', v => { cms.posY = v; applyVideoPreview(); markDirty(); syncPreviewStyles(); }, '%');
+  applyVideoPreview();
 }
 
 /* ══════════════════════════════════════════════════
    PAGE 8: IMAGE LIBRARY
 ══════════════════════════════════════════════════ */
 function initImageLibraryPage() {
-  let selectedImg = null;
-  const images = [
-    'assets/images/hero-venue.jpg','assets/images/hall-interior.jpg',
-    'assets/images/stage-celebration.jpg','assets/images/venue-entrance.jpg',
-    'assets/images/photo-01.jpeg','assets/images/photo-02.jpeg',
-    'assets/images/photo-03.jpeg','assets/images/photo-04.jpeg',
-    'assets/images/photo-05.jpeg','assets/images/photo-06.jpeg',
-    'assets/images/photo-07.jpeg','assets/images/photo-08.jpeg',
-    'assets/images/photo-09.jpeg','assets/images/photo-10.jpeg',
-    'assets/images/photo-11.jpeg','assets/images/photo-12.jpeg',
-    'assets/images/photo-13.jpeg','assets/images/photo-14.jpeg',
-    'assets/images/photo-15.jpeg','assets/images/photo-16.jpeg',
-    'assets/images/photo-17.jpeg','assets/images/photo-18.jpeg',
-  ];
-
   const grid = document.getElementById('img-library-grid');
   if (!grid) return;
-  grid.innerHTML = '';
-  images.forEach((src, i) => {
-    const name = src.split('/').pop();
-    const item = document.createElement('div');
-    item.className = 's-img-item';
-    item.innerHTML = `
-      <img src="${src}" alt="${name}" loading="lazy">
-      <div class="s-img-overlay">
-        <button class="s-img-ob" data-action="set" title="Set as hero"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></button>
-        <button class="s-img-ob" data-action="rename" title="Rename"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-        <button class="s-img-ob" data-action="delete" title="Delete"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
-      </div>
-      <div class="s-img-name">${name}</div>
-    `;
-    item.addEventListener('click', e => {
-      const action = e.target.closest('[data-action]')?.dataset.action;
-      if (action === 'set') {
-        STUDIO.cms.hero.src = src;
-        applyToPreview(doc => {
-          const hero = doc.querySelector('.hero, .hero-section');
-          if (hero) hero.style.backgroundImage = `url(${src})`;
-        });
-        toast(`Hero set to ${name}`, 'success');
-      } else if (action === 'rename') {
-        const newName = prompt('New name for ' + name + ':', name);
-        if (newName) { item.querySelector('.s-img-name').textContent = newName; toast('Renamed', 'gold'); }
-      } else if (action === 'delete') {
-        if (confirm(`Delete ${name}? This cannot be undone.`)) { item.remove(); toast('Asset removed', 'error'); }
-      } else {
-        grid.querySelectorAll('.s-img-item').forEach(it => it.classList.remove('active'));
-        item.classList.add('active');
-        selectedImg = src;
-        const selName = document.getElementById('selected-img-name');
-        const selPreview = document.getElementById('selected-img-preview');
-        if (selName) selName.textContent = name;
-        if (selPreview) selPreview.src = src;
-      }
-    });
-    grid.appendChild(item);
+
+  const cms = STUDIO.cms;
+  cms.mediaLibrary = Array.isArray(cms.mediaLibrary) ? cms.mediaLibrary : [];
+  cms.mediaLabels = cms.mediaLabels && typeof cms.mediaLabels === 'object' ? cms.mediaLabels : {};
+  cms.hiddenMediaAssets = Array.isArray(cms.hiddenMediaAssets) ? cms.hiddenMediaAssets : [];
+  cms.imageSizing = cms.imageSizing && typeof cms.imageSizing === 'object' ? cms.imageSizing : {};
+  cms.integrations = cms.integrations && typeof cms.integrations === 'object' ? cms.integrations : {};
+  cms.integrations.cloudinary = cms.integrations.cloudinary && typeof cms.integrations.cloudinary === 'object'
+    ? cms.integrations.cloudinary : {};
+
+  const fallbackImages = [
+    'assets/images/hero-venue.jpg','assets/images/hall-interior.jpg',
+    'assets/images/stage-celebration.jpg','assets/images/venue-entrance.jpg',
+    'assets/images/cake-display.jpg',
+    ...Array.from({length:30},(_,i)=>'assets/images/photo-'+String(i+1).padStart(2,'0')+'.jpeg')
+  ];
+  const manifestPhotos = Array.isArray(window.ROYAL_HALL_MEDIA?.photos)
+    ? window.ROYAL_HALL_MEDIA.photos.map(photo => typeof photo === 'string' ? { src: photo, category: 'gallery', title: '' } : photo).filter(photo => photo && photo.src)
+    : fallbackImages.map(src => ({ src, category: src.toLowerCase().includes('hero') ? 'hero' : 'gallery', title: '' }));
+  const manifestImages = manifestPhotos.map(photo => photo.src);
+  const manifestCategoryMap = new Map(manifestPhotos.map(photo => [photo.src, String(photo.category || 'gallery').toLowerCase()]));
+  const manifestTitleMap = new Map(manifestPhotos.map(photo => [photo.src, String(photo.title || '')]));
+  let selectedImg = null;
+  let activeFilter = 'all';
+
+  document.getElementById('btn-cloudinary-config-save')?.addEventListener('click', async () => {
+    const status = document.getElementById('cloudinary-connection-status'), button = document.getElementById('btn-cloudinary-config-save');
+    if (button) button.disabled = true;
+    if (status) status.textContent = 'Checking server-side Cloudinary connection…';
+    try {
+      const response = await fetch('/api/cloudinary/status', { credentials:'same-origin', cache:'no-store' });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.connected) throw new Error(result.message || 'Cloudinary is not configured on Render.');
+      if (status) status.textContent = 'Connected: ' + result.cloudName;
+      toast('Cloudinary connection verified: ' + result.cloudName, 'success');
+    } catch (error) {
+      if (status) status.textContent = error.message || 'Cloudinary connection failed.';
+      toast('Cloudinary is not ready: ' + (error.message || 'Connection failed.'), 'error');
+    } finally { if (button) button.disabled = false; }
   });
 
-  // Upload more
+
+
+  function assetRecords() {
+    const builtIn = manifestImages
+      .filter(src => typeof src === 'string' && !cms.hiddenMediaAssets.includes(src))
+      .map(src => ({
+        id: 'builtin:' + src, src,
+        name: cms.mediaLabels[src] || manifestTitleMap.get(src) || src.split('/').pop(),
+        category: manifestCategoryMap.get(src) || (src.toLowerCase().includes('hero') ? 'hero' : 'gallery'),
+        builtin: true
+      }));
+    const custom = cms.mediaLibrary
+      .filter(asset => asset && typeof asset.src === 'string')
+      .map(asset => ({ ...asset, category: String(asset.category || 'gallery').toLowerCase(), builtin: false }));
+    return [...builtIn, ...custom];
+  }
+
+  function updateCounts() {
+    const count = assetRecords().length;
+    const statValues = document.querySelectorAll('#page-image-library .s-stats .s-stat-val');
+    if (statValues[0]) statValues[0].textContent = String(count);
+    if (statValues[1]) statValues[1].textContent = selectedImg ? '1' : '0';
+    const toolbar = document.querySelector('#page-image-library .s-preview-toolbar .s-pt-label');
+    if (toolbar) toolbar.textContent = 'Image Library — ' + count + ' assets';
+  }
+
+  function selectImage(record, item) {
+    grid.querySelectorAll('.s-img-item').forEach(node => node.classList.remove('active'));
+    item.classList.add('active');
+    selectedImg = record.src;
+    const nameInput = document.getElementById('selected-img-name');
+    const preview = document.getElementById('selected-img-preview');
+    const placeholder = document.getElementById('selected-img-placeholder');
+    if (nameInput) nameInput.value = record.name || record.src.split('/').pop();
+    if (preview) {
+      preview.src = record.src;
+      preview.style.display = 'block';
+      const size = cms.imageSizing[selectedImg] || {};
+      preview.style.width = size.width ? 'min(100%,' + Number(size.width) + 'px)' : '100%';
+      preview.style.height = size.height ? 'min(100%,' + Number(size.height) + 'px)' : '100%';
+      preview.style.objectFit = size.objectFit || 'cover';
+    }
+    if (placeholder) placeholder.style.display = 'none';
+    updateCounts();
+  }
+
+  function renderLibrary() {
+    grid.innerHTML = '';
+    const allRecords = assetRecords();
+    const records = allRecords.filter(record => {
+      if (activeFilter === 'all') return true;
+      if (activeFilter === 'hero') return record.category === 'hero' || /hero|banner/i.test(record.name || '');
+      if (activeFilter === 'events') return /event|birthday|wedding|stage|party|catering/i.test((record.category || '') + ' ' + (record.name || ''));
+      return !(/event|birthday|wedding|stage|party|catering/i.test((record.category || '') + ' ' + (record.name || '')));
+    });
+    records.forEach(record => {
+      const item = document.createElement('div');
+      item.className = 's-img-item';
+      item.dataset.src = record.src;
+      item.dataset.category = record.category || 'gallery';
+      const img = document.createElement('img');
+      img.src = record.src;
+      img.alt = record.name || 'Royal Banquet Hall asset';
+      img.loading = 'lazy';
+      const overlay = document.createElement('div');
+      overlay.className = 's-img-overlay';
+      const actions = [
+        ['set','Set as hero','✓'],
+        ['rename','Rename label','✎'],
+        ['remove','Remove from library','×']
+      ];
+      actions.forEach(([action,title,label]) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 's-img-ob';
+        button.dataset.action = action;
+        button.title = title;
+        button.setAttribute('aria-label',title);
+        button.textContent = label;
+        overlay.appendChild(button);
+      });
+      const name = document.createElement('div');
+      name.className = 's-img-name';
+      name.textContent = record.name || record.src.split('/').pop();
+      item.append(img,overlay,name);
+      item.addEventListener('click',event => {
+        const button = event.target.closest('[data-action]');
+        if (!button) {
+          selectImage(record,item);
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        if (button.dataset.action === 'set') {
+          pushUndo('Set hero image');
+          cms.hero.src = record.src;
+          syncPreviewStyles();
+          markDirty();
+          toast('Hero image changed in the draft. Save Draft, then Publish.', 'gold');
+        } else if (button.dataset.action === 'rename') {
+          const currentName = record.name || '';
+          const newName = prompt('New library label:',currentName);
+          if (newName && newName.trim()) {
+            pushUndo('Rename media label');
+            if (record.builtin) cms.mediaLabels[record.src] = newName.trim();
+            else {
+              const found = cms.mediaLibrary.find(asset => asset.src === record.src);
+              if (found) found.name = newName.trim();
+            }
+            markDirty();
+            renderLibrary();
+            toast('Library label updated in the draft.', 'gold');
+          }
+        } else if (button.dataset.action === 'remove') {
+          const message = 'Remove this item from the Admin Studio library? The underlying image file or Cloudinary asset will not be deleted, and existing page references are unchanged.';
+          if (!askBeforeDestructive(message)) return;
+          pushUndo('Remove media from library');
+          if (record.builtin) {
+            if (!cms.hiddenMediaAssets.includes(record.src)) cms.hiddenMediaAssets.push(record.src);
+          } else {
+            cms.mediaLibrary = cms.mediaLibrary.filter(asset => asset.src !== record.src);
+          }
+          if (selectedImg === record.src) selectedImg = null;
+          markDirty();
+          renderLibrary();
+          toast('Asset removed from the library list. Source file was not deleted.', 'gold');
+        }
+      });
+      grid.appendChild(item);
+      if (selectedImg && selectedImg === record.src) selectImage(record,item);
+    });
+    updateCounts();
+  }
+
+  renderLibrary();
+  window.refreshMediaLibrary = renderLibrary;
+  document.querySelectorAll('#page-image-library .s-panel-scroll .s-chips .s-chip').forEach(chip => {
+    const text = chip.textContent.trim().toLowerCase();
+    const filter = text.startsWith('all') ? 'all' : text;
+    chip.addEventListener('click', () => {
+      activeFilter = filter;
+      document.querySelectorAll('#page-image-library .s-panel-scroll .s-chips .s-chip').forEach(other => other.classList.toggle('active', other === chip));
+      const allChip = Array.from(document.querySelectorAll('#page-image-library .s-panel-scroll .s-chips .s-chip')).find(other => other.textContent.trim().toLowerCase().startsWith('all'));
+      if (allChip) allChip.textContent = 'All (' + assetRecords().length + ')';
+      renderLibrary();
+    });
+  });
+  const allChip = Array.from(document.querySelectorAll('#page-image-library .s-panel-scroll .s-chips .s-chip')).find(chip => chip.textContent.trim().toLowerCase().startsWith('all'));
+  if (allChip) allChip.textContent = 'All (' + assetRecords().length + ')';
+
   const upload = document.getElementById('img-lib-upload');
   if (upload) {
-    upload.addEventListener('change', e => {
-      [...e.target.files].forEach(file => {
-        const reader = new FileReader();
-        reader.onload = ev => {
-          const item = document.createElement('div');
-          item.className = 's-img-item';
-          const name = file.name;
-          item.innerHTML = `<img src="${ev.target.result}" alt="${name}"><div class="s-img-overlay"></div><div class="s-img-name">${name}</div>`;
-          grid.prepend(item);
-          toast(`${name} added to library`, 'success');
-        };
-        reader.readAsDataURL(file);
-      });
+    upload.addEventListener('change', async event => {
+      const files = Array.from(event.target.files || []);
+      if (!files.length) return;
+      upload.disabled = true;
+      let uploadedCount = 0;
+      try {
+        for (const file of files) {
+          if (!file.type.startsWith('image/') || file.size > 15 * 1024 * 1024) { toast(file.name + ' is not a supported image under 15 MB; skipped.', 'error'); continue; }
+          try {
+            const uploaded = await uploadMediaToCloudinary(file);
+            pushUndo('Add Cloudinary media');
+            cms.mediaLibrary.push({id:'cloudinary-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),src:uploaded.url,publicId:uploaded.publicId,name:file.name,source:'cloudinary',category:'gallery',createdAt:new Date().toISOString()});
+            uploadedCount += 1; markDirty(); renderLibrary();
+          } catch (error) { toast(file.name+' upload failed: '+(error.message||'Unknown error.'),'error'); }
+        }
+        if(uploadedCount) toast(uploadedCount+' image(s) uploaded to Cloudinary. Save Draft, then Publish.','success');
+      } finally { upload.disabled = false; upload.value = ''; }
     });
   }
 
-  // Resize / crop controls
-  initSlider('imglib-slider-w', 'imglib-num-w', 'imglib-val-w', v => { markDirty(); }, 'px');
-  initSlider('imglib-slider-h', 'imglib-num-h', 'imglib-val-h', v => { markDirty(); }, 'px');
+
+
+  initSlider('imglib-slider-w', 'imglib-num-w', 'imglib-val-w',v => {
+    const label = document.getElementById('imglib-val-w');
+    if(label) label.textContent = v + 'px';
+  },'px');
+  initSlider('imglib-slider-h', 'imglib-num-h', 'imglib-val-h',v => {
+    const label = document.getElementById('imglib-val-h');
+    if(label) label.textContent = v + 'px';
+  },'px');
 }
+
 
 /* ══════════════════════════════════════════════════
    PAGE 9: THEME LIBRARY
@@ -1105,6 +1838,32 @@ const THEMES = [
 ];
 
 function initThemePage() {
+  const custom = STUDIO.cms.theme.customColors = {
+    gold: '#c6a15b',
+    background: '#0a0b0d',
+    ink: '#171d19',
+    cream: '#f5f0e7',
+    ...(STUDIO.cms.theme.customColors || {})
+  };
+  document.querySelectorAll('#page-themes .s-color-row[data-theme-token]').forEach(row => {
+    const token = row.dataset.themeToken;
+    const swatch = row.querySelector('input[type="color"]');
+    const hex = row.querySelector('input[type="text"]');
+    if (swatch && /^#[0-9a-f]{6}$/i.test(custom[token] || '')) swatch.value = custom[token];
+    if (hex) hex.value = custom[token] || '';
+    const onValue = value => {
+      if (!/^#[0-9a-f]{6}$/i.test(value || '')) return;
+      pushUndo('Custom theme color');
+      custom[token] = value;
+      if (swatch && swatch.value !== value) swatch.value = value;
+      if (hex && hex.value !== value) hex.value = value;
+      markDirty();
+      syncPreviewStyles();
+    };
+    swatch?.addEventListener('input', () => onValue(swatch.value));
+    hex?.addEventListener('change', () => onValue(hex.value.trim()));
+  });
+
   const grid = document.getElementById('theme-grid');
   if (!grid) return;
   grid.innerHTML = '';
@@ -1139,6 +1898,16 @@ function applyTheme(i) {
   pushUndo('Theme change');
   STUDIO.cms.theme.active = i;
   const theme = THEMES[i];
+  // Persist the theme palette into the shared CMS shape so public pages match the preview.
+  STUDIO.cms.navbar = STUDIO.cms.navbar || {};
+  STUDIO.cms.navbar.bgColor = theme.nav;
+  STUDIO.cms.navbar.transparent = false;
+  STUDIO.cms.buttons = STUDIO.cms.buttons || {};
+  STUDIO.cms.buttons.gold = STUDIO.cms.buttons.gold || {};
+  STUDIO.cms.buttons.gold.bgType = 'solid';
+  STUDIO.cms.buttons.gold.bgColor = theme.btn;
+  STUDIO.cms.buttons.gold.textColor = '#171d19';
+  STUDIO.cms.theme.customColors = { gold: theme.btn, background: theme.nav, ink: theme.nav, cream: theme.hero };
   document.getElementById('theme-grid')?.querySelectorAll('.s-theme-card').forEach((c, idx) => c.classList.toggle('active', idx === i));
   applyToPreview(doc => {
     doc.documentElement.style.setProperty('--gold', theme.btn);
@@ -1208,6 +1977,7 @@ function initAnimationPage() {
     card.dataset.index = i;
     card.innerHTML = `<div class="s-anim-thumb">${anim.emoji}</div><div class="s-anim-name">${anim.name}</div>`;
     card.addEventListener('click', () => {
+      pushUndo('Animation toggle');
       const idx = STUDIO.cms.animations.activeItems.indexOf(i);
       if (idx > -1) {
         STUDIO.cms.animations.activeItems.splice(idx, 1);
@@ -1216,21 +1986,63 @@ function initAnimationPage() {
         STUDIO.cms.animations.activeItems.push(i);
         card.classList.add('active');
       }
-      markDirty();
-      toast(`${anim.name} ${card.classList.contains('active') ? 'enabled' : 'disabled'}`, 'gold');
+      syncPreviewStyles();
+      toast(anim.name + ' ' + (card.classList.contains('active') ? 'enabled' : 'disabled'), 'gold');
     });
     grid.appendChild(card);
   });
 
-  // Controls
-  initSlider('anim-slider-speed', 'anim-num-speed', 'anim-val-speed', v => { markDirty(); }, 's');
-  initSlider('anim-slider-delay', 'anim-num-delay', 'anim-val-delay', v => { markDirty(); }, 's');
-  initSlider('anim-slider-duration', 'anim-num-duration', 'anim-val-duration', v => { markDirty(); }, 'ms');
+  // Persist animation timings, selected targets and behavior.
+  const model = STUDIO.cms.animations;
+  initSlider('anim-slider-speed', 'anim-num-speed', 'anim-val-speed', v => { model.speed = v; markDirty(); syncPreviewStyles(); }, 's');
+  initSlider('anim-slider-delay', 'anim-num-delay', 'anim-val-delay', v => { model.delay = v; markDirty(); syncPreviewStyles(); }, 's');
+  initSlider('anim-slider-duration', 'anim-num-duration', 'anim-val-duration', v => { model.duration = v; markDirty(); syncPreviewStyles(); }, 'ms');
 
-  // Target chips
   document.querySelectorAll('#anim-target-chips .s-chip').forEach(chip => {
-    chip.addEventListener('click', () => { chip.classList.toggle('active'); markDirty(); });
+    const target = chip.textContent.trim();
+    chip.classList.toggle('active', model.targets.includes(target));
+    chip.addEventListener('click', () => {
+      const index = model.targets.indexOf(target);
+      if (index >= 0 && model.targets.length > 1) {
+        model.targets.splice(index, 1);
+        chip.classList.remove('active');
+      } else if (index < 0) {
+        model.targets.push(target);
+        chip.classList.add('active');
+      }
+      markDirty();
+      syncPreviewStyles();
+    });
   });
+
+  document.querySelectorAll('#anim-direction-chips .s-chip').forEach(chip => {
+    chip.classList.toggle('active', chip.textContent.trim() === model.direction);
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#anim-direction-chips .s-chip').forEach(item => item.classList.toggle('active', item === chip));
+      model.direction = chip.textContent.trim();
+      markDirty();
+      syncPreviewStyles();
+    });
+  });
+
+  const scrollToggle = document.getElementById('anim-scroll-trigger');
+  const repeatToggle = document.getElementById('anim-repeat-toggle');
+  if (scrollToggle) {
+    scrollToggle.classList.toggle('on', !!model.scrollTrigger);
+    scrollToggle.addEventListener('click', () => {
+      model.scrollTrigger = scrollToggle.classList.toggle('on');
+      markDirty();
+      syncPreviewStyles();
+    });
+  }
+  if (repeatToggle) {
+    repeatToggle.classList.toggle('on', !!model.repeatEveryView);
+    repeatToggle.addEventListener('click', () => {
+      model.repeatEveryView = repeatToggle.classList.toggle('on');
+      markDirty();
+      syncPreviewStyles();
+    });
+  }
 }
 
 /* ══════════════════════════════════════════════════
@@ -1313,11 +2125,12 @@ function initEffectsPage() {
       <div class="s-effect-desc">${eff.cat}</div>
     `;
     card.addEventListener('click', () => {
+      pushUndo('Effect toggle');
       const idx = STUDIO.cms.effects.activeItems.indexOf(i);
       if (idx > -1) { STUDIO.cms.effects.activeItems.splice(idx, 1); card.classList.remove('active'); }
       else { STUDIO.cms.effects.activeItems.push(i); card.classList.add('active'); }
-      pushUndo('Effect toggle');
-      toast(`${eff.name} ${card.classList.contains('active') ? 'applied' : 'removed'}`, 'gold');
+      syncPreviewStyles();
+      toast(eff.name + ' ' + (card.classList.contains('active') ? 'applied' : 'removed'), 'gold');
     });
     grid.appendChild(card);
   });
@@ -1328,7 +2141,11 @@ function initEffectsPage() {
     });
   }
 
-  initSlider('effects-slider-intensity', 'effects-num-intensity', 'effects-val-intensity', v => { markDirty(); }, '%');
+  initSlider('effects-slider-intensity', 'effects-num-intensity', 'effects-val-intensity', v => {
+    STUDIO.cms.effects.intensity = v;
+    markDirty();
+    syncPreviewStyles();
+  }, '%');
 }
 
 /* ══════════════════════════════════════════════════
@@ -1415,11 +2232,12 @@ function initComponentsPage() {
       </div>
     `;
     card.addEventListener('click', () => {
+      pushUndo('Component toggle');
       const idx = STUDIO.cms.components.activeItems.indexOf(i);
       if (idx > -1) { STUDIO.cms.components.activeItems.splice(idx, 1); card.classList.remove('active'); }
       else { STUDIO.cms.components.activeItems.push(i); card.classList.add('active'); }
-      pushUndo('Component toggle');
-      toast(`${comp.name} ${card.classList.contains('active') ? 'added' : 'removed'}`, 'gold');
+      syncPreviewStyles();
+      toast(comp.name + ' ' + (card.classList.contains('active') ? 'enabled' : 'disabled') + ' for the live layout', 'gold');
     });
     grid.appendChild(card);
   });
@@ -1460,16 +2278,41 @@ function initFontAnimPage() {
       toast(`"${name}" applied`, 'gold');
       markDirty();
       previewFontAnim(name, i);
+      syncPreviewStyles();
     });
     list.appendChild(item);
   });
 
-  initSlider('fontanim-slider-speed', 'fontanim-num-speed', 'fontanim-val-speed', v => { markDirty(); }, 's');
-  initSlider('fontanim-slider-delay', 'fontanim-num-delay', 'fontanim-val-delay', v => { markDirty(); }, 's');
-  initSlider('fontanim-slider-duration', 'fontanim-num-duration', 'fontanim-val-duration', v => { markDirty(); }, 'ms');
+  const model = STUDIO.cms.fontAnimations;
+  initSlider('fontanim-slider-speed', 'fontanim-num-speed', 'fontanim-val-speed', v => { model.speed = v; markDirty(); syncPreviewStyles(); }, 's');
+  initSlider('fontanim-slider-delay', 'fontanim-num-delay', 'fontanim-val-delay', v => { model.delay = v; markDirty(); syncPreviewStyles(); }, 's');
+  initSlider('fontanim-slider-duration', 'fontanim-num-duration', 'fontanim-val-duration', v => { model.duration = v; markDirty(); syncPreviewStyles(); }, 'ms');
 
   document.querySelectorAll('#fontanim-target-chips .s-chip').forEach(chip => {
-    chip.addEventListener('click', () => { chip.classList.toggle('active'); markDirty(); });
+    const target = chip.textContent.trim();
+    chip.classList.toggle('active', model.targets.includes(target));
+    chip.addEventListener('click', () => {
+      const idx = model.targets.indexOf(target);
+      if (idx >= 0 && model.targets.length > 1) {
+        model.targets.splice(idx, 1);
+        chip.classList.remove('active');
+      } else if (idx < 0) {
+        model.targets.push(target);
+        chip.classList.add('active');
+      }
+      markDirty();
+      syncPreviewStyles();
+    });
+  });
+
+  document.querySelectorAll('#fontanim-repeat-chips .s-chip').forEach(chip => {
+    chip.classList.toggle('active', chip.textContent.trim() === model.repeat);
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#fontanim-repeat-chips .s-chip').forEach(item => item.classList.toggle('active', item === chip));
+      model.repeat = chip.textContent.trim();
+      markDirty();
+      syncPreviewStyles();
+    });
   });
 }
 
@@ -1503,6 +2346,13 @@ function syncAllControls() {
   const lhn = document.getElementById('logo-num-h');
   const lhv = document.getElementById('logo-val-h');
   if (lh && c.logo?.height) { lh.value = c.logo.height; if (lhn) lhn.value = c.logo.height; if (lhv) lhv.textContent = `${c.logo.height}px`; }
+  const logoUrl = document.getElementById('logo-url-input');
+  if (logoUrl) logoUrl.value = c.logo?.src || 'assets/images/royal-hall-crest.webp';
+  const logoPreview = document.getElementById('logo-preview-img');
+  if (logoPreview && c.logo?.src && !/^(?:blob:)/i.test(c.logo.src)) logoPreview.src = c.logo.src;
+  const logoToggles = {'logo-mobile-scale-toggle':'mobileScale','logo-hide-xs-toggle':'hideOnSmall','logo-text-fallback-toggle':'textFallback'};
+  Object.entries(logoToggles).forEach(([id,key]) => document.getElementById(id)?.classList.toggle('on',
+    c.logo?.[key] !== false && (key !== 'hideOnSmall' || c.logo?.[key] === true)));
 
   // Navbar
   const nh = document.getElementById('navbar-slider-h');
@@ -1521,6 +2371,15 @@ function syncAllControls() {
   if (transpToggle && c.navbar) {
     transpToggle.classList.toggle('on', !!c.navbar.transparent);
   }
+  document.getElementById('navbar-sticky-toggle')?.classList.toggle('on',c.navbar?.sticky !== false);
+  document.getElementById('navbar-hamburger-toggle')?.classList.toggle('on',c.navbar?.hamburger !== false);
+  const syncPresetGroup = (selector,index) => {
+    document.querySelectorAll(selector + ' [data-index]').forEach(card => card.classList.toggle('active',Number(card.dataset.index) === Number(index || 0)));
+  };
+  syncPresetGroup('#navbar-designs-container',c.navbar?.design);
+  syncPresetGroup('#navbar-btn-styles',c.navbar?.buttonStyle);
+  syncPresetGroup('#navbar-anim-grid',c.navbar?.animation);
+  syncPresetGroup('#navbar-hover-grid',c.navbar?.hoverAnimation);
 
   // Hero
   const hs = document.getElementById('hero-slider-scale');
@@ -1534,12 +2393,392 @@ function syncAllControls() {
   const hsub = document.getElementById('hero-sub-text');
   if (hsub && c.heroSub?.text) hsub.value = c.heroSub.text;
 
+  // Restore all controls when the server draft loads or Undo/Redo changes state.
+  const setPair = (sliderId, numberId, labelId, value, unit = '') => {
+    if (!Number.isFinite(Number(value))) return;
+    const slider = document.getElementById(sliderId);
+    const number = document.getElementById(numberId);
+    const label = document.getElementById(labelId);
+    if (slider) slider.value = Number(value);
+    if (number) number.value = Number(value);
+    if (label) label.textContent = String(value) + unit;
+  };
+  const hero = c.hero || {};
+  setPair('hero-slider-scale','hero-num-scale','hero-val-scale',hero.scale ?? 100,'%');
+  setPair('hero-slider-posx','hero-num-posx','hero-val-posx',hero.posX ?? 50,'%');
+  setPair('hero-slider-posy','hero-num-posy','hero-val-posy',hero.posY ?? 50,'%');
+  setPair('hero-slider-height','hero-num-height','hero-val-height',hero.height ?? 70,'vh');
+  setPair('hero-slider-opacity','hero-num-opacity','hero-val-opacity',hero.overlayOpacity ?? 40,'%');
+  setPair('hero-slider-brightness','hero-num-brightness','hero-val-brightness',hero.brightness ?? 100,'%');
+  setPair('hero-slider-contrast','hero-num-contrast','hero-val-contrast',hero.contrast ?? 100,'%');
+  setPair('hero-slider-animspeed','hero-num-animspeed','hero-val-animspeed',hero.animationSpeed ?? 10,'s');
+  setPair('hero-slider-animdelay','hero-num-animdelay','hero-val-animdelay',hero.animationDelay ?? 3,'s');
+  setPair('hero-slider-blur','hero-num-blur','hero-val-blur',hero.blur ?? 0,'px');
+  const overlaySwatch = document.getElementById('hero-overlay-swatch');
+  const overlayHex = document.getElementById('hero-overlay-hex');
+  if (overlaySwatch && /^#[0-9a-f]{6}$/i.test(hero.overlayColor || '')) overlaySwatch.value = hero.overlayColor;
+  if (overlayHex) overlayHex.value = hero.overlayColor || '#000000';
+  document.querySelectorAll('#hero-display-modes .s-mode-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.mode === (hero.displayMode || 'cover')));
+  const heroToggles = {'hero-ken-burns':'kenBurns','hero-parallax':'parallax','hero-gradient':'gradient','hero-decorative':'decorative'};
+  Object.entries(heroToggles).forEach(([id,key]) => document.getElementById(id+'-toggle')?.classList.toggle('on', !!hero[key]));
+
+  const customThemeColors = c.theme?.customColors || {};
+  document.querySelectorAll('#page-themes .s-color-row[data-theme-token]').forEach(row => {
+    const token = row.dataset.themeToken;
+    const value = customThemeColors[token];
+    if (!/^#[0-9a-f]{6}$/i.test(value || '')) return;
+    const swatch = row.querySelector('input[type="color"]');
+    const hex = row.querySelector('input[type="text"]');
+    if (swatch) swatch.value = value;
+    if (hex) hex.value = value;
+  });
+  const cloudinary = c.integrations?.cloudinary || {};
+  const cloudNameInput = document.getElementById('cloudinary-cloud-name');
+  const uploadPresetInput = document.getElementById('cloudinary-upload-preset');
+  if (cloudNameInput) cloudNameInput.value = cloudinary.cloudName || '';
+  if (uploadPresetInput) uploadPresetInput.value = cloudinary.uploadPreset || '';
+
+  const background = c.background || {};
+  const bgUrl = document.getElementById('bg-url-input');
+  if (bgUrl) bgUrl.value = background.src || '';
+  const bgFixedToggle = document.getElementById('bg-fixed-toggle');
+  const bgGradientToggle = document.getElementById('bg-gradient-toggle');
+  if (bgFixedToggle) bgFixedToggle.classList.toggle('on',background.fixed !== false);
+  if (bgGradientToggle) bgGradientToggle.classList.toggle('on',background.gradient !== false);
+  const bgPosX = document.getElementById('bg-slider-posx');
+  const bgPosXNum = document.getElementById('bg-num-posx');
+  const bgPosXVal = document.getElementById('bg-val-posx');
+  if (bgPosX) { bgPosX.value = background.posX ?? 50; if (bgPosXNum) bgPosXNum.value = background.posX ?? 50; if (bgPosXVal) bgPosXVal.textContent = (background.posX ?? 50) + '%'; }
+  const bgPosY = document.getElementById('bg-slider-posy');
+  const bgPosYNum = document.getElementById('bg-num-posy');
+  const bgPosYVal = document.getElementById('bg-val-posy');
+  if (bgPosY) { bgPosY.value = background.posY ?? 50; if (bgPosYNum) bgPosYNum.value = background.posY ?? 50; if (bgPosYVal) bgPosYVal.textContent = (background.posY ?? 50) + '%'; }
+  setPair('bg-slider-opacity','bg-num-opacity','bg-val-opacity',background.overlayOpacity ?? 30,'%');
+  const bgColor = document.getElementById('bg-overlay-swatch');
+  const bgColorHex = document.getElementById('bg-overlay-hex');
+  if (bgColor && /^#[0-9a-f]{6}$/i.test(background.overlayColor || '')) bgColor.value = background.overlayColor;
+  if (bgColorHex) bgColorHex.value = background.overlayColor || '#000000';
+  const bgPreview = document.getElementById('bg-preview-img');
+  if (bgPreview && background.src) { bgPreview.src = background.src; bgPreview.style.display = 'block'; }
+
+  const heading = c.heroHeading || {};
+  setPair('heading-slider-size','heading-num-size','heading-val-size',heading.size ?? 56,'px');
+  setPair('heading-slider-lh','heading-num-lh','heading-val-lh',Math.round((heading.lineHeight ?? 1.15)*100),'');
+  setPair('heading-slider-ls','heading-num-ls','heading-val-ls',heading.letterSpacing ?? -1,'px');
+  const sub = c.heroSub || {};
+  setPair('sub-slider-size','sub-num-size','sub-val-size',sub.size ?? 18,'px');
+  setPair('sub-slider-lh','sub-num-lh','sub-val-lh',Math.round((sub.lineHeight ?? 1.6)*100),'');
+  const subSwatch = document.getElementById('sub-color-swatch');
+  const subHex = document.getElementById('sub-color-hex');
+  if (subSwatch && /^#[0-9a-f]{6}$/i.test(sub.color || '')) subSwatch.value = sub.color;
+  if (subHex) subHex.value = sub.color || '#e8eaf0';
+
+  const syncGrid = (selector, index) => {
+    document.querySelectorAll(selector + ' [data-index]').forEach(card => card.classList.toggle('active', Number(card.dataset.index) === Number(index || 0)));
+  };
+  syncGrid('#hero-anim-grid', hero.animation);
+  syncGrid('#heading-anim-grid', heading.animation);
+  syncGrid('#heading-font-grid', heading.font);
+  syncGrid('#heading-color-grid', heading.colorCombo);
+  syncGrid('#sub-preset-grid', sub.preset);
+  syncGrid('#bg-anim-grid', c.background?.animation);
+
+  document.querySelectorAll('#heading-align-chips .s-chip').forEach(chip => chip.classList.toggle('active', chip.dataset.val === (heading.align || 'center')));
+  document.querySelectorAll('#sub-align-chips .s-chip').forEach(chip => chip.classList.toggle('active', chip.dataset.val === (sub.align || 'center')));
+
+  // Sync every advanced control from the stored CMS after backend load / undo / redo.
+  const setExplicitPair = (sliderId, numberId, labelId, value, unit) => {
+    const slider = document.getElementById(sliderId);
+    const number = document.getElementById(numberId);
+    const label = document.getElementById(labelId);
+    if (Number.isFinite(Number(value))) {
+      if (slider) slider.value = Number(value);
+      if (number) number.value = Number(value);
+      if (label) label.textContent = String(value) + (unit || '');
+    }
+  };
+
+  const animation = c.animations || {};
+  setExplicitPair('anim-slider-speed','anim-num-speed','anim-val-speed',animation.speed ?? 10,'s');
+  setExplicitPair('anim-slider-delay','anim-num-delay','anim-val-delay',animation.delay ?? 0,'s');
+  setExplicitPair('anim-slider-duration','anim-num-duration','anim-val-duration',animation.duration ?? 500,'ms');
+  setExplicitPair('effects-slider-intensity','effects-num-intensity','effects-val-intensity',c.effects?.intensity ?? 100,'%');
+  const fontAnim = c.fontAnimations || {};
+  setExplicitPair('fontanim-slider-speed','fontanim-num-speed','fontanim-val-speed',fontAnim.speed ?? 10,'s');
+  setExplicitPair('fontanim-slider-delay','fontanim-num-delay','fontanim-val-delay',fontAnim.delay ?? 0,'s');
+  setExplicitPair('fontanim-slider-duration','fontanim-num-duration','fontanim-val-duration',fontAnim.duration ?? 500,'ms');
+
+  const activeAnimations = Array.isArray(animation.activeItems) ? animation.activeItems : [];
+  document.querySelectorAll('#anim-lib-grid .s-anim-card').forEach((card, index) => {
+    card.classList.toggle('active', activeAnimations.includes(index));
+  });
+  const activeEffects = Array.isArray(c.effects?.activeItems) ? c.effects.activeItems : [];
+  document.querySelectorAll('#effects-grid .s-effect-card').forEach((card, index) => {
+    card.classList.toggle('active', activeEffects.includes(index));
+  });
+  const activeComponents = Array.isArray(c.components?.activeItems) ? c.components.activeItems : [];
+  document.querySelectorAll('#components-grid .s-comp-card').forEach((card, index) => {
+    card.classList.toggle('active', activeComponents.includes(index));
+  });
+  const fontIndex = Number.isInteger(Number(fontAnim.active)) ? Number(fontAnim.active) : 0;
+  document.querySelectorAll('#font-anim-list .s-fa-item').forEach((item, index) => {
+    item.classList.toggle('active', index === fontIndex);
+  });
+
+  const animationTargets = Array.isArray(animation.targets) ? animation.targets : ['Headings'];
+  document.querySelectorAll('#anim-target-chips .s-chip').forEach(chip => {
+    chip.classList.toggle('active', animationTargets.includes(chip.textContent.trim()));
+  });
+  const direction = animation.direction || 'Normal';
+  document.querySelectorAll('#anim-direction-chips .s-chip').forEach(chip => {
+    chip.classList.toggle('active', chip.textContent.trim() === direction);
+  });
+  const scrollToggle = document.getElementById('anim-scroll-trigger');
+  const repeatToggle = document.getElementById('anim-repeat-toggle');
+  if (scrollToggle) scrollToggle.classList.toggle('on', animation.scrollTrigger !== false);
+  if (repeatToggle) repeatToggle.classList.toggle('on', animation.repeatEveryView === true);
+
+  const video = c.video || {};
+  const videoUrlInput = document.getElementById('video-source-url');
+  const videoPosterInput = document.getElementById('video-poster-url');
+  if (videoUrlInput && !String(video.src || '').startsWith('blob:') && !String(video.src || '').startsWith('data:')) {
+    videoUrlInput.value = video.src || '';
+  }
+  if (videoPosterInput) videoPosterInput.value = video.poster || 'assets/images/hero-venue.jpg';
+  const videoToggleMap = {
+    'video-autoplay':'autoplay','video-loop':'loop','video-muted':'muted',
+    'video-controls':'controls','video-inline':'playsInline'
+  };
+  Object.entries(videoToggleMap).forEach(([id,property]) => {
+    const toggle = document.getElementById(id+'-toggle');
+    if (toggle) toggle.classList.toggle('on', property === 'controls' ? video[property] === true : video[property] !== false);
+  });
+  document.querySelectorAll('#page-video .s-display-modes .s-mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === (video.objectFit || 'cover'));
+  });
+  setPair('video-slider-posx','video-num-posx','video-val-posx',video.posX ?? 50,'%');
+  setPair('video-slider-posy','video-num-posy','video-val-posy',video.posY ?? 50,'%');
+
+  const fontTargets = Array.isArray(fontAnim.targets) ? fontAnim.targets : ['Hero Heading'];
+  document.querySelectorAll('#fontanim-target-chips .s-chip').forEach(chip => {
+    chip.classList.toggle('active', fontTargets.includes(chip.textContent.trim()));
+  });
+  document.querySelectorAll('#fontanim-repeat-chips .s-chip').forEach(chip => {
+    chip.classList.toggle('active', chip.textContent.trim() === (fontAnim.repeat || 'Once'));
+  });
+
+  document.querySelectorAll('#theme-grid .s-theme-card').forEach((card, index) => {
+    card.classList.toggle('active', index === Number(c.theme?.active || 0));
+  });
+
+  const studioSettings = c.settings || {};
+  const settingsToggleMap = {
+    'setting-autosave-toggle':'autoSave',
+    'setting-live-preview-toggle':'livePreview',
+    'setting-shortcuts-toggle':'keyboardShortcuts',
+    'setting-animation-preview-toggle':'animationPreviews',
+    'setting-confirm-destructive-toggle':'confirmDestructive'
+  };
+  Object.entries(settingsToggleMap).forEach(([id,key]) => {
+    const toggle = document.getElementById(id);
+    if (toggle) {
+      const enabled = studioSettings[key] !== false;
+      toggle.classList.toggle('on',enabled);
+      toggle.setAttribute('aria-checked',String(enabled));
+    }
+  });
+
   syncPreviewStyles();
 }
 
 /* ══════════════════════════════════════════════════
    INIT ALL
 ══════════════════════════════════════════════════ */
+function copyCmsValue(value) {
+  return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
+}
+
+function pageResetKeys(pageId) {
+  const map = {
+    'page-logo':['logo'],
+    'page-navbar':['navbar'],
+    'page-hero-image':['hero'],
+    'page-hero-heading':['heroHeading'],
+    'page-hero-sub':['heroSub'],
+    'page-background':['background'],
+    'page-video':['video'],
+    'page-image-library':['mediaLibrary','mediaLabels','hiddenMediaAssets','imageSizing'],
+    'page-themes':['theme','navbar','buttons'],
+    'page-animations':['animations'],
+    'page-effects':['effects'],
+    'page-components':['components'],
+    'page-font-animations':['fontAnimations']
+  };
+  return map[pageId] || [];
+}
+
+async function reloadCurrentPageDraft(pageId) {
+  if (!studioAuthenticated || !API.available) {
+    toast('Cannot discard changes while the shared draft service is unavailable.', 'error');
+    return false;
+  }
+  const result = await API.get('/api/admin/load-cms');
+  if (!result?.success || !result.data || typeof result.data !== 'object') {
+    toast('Could not reload the saved draft: ' + (result?.message || 'server unavailable'), 'error');
+    return false;
+  }
+  const saved = result.data;
+  const keys = pageResetKeys(pageId);
+  keys.forEach(key => {
+    STUDIO.cms[key] = Object.prototype.hasOwnProperty.call(saved,key)
+      ? copyCmsValue(saved[key])
+      : copyCmsValue(STUDIO_RESET_DEFAULTS[key]);
+  });
+  if (pageId === 'page-image-library') {
+    const source = saved.integrations && saved.integrations.cloudinary;
+    STUDIO.cms.integrations = STUDIO.cms.integrations || {};
+    STUDIO.cms.integrations.cloudinary = copyCmsValue(source || {});
+  }
+  localStorage.setItem('rbh_studio_cms',JSON.stringify(STUDIO.cms));
+  syncAllControls();
+  window.refreshMediaLibrary?.();
+  syncPreviewStyles();
+  markSaved();
+  toast('Saved draft restored for this section.', 'success');
+  return true;
+}
+
+function resetCurrentPage(pageId) {
+  const keys = pageResetKeys(pageId);
+  if (!keys.length) {
+    toast('This page has no resettable CMS settings.', 'info');
+    return;
+  }
+  if (!askBeforeDestructive('Reset this section to its original defaults? This changes the draft only; the live site stays unchanged until you publish.')) return;
+  keys.forEach(key => {
+    STUDIO.cms[key] = copyCmsValue(STUDIO_RESET_DEFAULTS[key]);
+  });
+  localStorage.setItem('rbh_studio_cms',JSON.stringify(STUDIO.cms));
+  syncAllControls();
+  window.refreshMediaLibrary?.();
+  syncPreviewStyles();
+  markDirty();
+  toast('Section reset in draft. Save Draft, then Publish when reviewed.', 'gold');
+}
+
+function initFooterActionButtons() {
+  document.querySelectorAll('.s-page .s-left-footer .s-btn-outline').forEach(button => {
+    const label = button.textContent.trim().toLowerCase();
+    const page = button.closest('.s-page');
+    if (!page || button.id === 'btn-cancel-publish') return;
+    if (label === 'reset') {
+      button.removeAttribute('onclick');
+      button.addEventListener('click',() => resetCurrentPage(page.id));
+    } else if (label === 'cancel') {
+      button.removeAttribute('onclick');
+      button.addEventListener('click',() => reloadCurrentPageDraft(page.id));
+    }
+  });
+}
+
+function askBeforeDestructive(message) {
+  return STUDIO.cms.settings?.confirmDestructive === false || confirm(message);
+}
+
+function exportStudioSettings() {
+  const payload = JSON.stringify(STUDIO.cms, null, 2);
+  const blob = new Blob([payload], {type:'application/json;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'royal-banquet-studio-settings-' + new Date().toISOString().slice(0,10) + '.json';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('Settings JSON exported. Keep the file somewhere safe.', 'success');
+}
+
+async function resetAllStudioSettings() {
+  if (!askBeforeDestructive('Reset every Studio setting to the factory defaults? The public website will stay unchanged until you publish the reset draft.')) return;
+  const cloudinary = copyCmsValue(STUDIO.cms.integrations?.cloudinary || {});
+  STUDIO.cms = copyCmsValue(STUDIO_RESET_DEFAULTS);
+  STUDIO.cms.integrations = { cloudinary };
+  STUDIO.cms.settings = { autoSave:true, livePreview:true, keyboardShortcuts:true, animationPreviews:true, confirmDestructive:true };
+  localStorage.setItem('rbh_studio_cms',JSON.stringify(STUDIO.cms));
+  syncAllControls();
+  window.refreshMediaLibrary?.();
+  syncPreviewStyles();
+  markDirty();
+  const saved = await saveDraft({silent:true});
+  if (saved) toast('Factory defaults saved as a draft. The public website has not been changed.', 'success');
+  else toast('Factory reset exists only in this browser until the shared draft can be saved.', 'error');
+}
+
+function initStudioSettingsControls() {
+  STUDIO.cms.settings = {
+    autoSave:true, livePreview:true, keyboardShortcuts:true,
+    animationPreviews:true, confirmDestructive:true,
+    ...(STUDIO.cms.settings || {})
+  };
+  const settingsToggleMap = {
+    'setting-autosave-toggle':'autoSave',
+    'setting-live-preview-toggle':'livePreview',
+    'setting-shortcuts-toggle':'keyboardShortcuts',
+    'setting-animation-preview-toggle':'animationPreviews',
+    'setting-confirm-destructive-toggle':'confirmDestructive'
+  };
+  Object.entries(settingsToggleMap).forEach(([id,key]) => {
+    const toggle = document.getElementById(id);
+    if (!toggle) return;
+    const set = value => {
+      toggle.classList.toggle('on',Boolean(value));
+      toggle.setAttribute('aria-checked',String(Boolean(value)));
+    };
+    set(STUDIO.cms.settings[key] !== false);
+    const flip = () => {
+      pushUndo('Studio setting: ' + key);
+      STUDIO.cms.settings[key] = !toggle.classList.contains('on');
+      set(STUDIO.cms.settings[key]);
+      markDirty();
+      if (key === 'livePreview' || key === 'animationPreviews') syncPreviewStyles();
+      if (key === 'autoSave') toast(STUDIO.cms.settings.autoSave ? 'Autosave enabled: the editor will save every two minutes.' : 'Autosave disabled. Use Save Draft manually.', 'gold');
+    };
+    toggle.addEventListener('click',flip);
+    toggle.addEventListener('keydown',event => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); flip(); }
+    });
+  });
+
+  document.getElementById('btn-export-settings')?.addEventListener('click',exportStudioSettings);
+  document.getElementById('btn-reset-all-settings')?.addEventListener('click',resetAllStudioSettings);
+
+  document.getElementById('btn-animations-clear')?.addEventListener('click',() => {
+    pushUndo('Clear animations');
+    STUDIO.cms.animations.activeItems = [];
+    document.querySelectorAll('#anim-lib-grid .s-anim-card').forEach(card => card.classList.remove('active'));
+    syncPreviewStyles();
+    markDirty();
+    toast('Section animations removed from the draft. Save Draft to keep this change.', 'gold');
+  });
+  document.getElementById('btn-effects-clear')?.addEventListener('click',() => {
+    pushUndo('Clear visual effects');
+    STUDIO.cms.effects.activeItems = [];
+    document.querySelectorAll('#effects-grid .s-effect-card').forEach(card => card.classList.remove('active'));
+    syncPreviewStyles();
+    markDirty();
+    toast('Visual effects removed from the draft. Save Draft to keep this change.', 'gold');
+  });
+  document.getElementById('btn-components-clear')?.addEventListener('click',() => {
+    pushUndo('Clear components');
+    STUDIO.cms.components.activeItems = [];
+    document.querySelectorAll('#components-grid .s-comp-card').forEach(card => card.classList.remove('active'));
+    syncPreviewStyles();
+    markDirty();
+    toast('Component styling removed from the draft. Save Draft to keep this change.', 'gold');
+  });
+}
+
 function initAll() {
   // Sidebar navigation
   document.querySelectorAll('.s-nav-item[data-page]').forEach(item => {
@@ -1585,6 +2824,8 @@ function initAll() {
   initEffectsPage();
   initComponentsPage();
   initFontAnimPage();
+  initFooterActionButtons();
+  initStudioSettingsControls();
 
   // Inner tabs
   document.querySelectorAll('.s-inner-tab').forEach(tab => {
@@ -1606,15 +2847,23 @@ function initAll() {
 
   // Keyboard shortcuts
   document.addEventListener('keydown', e => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
-    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveDraft(); }
+    if (STUDIO.cms.settings?.keyboardShortcuts === false) return;
+    const command = e.ctrlKey || e.metaKey;
+    if (!command) return;
+    const key = e.key.toLowerCase();
+    const isEditable = e.target?.closest?.('input,textarea,select,[contenteditable="true"]');
+    if (isEditable && key !== 's') return;
+    if (key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+    if (key === 'y' || (key === 'z' && e.shiftKey)) { e.preventDefault(); redo(); }
+    if (key === 's') { e.preventDefault(); saveDraft(); }
   });
 
-  // Autosave every 2min
-  setInterval(saveDraft, 120000);
+  // Auto-save only when the setting is enabled; do not interrupt the editor with toast popups.
+  setInterval(() => {
+    if (STUDIO.cms.settings?.autoSave !== false) saveDraft({ silent:true });
+  }, 120000);
 
-  // ── Authentication Gate (Royal Hall / Royal@07)
+  // ── Authentication Gate (server-validated session)
   initAuth();
 
   // ── Connect to backend server (auto-detect Node.js / PHP / Python)
@@ -1637,101 +2886,111 @@ function initAll() {
   console.log('Royal Banquet Admin Studio initialized ✓ (backend: auto-detect)');
 }
 
-/* ── AUTHENTICATION MANAGEMENT ──
-   Login ID: Royal Hall
-   Password: Royal@07
-*/
+/* ── SERVER-VALIDATED ADMIN SESSION ── */
 function initAuth() {
-  const overlay   = document.getElementById('studio-login-overlay');
-  const form      = document.getElementById('studio-login-form');
+  const overlay = document.getElementById('studio-login-overlay');
+  const form = document.getElementById('studio-login-form');
   const userInput = document.getElementById('login-username');
   const passInput = document.getElementById('login-password');
-  const errBox    = document.getElementById('login-error-msg');
-  const remember  = document.getElementById('login-remember');
-  const togglePass= document.getElementById('toggle-password-btn');
+  const errBox = document.getElementById('login-error-msg');
+  const remember = document.getElementById('login-remember');
+  const togglePass = document.getElementById('toggle-password-btn');
   const logoutBtn = document.getElementById('btn-studio-logout');
+  const submitBtn = document.getElementById('btn-login-submit');
 
-  // Check saved session
-  const isAuth = localStorage.getItem('royal_studio_auth') === 'true' ||
-                 sessionStorage.getItem('royal_studio_auth') === 'true';
+  const showError = message => {
+    if (!errBox) return;
+    errBox.textContent = message;
+    errBox.style.display = 'block';
+  };
 
-  if (isAuth) {
-    overlay?.classList.add('hidden');
-  } else {
-    overlay?.classList.remove('hidden');
-    setTimeout(() => userInput?.focus(), 150);
-  }
+  // A browser flag is not authentication. Verify the signed server session.
+  (async () => {
+    try {
+      const response = await fetch('/api/auth/session', {
+        credentials: 'same-origin',
+        cache: 'no-store'
+      });
+      const result = await response.json().catch(() => ({}));
+      if (response.ok && result.success) {
+        studioAuthenticated = true;
+        overlay?.classList.add('hidden');
+        loadFromBackend();
+      } else {
+        studioAuthenticated = false;
+        overlay?.classList.remove('hidden');
+        if (response.status === 503) showError(result.message || 'Admin authentication is not configured on this deployment.');
+        setTimeout(() => userInput?.focus(), 150);
+      }
+    } catch {
+      studioAuthenticated = false;
+      overlay?.classList.remove('hidden');
+      showError('Cannot reach the sign-in service. Open the deployed Admin Studio URL and try again.');
+    }
+  })();
 
-  // Toggle password visibility
   togglePass?.addEventListener('click', () => {
     if (!passInput) return;
-    const isPass = passInput.type === 'password';
-    passInput.type = isPass ? 'text' : 'password';
-    togglePass.style.color = isPass ? 'var(--s-gold)' : 'var(--s-text-muted)';
+    const show = passInput.type === 'password';
+    passInput.type = show ? 'text' : 'password';
+    togglePass.style.color = show ? 'var(--s-gold)' : 'var(--s-text-muted)';
   });
 
-  // Auto-clear error when user types
   userInput?.addEventListener('input', () => { if (errBox) errBox.style.display = 'none'; });
   passInput?.addEventListener('input', () => { if (errBox) errBox.style.display = 'none'; });
 
-  // Handle Login Submission
-  form?.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  form?.addEventListener('submit', async event => {
+    event.preventDefault();
     if (errBox) errBox.style.display = 'none';
+    if (submitBtn) submitBtn.disabled = true;
 
-    // Normalize inputs (trim whitespace, normalize unicode spaces & case)
-    const rawU = userInput?.value || '';
-    const rawP = passInput?.value || '';
-
-    const cleanU = rawU.replace(/[\u00A0\u200B\u200E\s]+/g, ' ').trim().toLowerCase();
-    const cleanP = rawP.trim();
-
-    // Check direct valid credentials
-    const isUserValid = cleanU === 'royal hall' || cleanU === 'royalhall';
-    const isPassValid = cleanP === 'Royal@07' || cleanP === 'Royal@O7' || cleanP === 'Royal@o7';
-
-    let success = isUserValid && isPassValid;
-
-    // Also check backend API if available and not yet confirmed
-    if (!success && API.available) {
-      try {
-        const res = await API.post('/api/auth/login', { username: rawU, password: rawP });
-        if (res && res.success) success = true;
-      } catch {}
-    }
-
-    if (success) {
-      if (remember && remember.checked) {
-        localStorage.setItem('royal_studio_auth', 'true');
-        localStorage.setItem('royal_studio_user', 'Royal Hall');
-      } else {
-        sessionStorage.setItem('royal_studio_auth', 'true');
-        sessionStorage.setItem('royal_studio_user', 'Royal Hall');
-      }
-      overlay?.classList.add('hidden');
-      toast('Welcome, Royal Hall! Admin Studio unlocked.', 'gold');
-    } else {
-      if (errBox) {
-        errBox.textContent = 'Invalid Login ID or Password. Please try again.';
-        errBox.style.display = 'block';
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: userInput?.value || '',
+          password: passInput?.value || '',
+          remember: Boolean(remember?.checked)
+        })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) {
+        showError(result.message || 'Sign-in failed. Check your credentials and server configuration.');
         passInput?.focus();
         passInput?.select();
+        return;
       }
+
+      studioAuthenticated = true;
+      overlay?.classList.add('hidden');
+      await loadFromBackend();
+      toast('Admin session verified. Welcome to Royal Studio.', 'gold');
+    } catch {
+      studioAuthenticated = false;
+      showError('Sign-in service is unavailable. No login was accepted.');
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
     }
   });
 
-  // Handle Logout
-  logoutBtn?.addEventListener('click', () => {
-    localStorage.removeItem('royal_studio_auth');
-    localStorage.removeItem('royal_studio_user');
-    sessionStorage.removeItem('royal_studio_auth');
-    sessionStorage.removeItem('royal_studio_user');
+  logoutBtn?.addEventListener('click', async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}'
+      });
+    } catch {}
+    studioAuthenticated = false;
     overlay?.classList.remove('hidden');
     if (userInput) userInput.value = '';
     if (passInput) passInput.value = '';
     if (errBox) errBox.style.display = 'none';
     setTimeout(() => userInput?.focus(), 150);
-    toast('Logged out successfully.', 'info');
+    toast('Signed out of Royal Studio.', 'info');
   });
 }
 

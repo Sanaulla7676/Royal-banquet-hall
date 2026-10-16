@@ -1,13 +1,9 @@
-/**
- * Royal Banquet Hall - CMS & Studio Data Store
- * Automatically saved by Royal Admin Studio on 2026-10-15T08:21:46.183Z
- */
+/* Royal Banquet Hall public CMS defaults. Private credentials are configured on the server. */
 window.ROYAL_CMS_DATA = {
   "version": "1.0.0",
   "lastSaved": "2026-10-15T00:00:00.000Z",
   "auth": {
-    "adminPin": "royal2026",
-    "sessionDurationHours": 24
+    "sessionDurationHours": 8
   },
   "theme": {
     "activePreset": "royal-heritage",
@@ -229,8 +225,6 @@ window.ROYAL_CMS_DATA = {
   "integrations": {
     "cloudinary": {
       "cloudName": "pspn79yf",
-      "apiKey": "234231665841756",
-      "apiSecret": "8k08FEMxV-bWRyw0vbpRvQQXAkw",
       "uploadPreset": "royal_preset",
       "enabled": true,
       "folder": "royal-banquet"

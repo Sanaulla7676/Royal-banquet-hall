@@ -4,90 +4,66 @@ A luxury management studio and in-context visual CMS for **The Royal Party Hall*
 
 ---
 
-## 👑 Quick Start
+## Quick Start
 
-### 1. Launch the Live Admin Server
-Run the local dev & persistence server:
-```bash
+### 1. Run the secured local admin server
+
+Set private environment variables before running the server. Production passwords and API secrets must never be stored in source code.
+
+```powershell
+npm install
+$env:ADMIN_USERNAME="choose-a-new-admin-user"
+$env:ADMIN_PASSWORD="use-a-new-unique-password"
+$env:ADMIN_SESSION_SECRET="use-at-least-32-random-characters"
 npm run admin
 ```
-- **Public Website:** `http://localhost:3000/`
-- **Admin Studio Dashboard:** `http://localhost:3000/admin.html`
 
-### 2. Admin Authentication
-- **Default Admin PIN:** `royal2026`
-- **In-Context Studio Hotkey:** Press `Ctrl + Shift + A` on any live public page, or click the discreet crown icon `♛` in the bottom-right corner.
+- Public website: `http://localhost:3001/`
+- Admin Studio: `http://localhost:3001/admin-studio.html`
+- Legacy admin URL: `http://localhost:3001/admin.html` redirects to the canonical Studio.
 
----
+### 2. Configure production
 
-## ✨ Features Implemented
+The public website stays on Vercel. Vercel forwards `/api/*` requests to the Node.js backend at `https://royal-banquet-backend.onrender.com`.
 
-### 1. Visual Layout & Element Resizing
-- **Canvas Resizing Controls:** Real-time sliders for Width, Min/Max Height, Padding, Margins, Scale factor (0.5x to 1.6x), and X/Y offset positioning.
-- **Section Reordering:** Move sections up or down (`.hero`, `.quick-search`, `.cards`, `.features`, `.cta-banner`, etc.) with drag handles and instant preview.
-- **Live In-Context Editor:** On any public page, toggle **✏️ Visual Edit** to click any element and open the floating inspector drawer.
+Open Render Dashboard → `royal-banquet-backend` → **Environment** and set these values there. Never put them in source control or browser code:
 
-### 2. Colors & Theme Studio
-- **5 Curated Luxury Presets:**
-  - 👑 **Royal Heritage:** Classic 24K Gold, Forest Obsidian, and Warm Cream.
-  - 💎 **Midnight Sapphire:** Deep Sapphire, Champagne Gold, and Pearl.
-  - 🌹 **Imperial Velvet:** Deep Wine Crimson, Antique Rose Gold, and Ivory.
-  - 🌿 **Emerald Palace:** Lush Jade, Polished Brass, and Silk Linen.
-  - 🌑 **Obsidian Noir:** Dark luxury mode with carbon surfaces and 24K gold accents.
-- **Individual Token Customizer:** Live color pickers and hex inputs for `--gold`, `--gold2`, `--ink`, `--ink2`, `--cream`, `--paper`, `--text`, `--muted`, and `--line`.
+- `DATABASE_URL`: connection string from the existing Neon project `royal-banquet-cms`, database `royal_banquet_cms`.
+- `ADMIN_USERNAME`: a new administrator login ID.
+- `ADMIN_PASSWORD`: a new, unique, strong password that has not been shared in chat or embedded in source.
+- `ADMIN_SESSION_SECRET`: a randomly generated secret with at least 32 characters.
+- `CLOUDINARY_CLOUD_NAME`: the Cloudinary cloud name.
+- `CLOUDINARY_API_KEY`: the Cloudinary API key.
+- `CLOUDINARY_API_SECRET`: a newly rotated Cloudinary API secret.
+- Optional `ADMIN_ALLOWED_ORIGINS`: comma-separated trusted origins if an additional custom domain is introduced.
 
-### 3. Fonts & Typography Studio
-- **Curated Google Fonts Collection:**
-  - **Headings & Serif:** Playfair Display, Cinzel, Cormorant Garamond, Bodoni Moda, Marcellus, Prata, Montserrat.
-  - **Body & Sans:** DM Sans, Plus Jakarta Sans, Outfit, Inter, Poppins, Roboto.
-  - **Script Accents:** Parisienne, Great Vibes, Alex Brush, Pinyon Script.
-- **Typography Scale Controls:** Sliders for Heading Scale Multiplier (0.8x to 1.4x) and Body Text Multiplier (0.85x to 1.25x).
+Do not share the database URL, administrator password, session secret, Cloudinary API secret, or deployment-hook URLs in chat or commit them to Git.
 
-### 4. Media Manager & Cloudinary Free Tier Integration
-- **Cloudinary Free Tier Ready:**
-  - Zero server-side code needed: enter your free Cloudinary **Cloud Name** and unsigned **Upload Preset**.
-  - Direct unsigned browser uploads with automatic CDN optimization (`f_auto, q_auto`).
-  - Generous free allowance (25 monthly credits, ~25GB bandwidth & storage).
-- **Local Fallback Uploader:** Works out-of-the-box with immediate browser base64 storage even without credentials.
-- **Instant Image Swapper:** Click any photo on the page to replace it with any newly uploaded image or web URL.
-- **Video Management:** Change or toggle the entrance intro video (`#site-intro video`) and embed video players.
+### 3. Deploy and verify the backend
 
-### 5. Page Builder & Page Manager
-- **Create New Pages:**
-  - Enter Page Title, Slug (e.g. `packages.html`, `decor.html`), and meta description.
-  - Choose from luxury templates:
-    1. **Banquet Packages & Pricing:** Tiered cards with amenities, guest count badges, and booking CTA.
-    2. **Decor & Stage Portfolio:** Visual showcase for stage themes, lighting designs, and floral setups.
-    3. **Venue Story & Narrative:** Split-screen layout with spacious hall features and guest reviews.
-  - Automatically compiles the standalone HTML page and adds it to the navbar menu!
-- **Hide & Delete Pages:** One-click page removal with automatic navbar cleanup.
+After all environment values have been configured, trigger a Render redeploy. Verify `/api/status` reports configured storage, auth, and Cloudinary readiness without exposing values. Then test sign-in, session validation, draft save/reload, publish/reload, backups, and signed Cloudinary media uploads before promoting the change to production.
 
-### 6. Buttons Customizer
-- **Interactive Button Playground:** Live preview for `.btn-gold`, `.btn-dark`, and `.btn-outline`.
-- **Customizable Properties:**
-  - Background: Solid color, linear gradients, or gloss.
-  - Border Radius: Sharp (0px), Subtle Curve (6px), Modern Rounded (12px), Full Capsule Pill (999px).
-  - Hover Effects: Float Lift (-2px), 24K Gold Ambient Glow, or Scale Zoom (1.04x).
-  - Padding & Font Weights.
+CMS drafts, published content, and new backups are stored in the existing Neon `cms_state` table. New images/videos are uploaded to Cloudinary. The Cloudinary API secret stays on the backend and uploads must use short-lived server-signed requests. Missing required configuration should fail clearly instead of returning false success.
 
-### 7. Navbar & Header Customizer
-- **Brand Logo:** Change logo image source URL or upload new crest, adjust logo width and height.
-- **Menu Links Manager:** Reorder links with Up/Down buttons, edit link labels and URLs, or add custom menu items.
-- **Header CTA:** Toggle header action button visibility, change label (e.g. "Check Your Date", "Book Now"), and link.
-- **Sticky Glassmorphism:** Header backdrop blur and background opacity.
+### 4. Admin authentication
 
-### 8. Pro Options & Venue Info
-- **Live Contact Synchronization:** WhatsApp enquiry phone number, booking email, physical address, and Google Maps link automatically synchronize across all pages, forms, and footer cards.
-- **Custom CSS Injector:** Add custom CSS overrides.
-- **Backup & Restore:** Download complete JSON snapshots of all settings or restore with one click.
-- **Factory Reset Safeguard:** Restore original pristine defaults whenever needed.
+Sign-in is verified server-side and uses a signed HttpOnly cookie. Browser localStorage is a local recovery copy only, never proof of authentication. The public website's crown button / Ctrl + Shift + A shortcut can open the same server-validated sign-in flow.
 
 ---
 
-## 📁 Key File Locations
+## Implemented Studio areas
 
-- `admin.html`: Dedicated Admin Studio Dashboard
-- `assets/css/royal-admin.css`: Admin and in-context visual editor styling
-- `assets/js/royal-cms-data.js`: Persistent CMS data store
-- `assets/js/royal-cms.js`: Runtime engine loaded on public pages
-- `scripts/admin-server.mjs`: Local Node.js server with disk persistence API (`/api/save-cms`, `/api/create-page`, `/api/delete-page`)
+The 13-page Studio includes layout, theme/colors, typography, animations/effects, component controls, navbar/logo settings, media uploads, page management, venue information, custom CSS, backups, and publishing. The legacy `admin.html` URL forwards to `admin-studio.html`.
+
+---
+
+## Key files
+
+- `admin-studio.html`: canonical Admin Studio
+- `assets/css/royal-admin.css`: admin and in-context editor styling
+- `assets/js/admin-studio.js`: Studio controls and signed media upload client
+- `assets/js/royal-cms.js`: runtime CMS engine
+- `server.js`: production backend and protected APIs
+- `lib/admin-auth.js`: server-side authentication/session helpers
+- `lib/cms-db.js`: Neon CMS persistence
+- `render.yaml`: required Render environment variable names (no secret values)

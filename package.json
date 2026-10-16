@@ -5,8 +5,8 @@
   "description": "Multi-page website for The Royal Party Hall, Rajajinagar, Bengaluru",
   "scripts": {
     "serve": "npx serve .",
-    "admin": "node scripts/admin-server.mjs",
-    "check": "node scripts/check-site.mjs",
+    "admin": "node server.js",
+    "check": "node scripts/check-site.mjs && node scripts/check-admin.mjs",
     "studio": "node server.js",
     "dev": "node server.js",
     "python-api": "python server.py"
@@ -16,6 +16,7 @@
     "cors": "^2.8.6",
     "express": "^4.22.3",
     "multer": "^1.4.5-lts.2",
-    "puppeteer-core": "^25.14.0"
+    "puppeteer-core": "^25.14.0",
+    "@neondatabase/serverless": "^1.2.0"
   }
 }

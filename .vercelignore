@@ -1,0 +1,10 @@
+/server.js
+/api.php
+/lib/
+/scripts/
+/data/
+/render.yaml
+/.github/
+/.env
+/.env.*
+/README*.md

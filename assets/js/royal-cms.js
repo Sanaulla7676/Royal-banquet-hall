@@ -21,23 +21,657 @@
     console.warn('[Royal CMS] Could not load localStorage data:', err);
   }
 
+  // Shared CSS/animation layer for the published 13-section Studio.
+  let advancedMotionObserver = null;
+  const advancedMotionOriginals = new WeakMap();
+
+  function applyStudioAdvancedStyles(pub) {
+    if (!pub || typeof pub !== 'object') return;
+    const navSettings = pub.navbar && typeof pub.navbar === 'object' ? pub.navbar : {};
+    const logoSettings = pub.logo && typeof pub.logo === 'object' ? pub.logo : {};
+    const backgroundSettings = pub.background && typeof pub.background === 'object' ? pub.background : {};
+
+    // Restore inline values from the last run before applying the latest draft/publish message.
+    if (advancedMotionObserver) {
+      advancedMotionObserver.disconnect();
+      advancedMotionObserver = null;
+    }
+    document.querySelectorAll('[data-rbh-cms-motion], [data-rbh-cms-font-motion]').forEach(node => {
+      const original = advancedMotionOriginals.get(node);
+      if (original) {
+        if (original.animation) node.style.animation = original.animation;
+        else node.style.removeProperty('animation');
+        if (original.opacity) node.style.opacity = original.opacity;
+        else node.style.removeProperty('opacity');
+        advancedMotionOriginals.delete(node);
+      } else {
+        node.style.removeProperty('animation');
+        node.style.removeProperty('opacity');
+      }
+      node.classList.remove('rbh-cms-motion-pending', 'rbh-cms-motion-active', 'rbh-cms-font-pending', 'rbh-cms-font-active', 'rbh-cms-font-hover');
+      node.removeAttribute('data-rbh-cms-motion');
+      node.removeAttribute('data-rbh-cms-font-motion');
+    });
+
+    const styleId = 'royal-cms-studio-advanced-styles';
+    let styleTag = document.getElementById(styleId);
+    if (!styleTag) {
+      styleTag = document.createElement('style');
+      styleTag.id = styleId;
+      document.head.appendChild(styleTag);
+    }
+
+    const keyframes = [
+      '@keyframes rbhFadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}',
+      '@keyframes rbhSlideDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}',
+      '@keyframes rbhSlideLeft{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}',
+      '@keyframes rbhSlideRight{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:translateX(0)}}',
+      '@keyframes rbhZoomIn{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:scale(1)}}',
+      '@keyframes rbhZoomOut{from{opacity:0;transform:scale(1.12)}to{opacity:1;transform:scale(1)}}',
+      '@keyframes rbhBounce{0%{opacity:0;transform:translateY(18px) scale(.96)}65%{opacity:1;transform:translateY(-4px) scale(1.01)}100%{transform:translateY(0) scale(1)}}',
+      '@keyframes rbhFlipX{from{opacity:0;transform:rotateX(70deg)}to{opacity:1;transform:rotateX(0)}}',
+      '@keyframes rbhFlipY{from{opacity:0;transform:rotateY(70deg)}to{opacity:1;transform:rotateY(0)}}',
+      '@keyframes rbhRotate{from{opacity:0;transform:rotate(-8deg) scale(.94)}to{opacity:1;transform:rotate(0) scale(1)}}',
+      '@keyframes rbhShake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-3px)}40%,80%{transform:translateX(3px)}}',
+      '@keyframes rbhPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}',
+      '@keyframes rbhWobble{0%,100%{transform:rotate(0)}25%{transform:rotate(-2deg)}75%{transform:rotate(2deg)}}',
+      '@keyframes rbhSwing{20%{transform:rotate(6deg)}40%{transform:rotate(-4deg)}60%{transform:rotate(2deg)}80%{transform:rotate(-1deg)}100%{transform:rotate(0)}}',
+      '@keyframes rbhTada{0%{transform:scale(1)}10%,20%{transform:scale(.94) rotate(-3deg)}30%,50%,70%,90%{transform:scale(1.06) rotate(3deg)}40%,60%,80%{transform:scale(1.06) rotate(-3deg)}100%{transform:scale(1) rotate(0)}}',
+      '@keyframes rbhRubber{0%{transform:scale(1)}30%{transform:scaleX(1.18) scaleY(.84)}40%{transform:scaleX(.84) scaleY(1.15)}60%{transform:scaleX(1.08) scaleY(.92)}100%{transform:scale(1)}}',
+      '@keyframes rbhHeartbeat{0%,28%,56%,100%{transform:scale(1)}14%,42%{transform:scale(1.08)}}',
+      '@keyframes rbhBlurIn{from{opacity:0;filter:blur(10px)}to{opacity:1;filter:blur(0)}}',
+      '@keyframes rbhFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}',
+      '@keyframes rbhSkew{from{opacity:0;transform:skewX(12deg) translateX(-12px)}to{opacity:1;transform:skewX(0) translateX(0)}}',
+      '@keyframes rbhRoll{from{opacity:0;transform:translateX(-24px) rotate(-14deg)}to{opacity:1;transform:translateX(0) rotate(0)}}',
+      '@keyframes rbhLightSpeed{from{opacity:0;transform:translateX(35px) skewX(-14deg)}to{opacity:1;transform:translateX(0) skewX(0)}}',
+      '@keyframes rbhShimmer{0%,100%{filter:brightness(1)}50%{filter:brightness(1.25)}}',
+      '@keyframes rbhGlitch{0%,100%{transform:translate(0)}20%{transform:translate(-2px,1px)}40%{transform:translate(2px,-1px)}60%{transform:translate(-1px,-1px)}80%{transform:translate(1px,1px)}}',
+      '@keyframes rbhJack{0%{opacity:0;transform:scale(.1) rotate(20deg)}50%{transform:rotate(-8deg)}70%{transform:rotate(3deg)}100%{opacity:1;transform:scale(1) rotate(0)}}',
+      '@keyframes rbhHinge{0%{transform:rotate(0);transform-origin:top left}20%,60%{transform:rotate(70deg);transform-origin:top left}40%,80%{transform:rotate(55deg);transform-origin:top left}100%{transform:translateY(0);transform-origin:top left}}'
+    ];
+
+    const animationNames = [
+      'rbhFadeIn','rbhFadeIn','rbhSlideDown','rbhSlideLeft','rbhSlideRight',
+      'rbhZoomIn','rbhZoomOut','rbhBounce','rbhFlipX','rbhFlipY','rbhRotate',
+      'rbhShake','rbhPulse','rbhWobble','rbhSwing','rbhTada','rbhRubber',
+      'rbhWobble','rbhHeartbeat','rbhZoomIn','rbhFadeIn','rbhFadeIn',
+      'rbhGlitch','rbhBlurIn','rbhFloat','rbhSkew','rbhRoll','rbhLightSpeed',
+      'rbhFadeIn','rbhSlideDown','rbhSlideLeft','rbhSlideRight','rbhHinge',
+      'rbhJack','rbhRoll','rbhZoomIn','rbhZoomIn','rbhZoomIn','rbhZoomIn','rbhTada'
+    ];
+    const targetSelectors = {
+      'Headings': '.hero-content h1,h1,h2,h3,.section-title,.eyebrow',
+      'Images': 'main img:not([data-hero-slide]),main video,.gallery-grid img',
+      'Buttons': '.btn,.btn-gold,.btn-dark,.btn-outline,.nav-actions a,button',
+      'Cards': '.card,.service-card,.feature-card,.event-card,.package-card,.testimonial-card,.review-card',
+      'Sections': 'main > section,main .section',
+      'Text': 'main p,main li,.lede'
+    };
+    const animationConfig = pub.animations && typeof pub.animations === 'object' ? pub.animations : {};
+    const activeAnimations = Array.isArray(animationConfig.activeItems)
+      ? animationConfig.activeItems.filter(n => Number.isInteger(n) && n >= 0 && n < animationNames.length)
+      : [];
+    const activeTargets = Array.isArray(animationConfig.targets)
+      ? animationConfig.targets.filter(target => Object.prototype.hasOwnProperty.call(targetSelectors, target))
+      : ['Headings'];
+    const duration = Math.max(100, Math.min(10000, Number(animationConfig.duration) || 500));
+    const delay = Math.max(0, Math.min(30000, (Number(animationConfig.delay) || 0) * 100));
+    const directionText = String(animationConfig.direction || 'Normal').toLowerCase();
+    const direction = ['normal','reverse','alternate'].includes(directionText) ? directionText : 'normal';
+    const repeatOnView = animationConfig.repeatEveryView === true;
+    const triggerOnScroll = animationConfig.scrollTrigger !== false;
+
+    const fontConfig = pub.fontAnimations && typeof pub.fontAnimations === 'object' ? pub.fontAnimations : {};
+    const fontTargets = Array.isArray(fontConfig.targets)
+      ? fontConfig.targets.filter(target => ['Hero Heading','Subheading','Section Title','Body Text','CTA Button'].includes(target))
+      : ['Hero Heading'];
+    const fontTargetSelectors = {
+      'Hero Heading': '.hero-content h1,.hero-title-primary',
+      'Subheading': '.hero-content .lede,.hero-content p',
+      'Section Title': 'main section h2,.section-title',
+      'Body Text': 'main p,main li',
+      'CTA Button': '.hero-content a.btn,.btn-gold,.btn-outline'
+    };
+    const fontAnimIndex = Number.isInteger(Number(fontConfig.active)) ? Math.max(0, Math.min(39, Number(fontConfig.active))) : 0;
+    const fontAnimNames = [
+      'rbhFadeIn','rbhWobble','rbhShimmer','rbhPulse','rbhShimmer','rbhBounce','rbhBounce','rbhBlurIn',
+      'rbhLightSpeed','rbhFadeIn','rbhFadeIn','rbhSlideUp','rbhRotate','rbhSwing','rbhFlipY',
+      'rbhPulse','rbhPulse','rbhShimmer','rbhFadeIn','rbhFadeIn','rbhFlipX','rbhWobble','rbhGlitch','rbhGlitch',
+      'rbhZoomIn','rbhJack','rbhFadeIn','rbhPulse','rbhWobble','rbhRoll','rbhShimmer','rbhPulse',
+      'rbhBlurIn','rbhFadeIn','rbhFadeIn','rbhFadeIn','rbhSlideDown','rbhBounce','rbhFloat','rbhFadeIn'
+    ];
+    const fontDuration = Math.max(100, Math.min(10000, Number(fontConfig.duration) || 500));
+    const fontDelay = Math.max(0, Math.min(30000, (Number(fontConfig.delay) || 0) * 100));
+    const fontRepeat = String(fontConfig.repeat || 'Once');
+
+    const effectConfig = pub.effects && typeof pub.effects === 'object' ? pub.effects : {};
+    const effectItems = Array.isArray(effectConfig.activeItems)
+      ? effectConfig.activeItems.filter(n => Number.isInteger(n) && n >= 0 && n <= 41)
+      : [];
+    const intensity = Math.max(0, Math.min(2, (Number(effectConfig.intensity) || 100) / 100));
+    const effectsCss = {
+      0: '.site-header,.card,.service-card,.feature-card{background-color:rgba(255,255,255,.08)!important;backdrop-filter:blur(' + (6 * intensity) + 'px)!important}',
+      1: 'h1,h2,h3{ text-shadow:0 0 ' + (12 * intensity) + 'px rgba(198,161,91,.55)!important}',
+      2: '.card,.service-card,.feature-card,.event-card,.package-card{border:1px solid transparent!important;box-shadow:0 0 0 1px rgba(198,161,91,.5),0 8px 26px rgba(0,0,0,.12)!important}',
+      3: '.card,.service-card,.feature-card,.event-card,.package-card,.testimonial-card{box-shadow:0 ' + (8 * intensity) + 'px ' + (26 * intensity) + 'px rgba(0,0,0,.22)!important}',
+      4: '.site-header{backdrop-filter:blur(' + (10 * intensity) + 'px)!important}',
+      5: 'h1,h2,.section-title{animation:rbhShimmer 3s ease-in-out infinite}',
+      6: '.card,.service-card,.feature-card,.event-card,.package-card,.btn{transition:transform .25s ease,box-shadow .25s ease!important}.card:hover,.service-card:hover,.feature-card:hover,.event-card:hover,.package-card:hover,.btn:hover{transform:translateY(-2px)!important}',
+      7: '.card:hover,.service-card:hover,.feature-card:hover,.event-card:hover,.package-card:hover{transform:scale(1.025)!important}',
+      8: 'main img{filter:saturate(' + (1 + .35 * intensity) + ')!important}',
+      9: '.hero-media:after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse,transparent 45%,rgba(0,0,0,' + (.32 * intensity) + '))}',
+      10: '.site-header,.card,.service-card{background:rgba(255,255,255,.12)!important;backdrop-filter:blur(' + (8 * intensity) + 'px)!important}',
+      13: '.hero-media:after{content:"";position:absolute;inset:0;pointer-events:none;background:rgba(20,14,4,' + (.15 * intensity) + ')}',
+      14: '.card,.service-card,.feature-card{box-shadow:inset 0 0 ' + (16 * intensity) + 'px rgba(0,0,0,.18)!important}',
+      15: '.card,.service-card,.feature-card{box-shadow:inset 0 0 ' + (12 * intensity) + 'px rgba(0,0,0,.24)!important}',
+      16: 'h1,h2,h3{ text-shadow:1px 2px 0 rgba(0,0,0,.18)!important}',
+      17: 'h1,h2,.section-title{ text-decoration:underline;text-decoration-color:var(--gold);text-underline-offset:.18em}',
+      18: 'h1,h2,h3{ -webkit-text-stroke:.35px currentColor}',
+      22: 'h1,h2,h3,.section-title{background:linear-gradient(90deg,currentColor,var(--gold),currentColor);background-size:200% 100%;background-clip:text;-webkit-background-clip:text;color:transparent!important;animation:rbhShimmer 4s linear infinite}',
+      23: '.btn-gold,.nav-actions .btn-gold{box-shadow:0 0 ' + (18 * intensity) + 'px rgba(198,161,91,.55)!important}',
+      25: '.site-header{position:sticky!important;top:0;z-index:90!important}',
+      27: '.hero .hero-content{backdrop-filter:blur(' + (10 * intensity) + 'px);background:rgba(0,0,0,.12);border-radius:12px;padding:12px}',
+      28: '.site-header{position:sticky!important;top:0;z-index:90!important}',
+      31: 'blockquote,.quote-block{border-left:3px solid var(--gold)!important;padding-left:1.2rem!important}',
+      35: '.cta-banner,.cta-section{background:linear-gradient(135deg,var(--ink),var(--gold2))!important;color:var(--cream)!important}'
+    };
+    let css = keyframes.join('\n') + '\n';
+    const navBackground = typeof navSettings.bgColor === 'string' &&
+      (/^#[0-9a-f]{3,8}$/i.test(navSettings.bgColor) || /^rgba?\([0-9., %]+\)$/i.test(navSettings.bgColor) || navSettings.bgColor === 'transparent')
+      ? navSettings.bgColor : '#0a0b0d';
+    css += '.site-header{position:' + (navSettings.sticky === false ? 'relative' : 'sticky') + '!important;top:' +
+      (navSettings.sticky === false ? 'auto' : '0') + '!important;z-index:1000!important}\n';
+    css += '@media(max-width:760px){.site-header .menu-toggle{display:' +
+      (navSettings.hamburger === false ? 'none' : 'block') + '!important}.site-header .nav-links{display:' +
+      (navSettings.hamburger === false ? 'flex' : 'none') + '!important;position:' +
+      (navSettings.hamburger === false ? 'static' : 'fixed') + '!important;inset:' +
+      (navSettings.hamburger === false ? 'auto' : '70px 0 auto') + '!important;flex-direction:' +
+      (navSettings.hamburger === false ? 'row' : 'column') + '!important;flex-wrap:' +
+      (navSettings.hamburger === false ? 'wrap' : 'nowrap') + '!important;gap:' +
+      (navSettings.hamburger === false ? '6px' : '0') + '!important;padding:' +
+      (navSettings.hamburger === false ? '4px' : '18px 24px 24px') + '!important;background:' +
+      (navSettings.hamburger === false ? 'transparent' : navBackground) + '!important;box-shadow:' +
+      (navSettings.hamburger === false ? 'none' : '0 18px 40px rgba(0,0,0,.26)') +
+      '!important}.site-header .nav-links.open{display:flex!important}}\n';
+    css += '@media(max-width:760px){.site-header .brand-logo{' +
+      (logoSettings.mobileScale === false ? '' : 'width:min(' + Math.max(60,Math.min(500,Number(logoSettings.width)||145)) +
+       'px,22vw)!important;height:min(' + Math.max(30,Math.min(260,Number(logoSettings.height)||98)) +
+       'px,13vw)!important;max-width:22vw!important;') + '}}\n';
+    if (logoSettings.hideOnSmall === true) css += '@media(max-width:420px){.site-header .brand-logo{display:none!important}}\n';
+    css += 'body{background-attachment:' + (backgroundSettings.fixed === false ? 'scroll' : 'fixed') + '!important}\n';
+    css += '.rbh-logo-text-fallback{display:none;font-family:Georgia,serif;font-weight:600;color:var(--gold);line-height:1.15;max-width:130px}\n';
+    const navDesign = Math.max(0,Math.min(5,Number(navSettings.design)||0));
+    const navDesignCss = [
+      '',
+      '.site-header{backdrop-filter:blur(14px)!important;background:rgba(18,22,28,.76)!important;border-bottom:1px solid rgba(198,161,91,.25)!important}',
+      '.site-header{background:#fffdf9!important;border-bottom:1px solid rgba(23,29,25,.12)!important;color:#171d19!important}.site-header a{color:#171d19!important}',
+      '.site-header{background:transparent!important;box-shadow:none!important;border-bottom:1px solid rgba(255,255,255,.14)!important}',
+      '.site-header .nav{flex-direction:column!important;gap:6px!important;padding-top:10px!important;padding-bottom:10px!important}.site-header{background:rgba(10,11,13,.96)!important}',
+      '.site-header{background:#060708!important;border-bottom:2px solid var(--gold)!important;box-shadow:0 8px 24px rgba(0,0,0,.24)!important}'
+    ];
+    css += (navDesignCss[navDesign] || '') + '\n';
+    const buttonStyle = Math.max(0,Math.min(9,Number(navSettings.buttonStyle)||0));
+    const buttonStyles = [
+      'border-radius:999px;background:var(--gold);color:var(--ink);border:1px solid transparent',
+      'border-radius:2px;background:transparent;color:var(--gold);border:1px solid var(--gold)',
+      'border-radius:8px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--ink)',
+      'border-radius:0;background:transparent;color:inherit;border:0;border-bottom:1px solid var(--gold)',
+      'border-radius:999px;background:var(--cream);color:var(--ink);border:1px solid var(--cream)',
+      'border-radius:6px;background:transparent;color:var(--gold);border:1px solid rgba(198,161,91,.55)',
+      'border-radius:8px;background:var(--ink);color:var(--cream);border:1px solid var(--gold)',
+      'border-radius:0;background:transparent;color:inherit;border:1px dashed var(--gold)',
+      'border-radius:0;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--ink)',
+      'border-radius:999px;background:var(--gold);color:var(--ink);border:1px solid transparent;box-shadow:0 0 18px rgba(198,161,91,.48)'
+    ];
+    css += '.site-header .nav-actions .btn-gold,.site-header .nav-actions .btn{' + buttonStyles[buttonStyle] + '!important;transition:all .25s ease!important}\n';
+    const hoverStyle = Math.max(0,Math.min(9,Number(navSettings.hoverAnimation)||0));
+    const hoverCss = [
+      'transform:translateY(-2px)',
+      'text-decoration:underline;text-decoration-color:var(--gold);text-underline-offset:.3em',
+      'background:var(--gold);color:var(--ink)',
+      'box-shadow:0 0 18px rgba(198,161,91,.55)',
+      'transform:scale(1.04)',
+      'background:linear-gradient(90deg,var(--gold),var(--gold2));color:var(--ink)',
+      'border:1px solid var(--gold);background:rgba(198,161,91,.12)',
+      'filter:brightness(1.2)',
+      'transform:rotate(-1deg)',
+      'text-shadow:0 0 10px rgba(198,161,91,.75);filter:brightness(1.1)'
+    ];
+    css += '.site-header .nav-links a,.site-header .nav-actions a,.site-header .menu-toggle{transition:all .25s ease!important}.site-header .nav-links a:hover,.site-header .nav-actions a:hover,.site-header .menu-toggle:hover{' + hoverCss[hoverStyle] + '!important}\n';
+    const navAnimation = Math.max(0,Math.min(9,Number(navSettings.animation)||0));
+    const navAnimNames = ['rbhSlideDown','rbhFadeIn','rbhZoomIn','rbhShimmer','rbhNavUp','rbhRotate','rbhSlideDown','rbhNavCurtain','rbhNavFlash','rbhNavWave'];
+    css += '@keyframes rbhNavUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}@keyframes rbhNavCurtain{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0 0 0 0)}}@keyframes rbhNavFlash{0%,100%{filter:brightness(1)}40%{filter:brightness(1.8)}}@keyframes rbhNavWave{0%{transform:translateY(-10px)}50%{transform:translateY(3px)}100%{transform:translateY(0)}}\n';
+    if (navAnimation !== 0) css += '.site-header{animation:' + navAnimNames[navAnimation] + ' .7s ease both}\n';
+    css += '[data-rbh-cms-motion].rbh-cms-motion-pending,[data-rbh-cms-font-motion].rbh-cms-font-pending{opacity:0!important;animation:none!important}\n';
+    css += '[data-rbh-cms-motion].rbh-cms-motion-active{animation-name:var(--rbh-cms-anim)!important;animation-duration:var(--rbh-cms-duration)!important;animation-delay:var(--rbh-cms-delay)!important;animation-timing-function:cubic-bezier(.2,.7,.2,1)!important;animation-direction:var(--rbh-cms-direction)!important;animation-fill-mode:both!important;animation-iteration-count:var(--rbh-cms-iterations)!important}\n';
+    css += '[data-rbh-cms-font-motion].rbh-cms-font-active{animation-name:var(--rbh-cms-font-anim)!important;animation-duration:var(--rbh-cms-font-duration)!important;animation-delay:var(--rbh-cms-font-delay)!important;animation-timing-function:ease!important;animation-fill-mode:both!important;animation-iteration-count:var(--rbh-cms-font-iterations)!important}\n';
+    css += '[data-rbh-cms-font-motion].rbh-cms-font-hover:hover{animation-name:var(--rbh-cms-font-anim)!important;animation-duration:var(--rbh-cms-font-duration)!important;animation-delay:var(--rbh-cms-font-delay)!important;animation-timing-function:ease!important;animation-fill-mode:both!important;animation-iteration-count:var(--rbh-cms-font-iterations)!important}\n';
+    effectItems.forEach(index => { if (effectsCss[index]) css += effectsCss[index] + '\n'; });
+    css += '@media (prefers-reduced-motion: reduce){[data-rbh-cms-motion].rbh-cms-motion-active,[data-rbh-cms-font-motion].rbh-cms-font-active{animation:none!important;transition:none!important}}\n';
+    styleTag.textContent = css;
+
+    function prepareNode(node, attr, keyframe, seconds, waitMs, directionValue, iterations, pendingClass, activeClass) {
+      if (!advancedMotionOriginals.has(node)) {
+        advancedMotionOriginals.set(node, {
+          animation: node.style.animation,
+          opacity: node.style.opacity
+        });
+      }
+      node.setAttribute(attr, keyframe);
+      if (attr === 'data-rbh-cms-motion') {
+        node.style.setProperty('--rbh-cms-anim', keyframe);
+        node.style.setProperty('--rbh-cms-duration', seconds + 'ms');
+        node.style.setProperty('--rbh-cms-delay', waitMs + 'ms');
+        node.style.setProperty('--rbh-cms-direction', directionValue);
+        node.style.setProperty('--rbh-cms-iterations', String(iterations));
+      } else {
+        node.style.setProperty('--rbh-cms-font-anim', keyframe);
+        node.style.setProperty('--rbh-cms-font-duration', seconds + 'ms');
+        node.style.setProperty('--rbh-cms-font-delay', waitMs + 'ms');
+        node.style.setProperty('--rbh-cms-font-iterations', String(iterations));
+      }
+      node.classList.add(pendingClass);
+    }
+
+    function queryTarget(selector) {
+      try { return Array.from(document.querySelectorAll(selector)).slice(0, 80); }
+      catch { return []; }
+    }
+
+    if (activeAnimations.length && activeTargets.length) {
+      const unique = new Map();
+      activeTargets.forEach((target, targetIndex) => {
+        const keyframe = animationNames[activeAnimations[targetIndex % activeAnimations.length]];
+        queryTarget(targetSelectors[target]).forEach(node => { if (!unique.has(node)) unique.set(node, keyframe); });
+      });
+      for (const [node, keyframe] of unique.entries()) {
+        prepareNode(node,'data-rbh-cms-motion',keyframe,duration,delay,direction,1,'rbh-cms-motion-pending','rbh-cms-motion-active');
+      }
+    }
+
+    if (fontTargets.length && fontAnimIndex >= 0) {
+      const seen = new Set();
+      fontTargets.forEach(target => {
+        queryTarget(fontTargetSelectors[target]).forEach(node => {
+          if (seen.has(node)) return;
+          seen.add(node);
+          let iterations = 1;
+          let wait = fontDelay;
+          if (fontRepeat === 'Loop') iterations = 'infinite';
+          prepareNode(node,'data-rbh-cms-font-motion',fontAnimNames[fontAnimIndex],fontDuration,wait,'normal',iterations,'rbh-cms-font-pending','rbh-cms-font-active');
+          if (fontRepeat === 'On Hover') {
+            node.classList.remove('rbh-cms-font-pending','rbh-cms-font-active');
+            node.classList.add('rbh-cms-font-hover');
+          }
+        });
+      });
+    }
+
+    const scrollNodes = Array.from(document.querySelectorAll('[data-rbh-cms-motion].rbh-cms-motion-pending, [data-rbh-cms-font-motion].rbh-cms-font-pending'));
+    const shouldRevealOnScroll = (triggerOnScroll && activeAnimations.length > 0) || fontRepeat === 'On Scroll';
+    const activateNode = node => {
+      node.classList.remove('rbh-cms-motion-pending', 'rbh-cms-font-pending');
+      if (node.hasAttribute('data-rbh-cms-motion')) node.classList.add('rbh-cms-motion-active');
+      if (node.hasAttribute('data-rbh-cms-font-motion')) node.classList.add('rbh-cms-font-active');
+    };
+    const resetNode = node => {
+      node.classList.remove('rbh-cms-motion-active', 'rbh-cms-font-active');
+      if (node.hasAttribute('data-rbh-cms-motion')) node.classList.add('rbh-cms-motion-pending');
+      if (node.hasAttribute('data-rbh-cms-font-motion')) node.classList.add('rbh-cms-font-pending');
+    };
+    if (scrollNodes.length && 'IntersectionObserver' in window && shouldRevealOnScroll) {
+      advancedMotionObserver = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          const node = entry.target;
+          if (entry.isIntersecting) {
+            activateNode(node);
+            if (!repeatOnView) advancedMotionObserver.unobserve(node);
+          } else if (repeatOnView) {
+            resetNode(node);
+          }
+        });
+      }, { threshold: 0.12 });
+      scrollNodes.forEach(node => advancedMotionObserver.observe(node));
+    } else {
+      scrollNodes.forEach(activateNode);
+    }
+
+    // Visual component presets apply to compatible existing elements. Components that need new
+    // content are treated as styling presets, not fabricated content.
+    const componentItems = pub.components && Array.isArray(pub.components.activeItems) ? pub.components.activeItems : [];
+    const componentCss = {
+      0: '.btn-gold,.nav-actions .btn-gold{box-shadow:0 5px 22px rgba(198,161,91,.3)!important}',
+      1: '.btn-outline{border:1px solid var(--gold)!important;background:transparent!important}',
+      2: '.badge,.eyebrow,.pill{border-radius:999px!important}',
+      3: '.badge,.eyebrow{background:var(--gold)!important;color:var(--ink)!important}',
+      4: '.service-card,.feature-card,.event-card{border-radius:14px!important}',
+      5: '.features,.feature-grid{gap:1.5rem!important}',
+      6: '.testimonial-card,.review-card,blockquote{border-radius:12px!important;padding:1.2rem!important}',
+      7: '.package-card,.pricing-card{border:1px solid var(--gold)!important;border-radius:14px!important}',
+      8: '.gallery-grid{gap:12px!important}',
+      9: '.gallery-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}',
+      10: 'main section{border-bottom:1px solid var(--line)}',
+      11: 'main section h2,.section-title{position:relative;text-decoration:underline;text-decoration-color:var(--gold);text-underline-offset:.3em}',
+      14: '.feature-card{box-shadow:0 8px 22px rgba(198,161,91,.12)!important}',
+      16: '.package-card,.pricing-card{padding:1.5rem!important}',
+      22: 'details summary{cursor:pointer;color:var(--gold)}',
+      25: '.social-links a{border-radius:999px!important}',
+      28: '.site-header{position:sticky!important;top:0;z-index:90!important}',
+      30: '.back-to-top{position:fixed!important;right:18px!important;bottom:18px!important;z-index:100!important}',
+      32: 'blockquote{border-left:3px solid var(--gold)!important;padding-left:1rem!important}',
+      35: '.cta-banner,.cta-section{padding:2rem!important;background:linear-gradient(135deg,var(--ink),var(--gold2))!important;color:var(--cream)!important}',
+      38: '.highlight-strip{border-left:3px solid var(--gold)!important;padding:1rem!important}',
+      39: '.floating-action,.floating-cta{position:fixed!important;right:18px!important;bottom:80px!important;z-index:101!important}'
+    };
+    componentItems.forEach(index => { if (componentCss[index]) styleTag.textContent += '\n' + componentCss[index]; });
+
+    document.querySelectorAll('.site-header .brand').forEach(brand => {
+      const image = brand.querySelector('img.brand-logo, img');
+      if (!image) return;
+      let fallback = brand.querySelector('.rbh-logo-text-fallback');
+      if (logoSettings.textFallback !== false) {
+        if (!fallback) {
+          fallback = document.createElement('span');
+          fallback.className = 'rbh-logo-text-fallback';
+          fallback.textContent = 'The Royal Hall';
+          brand.appendChild(fallback);
+        }
+        const showFallback = () => { if (fallback) { fallback.style.display='inline-block'; image.style.display='none'; } };
+        const showImage = () => { if (fallback) fallback.style.display='none'; image.style.display=''; };
+        if (image.dataset.rbhFallbackBound !== '1') {
+          image.addEventListener('error',showFallback);
+          image.addEventListener('load',showImage);
+          image.dataset.rbhFallbackBound='1';
+        }
+        if (image.complete && image.naturalWidth === 0) showFallback();
+      } else {
+        fallback?.remove();
+        image.style.display='';
+      }
+    });
+
+    const sizing = pub.imageSizing && typeof pub.imageSizing === 'object' ? pub.imageSizing : {};
+    const normalizedSizeMap = new Map();
+    Object.entries(sizing).forEach(([source, dimensions]) => {
+      if (!dimensions || typeof dimensions !== 'object') return;
+      try { normalizedSizeMap.set(new URL(source,window.location.href).href,dimensions); } catch {}
+    });
+    document.querySelectorAll('img').forEach(img => {
+      const dimensions = normalizedSizeMap.get(img.currentSrc || img.src);
+      if (!dimensions) return;
+      const width = Number(dimensions.width);
+      const height = Number(dimensions.height);
+      if (Number.isFinite(width) && width >= 100 && width <= 3000) img.style.maxWidth = width + 'px';
+      if (Number.isFinite(height) && height >= 100 && height <= 3000) img.style.maxHeight = height + 'px';
+      if (['cover','contain','fill','none','scale-down'].includes(dimensions.objectFit)) img.style.objectFit = dimensions.objectFit;
+    });
+  }
+
   // Load published Studio customizations (only when published from studio!)
   function applyStudioPublished(pub) {
-    if (!pub) return;
+    if (!pub || typeof pub !== 'object') return;
     cmsData.studioPublished = pub;
     cmsData.navbar = cmsData.navbar || {};
+
     if (pub.logo) {
       if (pub.logo.width) cmsData.navbar.logoWidth = pub.logo.width;
       if (pub.logo.height) cmsData.navbar.logoHeight = pub.logo.height;
       if (pub.logo.src) cmsData.navbar.logoSrc = pub.logo.src;
+      if (pub.logo.position) cmsData.navbar.logoPosition = pub.logo.position;
     }
     if (pub.navbar) {
       if (pub.navbar.bgColor) cmsData.navbar.bgColor = pub.navbar.bgColor;
       if (pub.navbar.height) cmsData.navbar.height = pub.navbar.height;
       cmsData.navbar.transparent = !!pub.navbar.transparent;
+      if (pub.navbar.cta) cmsData.navbar.cta = pub.navbar.cta;
+      if (Array.isArray(pub.navbar.links)) cmsData.navbar.links = pub.navbar.links;
     }
+
+    // Apply the same core settings that are edited in the Admin Studio to every visitor.
+    const hero = document.querySelector('.hero, .hero-section');
+    if (pub.hero) {
+      const slides = Array.from(document.querySelectorAll('.hero-media img, .hero-slide, .hero-slideshow [data-hero-slide]'));
+      if (pub.hero.src && slides.length && slides[0].src !== new URL(pub.hero.src, window.location.href).href) slides[0].src = pub.hero.src;
+      if (hero && Number.isFinite(Number(pub.hero.height))) {
+        hero.style.setProperty('min-height', Number(pub.hero.height) + 'vh', 'important');
+      }
+      const objectFit = ['cover','contain','fill','none','scale-down'].includes(pub.hero.displayMode) ? pub.hero.displayMode : 'cover';
+      slides.forEach(img => {
+        if (Number.isFinite(Number(pub.hero.posX)) && Number.isFinite(Number(pub.hero.posY))) {
+          img.style.objectPosition = Number(pub.hero.posX) + '% ' + Number(pub.hero.posY) + '%';
+        }
+        img.style.objectFit = objectFit;
+        if (Number.isFinite(Number(pub.hero.scale))) img.style.scale = String(Math.max(50,Math.min(160,Number(pub.hero.scale))) / 100);
+        img.style.filter = 'brightness(' + (Number.isFinite(Number(pub.hero.brightness)) ? Number(pub.hero.brightness) : 100) + '%) contrast(' +
+          (Number.isFinite(Number(pub.hero.contrast)) ? Number(pub.hero.contrast) : 100) + '%) blur(' +
+          Math.max(0,Math.min(20,Number(pub.hero.blur)||0)) + 'px)';
+      });
+      if (hero && pub.hero.displayMode) hero.style.setProperty('--cms-hero-display-mode', objectFit);
+      if (hero && pub.hero.decorative) {
+        hero.style.setProperty('outline','1px solid rgba(198,161,91,.58)');
+        hero.style.setProperty('outline-offset','-10px');
+      } else if (hero) {
+        hero.style.removeProperty('outline');
+        hero.style.removeProperty('outline-offset');
+      }
+
+      // A persistent in-flow overlay works across local previews and deployed static pages.
+      if (hero) {
+        const mediaLayer = hero.querySelector('.hero-media, .hero-slideshow') || hero;
+        let overlay = mediaLayer.querySelector(':scope > .rbh-cms-hero-overlay');
+        const overlayColor = /^#[0-9a-f]{6}$/i.test(pub.hero.overlayColor || '') ? pub.hero.overlayColor : '#000000';
+        const opacity = Math.max(0,Math.min(100,Number(pub.hero.overlayOpacity ?? 0))) / 100;
+        if (opacity > 0 || pub.hero.gradient) {
+          if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.className = 'rbh-cms-hero-overlay';
+            overlay.setAttribute('aria-hidden','true');
+            Object.assign(overlay.style,{position:'absolute',inset:'0',width:'100%',height:'100%',pointerEvents:'none',zIndex:'2'});
+            if (!mediaLayer.style.position && mediaLayer === hero) hero.style.position = 'relative';
+            mediaLayer.appendChild(overlay);
+          }
+          const hex = overlayColor.slice(1);
+          const rgba = 'rgba(' + parseInt(hex.slice(0,2),16) + ',' + parseInt(hex.slice(2,4),16) + ',' + parseInt(hex.slice(4,6),16) + ',' + opacity + ')';
+          overlay.style.background = pub.hero.gradient
+            ? 'linear-gradient(135deg,' + rgba + ',transparent 78%)'
+            : rgba;
+        } else if (overlay) overlay.remove();
+        const heroContent = hero.querySelector('.hero-content');
+        if (heroContent) {
+          heroContent.style.position = 'relative';
+          heroContent.style.zIndex = '3';
+        }
+      }
+    }
+
+    if (pub.heroHeading) {
+      const heading = document.querySelector('.hero-content h1') ||
+        document.querySelector('.hero-title-primary');
+      if (heading && typeof pub.heroHeading.text === 'string') {
+        const completeTitle = pub.heroHeading.text.trim();
+        const primary = heading.querySelector('.hero-title-primary');
+        const accent = heading.querySelector('.hero-title-accent');
+        if (primary && accent && completeTitle) {
+          const words = completeTitle.split(/\s+/);
+          accent.textContent = words.pop() || '';
+          primary.textContent = words.join(' ') + (words.length ? ' ' : '');
+        } else {
+          heading.textContent = completeTitle;
+        }
+      }
+      if (heading && Number.isFinite(Number(pub.heroHeading.size))) {
+        heading.style.fontSize = Number(pub.heroHeading.size) + 'px';
+      }
+      if (heading && Number.isFinite(Number(pub.heroHeading.weight))) {
+        heading.style.fontWeight = String(Number(pub.heroHeading.weight));
+      }
+      if (heading && Number.isFinite(Number(pub.heroHeading.lineHeight))) {
+        heading.style.lineHeight = String(Number(pub.heroHeading.lineHeight));
+      }
+      if (heading && Number.isFinite(Number(pub.heroHeading.letterSpacing))) {
+        heading.style.letterSpacing = Number(pub.heroHeading.letterSpacing) + 'px';
+      }
+      const headingFonts = [
+        "'Playfair Display', Georgia, serif","'Plus Jakarta Sans', Arial, sans-serif",
+        "Georgia, serif","'Courier New', monospace","Impact, sans-serif","Georgia, serif",
+        "Arial, sans-serif","Arial Black, Arial, sans-serif","'Times New Roman', serif",
+        "'Playfair Display', Georgia, serif"
+      ];
+      const fontIndex = Math.max(0,Math.min(9,Number(pub.heroHeading.font)||0));
+      if (heading) {
+        heading.style.fontFamily = headingFonts[fontIndex];
+        heading.style.textAlign = ['left','center','right'].includes(pub.heroHeading.align) ? pub.heroHeading.align : 'center';
+      }
+      const colors = [
+        ['#c6a15b','#e8c87a'],['#ffffff','#f0f0f0'],['#ff6b6b','#ee5a24'],['#a29bfe','#6c5ce7'],
+        ['#00cec9','#0984e3'],['#55efc4','#00b894'],['#fd79a8','#e84393'],['#fdcb6e','#e17055'],
+        ['#636e72','#2d3436'],['#e67e22','#d35400'],['#1abc9c','#16a085'],['#9b59b6','#8e44ad'],
+        ['#2c3e50','#34495e'],['#c0392b','#e74c3c'],['#f39c12','#f1c40f'],['#ecf0f1','#bdc3c7'],
+        ['#3498db','#2980b9'],['#27ae60','#229954'],['#ff4757','#ff6b81'],['#ffeaa7','#fdcb6e'],
+        ['#5f27cd','#341f97'],['#ee5a24','#c0392b'],['#00d2d3','#0abde3'],['#8395a7','#576574'],
+        ['#f368e0','#e056d7'],['#01a3a4','#048a81'],['#d63031','#6c0303'],['#6ab04c','#badc58'],
+        ['#e55039','#f0b27a'],['#1e3799','#0c2461']
+      ];
+      const pair = colors[Math.max(0,Math.min(29,Number(pub.heroHeading.colorCombo)||0))];
+      if (heading && pair) {
+        heading.style.backgroundImage = 'linear-gradient(110deg,' + pair[0] + ',' + pair[1] + ')';
+        heading.style.backgroundClip = 'text';
+        heading.style.webkitBackgroundClip = 'text';
+        heading.style.color = 'transparent';
+      }
+    }
+
+    if (pub.heroSub) {
+      const subheading = document.querySelector('.hero-content .lede') ||
+        document.querySelector('.hero-content p');
+      if (subheading && typeof pub.heroSub.text === 'string') subheading.textContent = pub.heroSub.text;
+      if (subheading && Number.isFinite(Number(pub.heroSub.size))) subheading.style.fontSize = Number(pub.heroSub.size) + 'px';
+      if (subheading && Number.isFinite(Number(pub.heroSub.lineHeight))) subheading.style.lineHeight = String(pub.heroSub.lineHeight);
+      if (subheading && pub.heroSub.color && /^#[0-9a-f]{6}$/i.test(pub.heroSub.color)) subheading.style.color = pub.heroSub.color;
+      if (subheading) subheading.style.textAlign = ['left','center','right'].includes(pub.heroSub.align) ? pub.heroSub.align : 'center';
+
+      const presetStyles = [
+        {fontWeight:'400',fontStyle:'normal',letterSpacing:'normal',textTransform:'none',textShadow:'none',background:'transparent',padding:'0',borderBottom:'0'},
+        {fontWeight:'700',fontStyle:'normal',letterSpacing:'normal',textTransform:'none'},
+        {fontWeight:'400',fontStyle:'italic',letterSpacing:'normal',textTransform:'none'},
+        {fontWeight:'300',fontStyle:'normal',letterSpacing:'.1em',textTransform:'uppercase'},
+        {fontWeight:'600',fontStyle:'normal',letterSpacing:'normal',color:'var(--gold)',textTransform:'none'},
+        {fontWeight:'400',fontStyle:'normal',borderBottom:'1px solid rgba(198,161,91,.3)',textTransform:'none'},
+        {fontWeight:'800',fontStyle:'normal',textTransform:'uppercase',letterSpacing:'.12em'},
+        {fontWeight:'400',fontStyle:'normal',background:'rgba(198,161,91,.1)',padding:'3px 8px',borderRadius:'4px'},
+        {fontWeight:'400',fontStyle:'normal',fontFamily:'Courier New,monospace'},
+        {fontWeight:'400',fontStyle:'normal',textShadow:'0 0 10px rgba(198,161,91,.5)'}
+      ];
+      const preset = presetStyles[Math.max(0,Math.min(9,Number(pub.heroSub.preset)||0))];
+      if (subheading && preset) Object.entries(preset).forEach(([property,value]) => subheading.style[property] = value);
+    }
+
+    if (pub.background) {
+      if (pub.background.src) {
+        const color = /^#[0-9a-f]{6}$/i.test(pub.background.overlayColor || '') ? pub.background.overlayColor : '#000000';
+        const alpha = Math.max(0,Math.min(100,Number(pub.background.overlayOpacity ?? 0))) / 100;
+        const hex = color.slice(1);
+        const overlay = 'rgba(' + parseInt(hex.slice(0,2),16) + ',' + parseInt(hex.slice(2,4),16) + ',' + parseInt(hex.slice(4,6),16) + ',' + alpha + ')';
+        const imageUrl = 'url("' + String(pub.background.src).replace(/"/g, '%22') + '")';
+        document.body.style.backgroundImage = pub.background.gradient === false
+          ? (alpha > 0 ? 'linear-gradient(' + overlay + ',' + overlay + '),' + imageUrl : imageUrl)
+          : 'linear-gradient(135deg,' + overlay + ',transparent 78%),' + imageUrl;
+        document.body.style.backgroundPosition = Number(pub.background.posX ?? 50) + '% ' + Number(pub.background.posY ?? 50) + '%';
+        document.body.style.backgroundSize = 'cover';
+        document.body.style.backgroundAttachment = pub.background.fixed === false ? 'scroll' : 'fixed';
+      } else {
+        // An empty background in a published reset must clear the previous inline override.
+        document.body.style.removeProperty('background-image');
+        document.body.style.removeProperty('background-position');
+        document.body.style.removeProperty('background-size');
+        document.body.style.removeProperty('background-attachment');
+      }
+    }
+
+    if (pub.video && pub.video.src && !/^(?:blob:|data:)/i.test(String(pub.video.src))) {
+      document.querySelectorAll('#site-intro video, .site-intro-video, .site-intro video').forEach(video => {
+        if (video.tagName.toLowerCase() === 'video') {
+          const resolvedSrc = new URL(pub.video.src, window.location.href).href;
+          if (video.src !== resolvedSrc) video.src = pub.video.src;
+          video.autoplay = pub.video.autoplay !== false;
+          video.loop = pub.video.loop !== false;
+          video.muted = pub.video.muted !== false;
+          video.controls = pub.video.controls === true;
+          video.playsInline = pub.video.playsInline !== false;
+          video.style.objectFit = ['cover','contain','fill','none','scale-down'].includes(pub.video.objectFit) ? pub.video.objectFit : 'cover';
+          video.style.objectPosition = Number(pub.video.posX ?? 50) + '% ' + Number(pub.video.posY ?? 50) + '%';
+          if (pub.video.poster) video.poster = pub.video.poster;
+        } else {
+          video.dataset.src = pub.video.src;
+        }
+      });
+    }
+
+    // Theme presets are intentionally mapped here rather than requiring the editor's iframe.
+    const themePresets = [
+      { nav: '#0a0b0d', hero: '#1a1200', gold: '#c6a15b' },
+      { nav: '#0d0a1f', hero: '#1a0f2e', gold: '#f0c060' },
+      { nav: '#1a0a0f', hero: '#f5f0ea', gold: '#c0697a' },
+      { nav: '#0a1a0f', hero: '#1a2f1a', gold: '#5ca870' },
+      { nav: '#0a1020', hero: '#0f1e35', gold: '#4a9fd4' },
+      { nav: '#f5f0e7', hero: '#faf7f2', gold: '#c6a15b' },
+      { nav: '#0f0a0a', hero: '#1a0a0f', gold: '#d45050' },
+      { nav: '#111827', hero: '#f8fafc', gold: '#6b7280' },
+      { nav: '#1a0e05', hero: '#2d1a08', gold: '#e8874a' },
+      { nav: '#0a0f2e', hero: '#f0f4ff', gold: '#3b5bdb' }
+    ];
+    const activeTheme = Number(pub.theme && pub.theme.active);
+    if (Number.isInteger(activeTheme) && themePresets[activeTheme]) {
+      const theme = themePresets[activeTheme];
+      document.documentElement.style.setProperty('--gold', theme.gold);
+      document.documentElement.style.setProperty('--ink', theme.nav);
+      cmsData.navbar = cmsData.navbar || {};
+      cmsData.navbar.bgColor = (pub.navbar && pub.navbar.bgColor) || theme.nav;
+      cmsData.navbar.transparent = pub.navbar && typeof pub.navbar.transparent === 'boolean' ?
+        pub.navbar.transparent : false;
+      cmsData.buttons = cmsData.buttons || {};
+      cmsData.buttons.background = (pub.buttons && pub.buttons.gold && pub.buttons.gold.bgColor) || theme.gold;
+      if (hero && !pub.hero?.src) hero.style.backgroundColor = theme.hero;
+    }
+
+    const customColors = pub.theme && pub.theme.customColors;
+    if (customColors && typeof customColors === 'object') {
+      const colorVariables = { gold:'--gold', background:'--paper', ink:'--ink', cream:'--cream' };
+      Object.entries(colorVariables).forEach(([key, variable]) => {
+        const value = customColors[key];
+        if (typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value)) {
+          document.documentElement.style.setProperty(variable,value);
+          if (key === 'background') document.documentElement.style.setProperty('--bg',value);
+        }
+      });
+    }
+
+    // Convert the Studio button controls to the existing public-site runtime format.
+    const goldButton = pub.buttons && pub.buttons.gold;
+    if (goldButton) {
+      cmsData.buttons = cmsData.buttons || {};
+      cmsData.buttons.borderRadius = goldButton.borderRadius || '999px';
+      cmsData.buttons.padding = (goldButton.paddingY || '14px') + ' ' + (goldButton.paddingX || '24px');
+      cmsData.buttons.fontSize = goldButton.fontSize || '0.82rem';
+      if (goldButton.bgColor) cmsData.buttons.background = goldButton.bgColor;
+      if (goldButton.textColor) cmsData.buttons.textColor = goldButton.textColor;
+    }
+
     applyNavbar();
+    if (pub.logo && pub.logo.position) {
+      const brand = document.querySelector('.site-header .brand, .site-header .brand-lockup');
+      if (brand) {
+        const positions = { left: 'flex-start', center: 'center', right: 'flex-end' };
+        brand.style.setProperty('justify-content', positions[pub.logo.position] || 'flex-start', 'important');
+      }
+    }
     applyThemeAndStyles();
+    applyButtons();
+    applyLayoutOverrides();
+    applyMediaReplacements();
+    applyVenueDetails();
+    applySectionOrdering();
+    applyStudioAdvancedStyles(pub);
   }
 
   try {
@@ -51,20 +685,29 @@
   // Fetch published CMS from server if available (e.g. for external / public visitors)
   (async function fetchPublishedFromServer() {
     try {
-      let res = await fetch('/api/load-cms').catch(() => null);
-      if (!res || !res.ok) {
-        res = await fetch('data/cms-settings.json').catch(() => null);
+      let res = null;
+      try {
+        res = await fetch('/api/load-cms', { cache: 'no-store' });
+      } catch {
+        // A static fallback is only considered if the API could not be reached at all.
+        res = null;
       }
+      if (!res) {
+        try { res = await fetch('data/cms-settings.json', { cache: 'no-store' }); } catch {}
+      }
+      // If the API replied with an error (for example, storage is misconfigured),
+      // do not apply an old static snapshot over the site or announce a false publish.
       if (res && res.ok) {
         const json = await res.json();
         const pub = json.data || json;
-        if (pub && (pub.logo || pub.navbar)) {
-          if (!localStorage.getItem('royal_cms_published')) {
-            applyStudioPublished(pub);
-          }
+        if (pub && (pub.logo || pub.navbar || pub.hero || pub.heroHeading)) {
+          applyStudioPublished(pub);
+          try { localStorage.setItem('royal_cms_published', JSON.stringify(pub)); } catch {}
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Royal CMS] Published settings could not be loaded:', e);
+    }
   })();
 
   // Listen for studio preview postMessage
@@ -447,6 +1090,7 @@
     if (cmsData.buttons.padding) cssText += `  padding: ${cmsData.buttons.padding} !important;\n`;
     if (cmsData.buttons.fontSize) cssText += `  font-size: ${cmsData.buttons.fontSize} !important;\n`;
     if (cmsData.buttons.background) cssText += `  background: ${cmsData.buttons.background} !important;\n`;
+    if (cmsData.buttons.textColor) cssText += `  color: ${cmsData.buttons.textColor} !important;\n`;
     cssText += `}\n`;
     styleTag.textContent = cssText;
   }
@@ -475,18 +1119,14 @@
   // --------------------------------------------------------------------------
   // ADMIN AUTHENTICATION & IN-CONTEXT STUDIO BAR
   // --------------------------------------------------------------------------
+  let serverSessionVerified = false;
+
   function isAuthenticated() {
-    return sessionStorage.getItem(AUTH_KEY) === '1' || localStorage.getItem(AUTH_KEY) === '1';
+    return serverSessionVerified;
   }
 
   function setAuthenticated(val) {
-    if (val) {
-      sessionStorage.setItem(AUTH_KEY, '1');
-      localStorage.setItem(AUTH_KEY, '1');
-    } else {
-      sessionStorage.removeItem(AUTH_KEY);
-      localStorage.removeItem(AUTH_KEY);
-    }
+    serverSessionVerified = Boolean(val);
   }
 
   let isEditMode = false;
@@ -516,9 +1156,13 @@
     // Discreet crown button in footer/corner
     injectDiscreetAdminKey();
 
-    if (isAuthenticated()) {
-      renderAdminDock();
-    }
+    fetch('/api/auth/session', { credentials: 'same-origin', cache: 'no-store' })
+      .then(async response => ({ response, data: await response.json().catch(() => ({})) }))
+      .then(({ response, data }) => {
+        setAuthenticated(Boolean(response.ok && data.success));
+        if (isAuthenticated()) renderAdminDock();
+      })
+      .catch(() => setAuthenticated(false));
   }
 
   function injectDiscreetAdminKey() {
@@ -543,46 +1187,65 @@
     if (document.querySelector('.admin-login-modal')) return;
     const modal = document.createElement('div');
     modal.className = 'admin-login-modal';
-    modal.innerHTML = `
-      <div class="admin-login-card">
-        <img class="admin-login-logo" src="assets/images/royal-hall-crest.webp" alt="Royal Crest">
-        <h2 class="admin-login-title">Royal Admin Studio</h2>
-        <p class="admin-login-subtitle">Enter your admin PIN to unlock visual editing and site controls</p>
-        <form id="admin-login-form">
-          <div class="admin-form-group">
-            <input type="password" id="admin-pin-input" class="admin-input" placeholder="Admin PIN (default: royal2026)" required autofocus style="text-align:center;font-size:1.1rem;letter-spacing:0.2em;">
-          </div>
-          <button type="submit" class="admin-header-btn btn-gold" style="width:100%;justify-content:center;padding:12px;font-size:0.9rem;">
-            Unlock Admin Studio
-          </button>
-        </form>
-        <button type="button" id="admin-login-cancel" style="background:transparent;border:0;color:#9ba49e;font-size:0.78rem;margin-top:14px;cursor:pointer;">Cancel</button>
-      </div>
-    `;
+    modal.innerHTML =
+      '<div class="admin-login-card">' +
+        '<img class="admin-login-logo" src="assets/images/royal-hall-crest.webp" alt="Royal Crest">' +
+        '<h2 class="admin-login-title">Royal Admin Studio</h2>' +
+        '<p class="admin-login-subtitle">Sign in to open the protected visual editor</p>' +
+        '<form id="admin-login-form">' +
+          '<div class="admin-form-group"><input type="text" id="admin-login-username" class="admin-input" placeholder="Admin login ID" required autocomplete="username" style="text-align:center;"></div>' +
+          '<div class="admin-form-group"><input type="password" id="admin-pin-input" class="admin-input" placeholder="Admin password" required autocomplete="current-password" style="text-align:center;font-size:1.1rem;letter-spacing:0.08em;"></div>' +
+          '<div id="admin-login-error" role="alert" style="display:none;color:#ffb4a9;font-size:0.82rem;margin:10px 0;"></div>' +
+          '<button type="submit" class="admin-header-btn btn-gold" style="width:100%;justify-content:center;padding:12px;font-size:0.9rem;">Sign In</button>' +
+        '</form>' +
+        '<button type="button" id="admin-login-cancel" style="background:transparent;border:0;color:#9ba49e;font-size:0.78rem;margin-top:14px;cursor:pointer;">Cancel</button>' +
+      '</div>';
     document.body.appendChild(modal);
 
     const form = modal.querySelector('#admin-login-form');
+    const userInput = modal.querySelector('#admin-login-username');
     const input = modal.querySelector('#admin-pin-input');
+    const error = modal.querySelector('#admin-login-error');
     const cancel = modal.querySelector('#admin-login-cancel');
 
     cancel.onclick = () => modal.remove();
-    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+    modal.onclick = event => { if (event.target === modal) modal.remove(); };
 
-    form.onsubmit = (e) => {
-      e.preventDefault();
-      const entered = input.value.trim();
-      const correctPin = cmsData.auth?.adminPin || 'royal2026';
-      if (entered === correctPin) {
+    form.onsubmit = async event => {
+      event.preventDefault();
+      const submit = form.querySelector('button[type="submit"]');
+      if (submit) submit.disabled = true;
+      if (error) error.style.display = 'none';
+
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: userInput.value, password: input.value, remember: false })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.success) {
+          if (error) {
+            error.textContent = result.message || 'Sign-in failed. Check credentials and server configuration.';
+            error.style.display = 'block';
+          }
+          return;
+        }
         setAuthenticated(true);
         modal.remove();
         renderAdminDock();
-        showToast('Welcome back, Admin! Studio unlocked.', 'success');
-      } else {
-        showToast('Incorrect PIN. Try again or check defaults (royal2026)', 'error');
-        input.value = '';
-        input.focus();
+        showToast('Admin session verified. Visual editor unlocked.', 'success');
+      } catch {
+        if (error) {
+          error.textContent = 'The sign-in service is unavailable. No login was accepted.';
+          error.style.display = 'block';
+        }
+      } finally {
+        if (submit) submit.disabled = false;
       }
     };
+    setTimeout(() => userInput.focus(), 50);
   }
 
   function renderAdminDock() {
@@ -613,7 +1276,15 @@
 
     dock.querySelector('#cms-btn-toggle-edit').onclick = toggleEditMode;
     dock.querySelector('#cms-btn-save-all').onclick = saveAllChanges;
-    dock.querySelector('#cms-btn-logout').onclick = () => {
+    dock.querySelector('#cms-btn-logout').onclick = async () => {
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}'
+        });
+      } catch {}
       setAuthenticated(false);
       if (isEditMode) toggleEditMode();
       dock.remove();
@@ -999,81 +1670,31 @@
     };
   }
 
-  function handleImageUpload(file, imgElement, oldSrc, modal) {
-    showToast('Uploading to Cloudinary...', 'info');
-
-    // Convert file to base64 for server-side upload
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const base64Data = e.target.result;
-
-      // Attempt 1: Server-side upload via admin server (uses official SDK with api_secret)
-      fetch('/api/cloudinary/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          file: base64Data,
-          folder: 'royal-banquet',
-          tags: ['cms-upload', 'royal-hall']
-        })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.url) {
-          setReplacement(oldSrc, data.optimizedUrl || data.url, imgElement);
-          modal.remove();
-          showToast(`Uploaded to Cloudinary CDN! (${(data.bytes / 1024).toFixed(0)} KB, ${data.format})`, 'success');
-        } else {
-          // Server couldn't upload (maybe no api_secret), try unsigned browser upload
-          attemptUnsignedBrowserUpload(file, imgElement, oldSrc, modal, base64Data);
-        }
-      })
-      .catch(() => {
-        // Server not running or errored, try unsigned browser upload
-        attemptUnsignedBrowserUpload(file, imgElement, oldSrc, modal, base64Data);
-      });
-    };
-    reader.readAsDataURL(file);
+  async function handleImageUpload(file, imgElement, oldSrc, modal) {
+    if (!file || !file.type.startsWith('image/')) { showToast('Choose a valid image file.', 'error'); return; }
+    showToast('Requesting secure Cloudinary upload signature…', 'info');
+    try {
+      const signResponse = await fetch('/api/cloudinary/signature?resource_type=image', { credentials:'same-origin', cache:'no-store' });
+      const signed = await signResponse.json().catch(() => ({}));
+      if (!signResponse.ok || !signed.success) throw new Error(signed.message || 'Secure Cloudinary upload is not configured.');
+      const form = new FormData();
+      form.append('file',file,file.name);
+      form.append('api_key',signed.apiKey);
+      form.append('timestamp',String(signed.timestamp));
+      form.append('folder',signed.folder);
+      form.append('tags',signed.tags);
+      form.append('signature',signed.signature);
+      const response = await fetch('https://api.cloudinary.com/v1_1/'+encodeURIComponent(signed.cloudName)+'/image/upload',{method:'POST',body:form});
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.secure_url) throw new Error((result.error&&result.error.message)||'Cloudinary rejected the upload.');
+      const url=String(result.secure_url).replace('/upload/','/upload/f_auto,q_auto/');
+      setReplacement(oldSrc,url,imgElement);
+      modal.remove();
+      showToast('Image uploaded to Cloudinary and added to the draft. Use the full Studio to publish shared changes.','success');
+    } catch(error) { showToast('Cloudinary upload failed: '+(error.message||'Unknown error.'),'error'); }
   }
 
-  function attemptUnsignedBrowserUpload(file, imgElement, oldSrc, modal, base64Fallback) {
-    const cloudName = cmsData.integrations?.cloudinary?.cloudName || 'pspn79yf';
-    const uploadPreset = cmsData.integrations?.cloudinary?.uploadPreset;
 
-    if (cloudName && uploadPreset) {
-      showToast('Trying unsigned browser upload to Cloudinary...', 'info');
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', uploadPreset);
-      formData.append('folder', 'royal-banquet');
-
-      fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-        method: 'POST',
-        body: formData
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.secure_url) {
-          setReplacement(oldSrc, data.secure_url, imgElement);
-          modal.remove();
-          showToast('Uploaded via unsigned preset to Cloudinary!', 'success');
-        } else {
-          applyLocalFallback(base64Fallback, imgElement, oldSrc, modal);
-        }
-      })
-      .catch(() => {
-        applyLocalFallback(base64Fallback, imgElement, oldSrc, modal);
-      });
-    } else {
-      applyLocalFallback(base64Fallback, imgElement, oldSrc, modal);
-    }
-  }
-
-  function applyLocalFallback(dataUrl, imgElement, oldSrc, modal) {
-    showToast('Stored image locally (configure Cloudinary for CDN hosting)', 'info');
-    setReplacement(oldSrc, dataUrl, imgElement);
-    modal.remove();
-  }
 
   function setReplacement(oldSrc, newSrc, imgElement) {
     imgElement.src = newSrc;
@@ -1092,20 +1713,10 @@
     } catch (e) {
       console.error('Failed to write to localStorage', e);
     }
-
-    // Attempt to notify local admin server if running
-    fetch('/api/save-cms', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(cmsData)
-    })
-    .then(res => res.json())
-    .then(() => {
-      showToast('All changes saved to live website and disk!', 'success');
-    })
-    .catch(() => {
-      showToast('Saved to browser storage! (To persist to git files, run npm run admin)', 'success');
-    });
+    showToast(
+      'This legacy in-context editor only saves locally. Use the full Admin Studio to save a shared draft and publish changes.',
+      'info'
+    );
   }
 
   function showToast(message, type = 'info') {
