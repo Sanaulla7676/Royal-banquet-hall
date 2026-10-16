@@ -136,6 +136,19 @@ STUDIO.cms.fontAnimations = {
   repeat: 'Once',
   ...(STUDIO.cms.fontAnimations || {})
 };
+STUDIO.cms.video = {
+  src: '',
+  autoplay: true,
+  loop: true,
+  muted: true,
+  controls: false,
+  playsInline: true,
+  objectFit: 'cover',
+  poster: 'assets/images/hero-venue.jpg',
+  posX: 50,
+  posY: 50,
+  ...(STUDIO.cms.video || {})
+};
 STUDIO.cms.hero = {
   animationSpeed: 10,
   animationDelay: 3,
@@ -1180,42 +1193,121 @@ function initVideoPage() {
   const cms = STUDIO.cms.video;
 
   const upload = document.getElementById('video-upload');
+  const videoEl = document.getElementById('video-preview-el');
+  const noVideo = document.getElementById('video-no-video');
+  const sourceUrl = document.getElementById('video-source-url');
+  const posterInput = document.getElementById('video-poster-url');
+  const applyVideoPreview = () => {
+    if (!videoEl) return;
+    videoEl.autoplay = cms.autoplay !== false;
+    videoEl.loop = cms.loop !== false;
+    videoEl.muted = cms.muted !== false;
+    videoEl.controls = cms.controls === true;
+    videoEl.playsInline = cms.playsInline !== false;
+    videoEl.objectFit = cms.objectFit || 'cover';
+    videoEl.style.objectFit = cms.objectFit || 'cover';
+    videoEl.style.objectPosition = (Number(cms.posX ?? 50)) + '% ' + (Number(cms.posY ?? 50)) + '%';
+    if (cms.poster) videoEl.poster = cms.poster;
+  };
+
+  if (sourceUrl) {
+    sourceUrl.value = /^https?:\/\//i.test(cms.src || '') || String(cms.src || '').startsWith('/') || String(cms.src || '').startsWith('assets/')
+      ? cms.src : '';
+    sourceUrl.addEventListener('change', () => {
+      const value = sourceUrl.value.trim();
+      if (value && !/^https?:\/\//i.test(value) && !value.startsWith('/') && !value.startsWith('assets/')) {
+        toast('Use an HTTPS video URL or a path inside assets/.', 'error');
+        return;
+      }
+      if (value.startsWith('blob:') || value.startsWith('data:')) {
+        toast('Temporary/local URLs cannot be published. Use a persistent HTTPS/CDN URL.', 'error');
+        return;
+      }
+      cms.src = value;
+      if (videoEl) {
+        if (value) {
+          videoEl.src = value;
+          videoEl.style.display = 'block';
+          videoEl.load();
+          if (noVideo) noVideo.style.display = 'none';
+        } else {
+          videoEl.removeAttribute('src');
+          videoEl.style.display = 'none';
+          if (noVideo) noVideo.style.display = '';
+        }
+      }
+      markDirty();
+      syncPreviewStyles();
+    });
+  }
+
+  if (posterInput) {
+    posterInput.value = cms.poster || 'assets/images/hero-venue.jpg';
+    posterInput.addEventListener('change', () => {
+      cms.poster = posterInput.value.trim();
+      applyVideoPreview();
+      markDirty();
+    });
+  }
+
   if (upload) {
     upload.addEventListener('change', e => {
       const file = e.target.files[0];
       if (!file) return;
-      const url = URL.createObjectURL(file);
-      cms.src = url;
-      const videoEl = document.getElementById('video-preview-el');
-      const noVideo = document.getElementById('video-no-video');
-      if (videoEl) { videoEl.src = url; videoEl.style.display = 'block'; videoEl.load(); }
+      if (!/^video\//i.test(file.type) || file.size > 50 * 1024 * 1024) {
+        toast('Choose a video under 50MB in a browser-supported format.', 'error');
+        upload.value = '';
+        return;
+      }
+      // Object URLs are intentionally preview-only; saving a blob: URL breaks after refresh.
+      const temporaryUrl = URL.createObjectURL(file);
+      if (videoEl) {
+        videoEl.src = temporaryUrl;
+        videoEl.style.display = 'block';
+        applyVideoPreview();
+        videoEl.load();
+      }
       if (noVideo) noVideo.style.display = 'none';
-      markDirty();
-      toast('Video uploaded', 'success');
+      toast('Local preview ready. Paste a permanent HTTPS/CDN video URL before saving.', 'gold');
     });
   }
 
-  // Playback toggles
-  ['video-autoplay', 'video-loop', 'video-muted'].forEach(id => {
+  // Every playback control writes a field in the saved CMS and updates the local preview.
+  const videoToggleMap = {
+    'video-autoplay': 'autoplay',
+    'video-loop': 'loop',
+    'video-muted': 'muted',
+    'video-controls': 'controls',
+    'video-inline': 'playsInline'
+  };
+  Object.entries(videoToggleMap).forEach(([id, property]) => {
     const t = document.getElementById(id + '-toggle');
-    if (t) {
-      if (cms[id.replace('video-', '')]) t.classList.add('on');
-      t.addEventListener('click', () => {
-        t.classList.toggle('on');
-        cms[id.replace('video-', '')] = t.classList.contains('on');
-        const videoEl = document.getElementById('video-preview-el');
-        if (videoEl) {
-          videoEl.autoplay = cms.autoplay;
-          videoEl.loop = cms.loop;
-          videoEl.muted = cms.muted;
-        }
-        markDirty();
-      });
-    }
+    if (!t) return;
+    t.classList.toggle('on', cms[property] !== false && (property !== 'controls' || cms.controls === true));
+    t.addEventListener('click', () => {
+      pushUndo('Video ' + property);
+      cms[property] = !t.classList.contains('on');
+      t.classList.toggle('on', cms[property]);
+      applyVideoPreview();
+      markDirty();
+      syncPreviewStyles();
+    });
   });
 
-  initSlider('video-slider-posx', 'video-num-posx', 'video-val-posx', v => { cms.posX = v; markDirty(); }, '%');
-  initSlider('video-slider-posy', 'video-num-posy', 'video-val-posy', v => { cms.posY = v; markDirty(); }, '%');
+  document.querySelectorAll('#page-video .s-display-modes .s-mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === (cms.objectFit || 'cover'));
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#page-video .s-display-modes .s-mode-btn').forEach(other => other.classList.toggle('active', other === btn));
+      cms.objectFit = btn.dataset.mode;
+      applyVideoPreview();
+      markDirty();
+      syncPreviewStyles();
+    });
+  });
+
+  initSlider('video-slider-posx', 'video-num-posx', 'video-val-posx', v => { cms.posX = v; applyVideoPreview(); markDirty(); syncPreviewStyles(); }, '%');
+  initSlider('video-slider-posy', 'video-num-posy', 'video-val-posy', v => { cms.posY = v; applyVideoPreview(); markDirty(); syncPreviewStyles(); }, '%');
+  applyVideoPreview();
 }
 
 /* ══════════════════════════════════════════════════
