@@ -1689,6 +1689,70 @@ function syncAllControls() {
   const hsub = document.getElementById('hero-sub-text');
   if (hsub && c.heroSub?.text) hsub.value = c.heroSub.text;
 
+  // Sync every advanced control from the stored CMS after backend load / undo / redo.
+  const setExplicitPair = (sliderId, numberId, labelId, value, unit) => {
+    const slider = document.getElementById(sliderId);
+    const number = document.getElementById(numberId);
+    const label = document.getElementById(labelId);
+    if (Number.isFinite(Number(value))) {
+      if (slider) slider.value = Number(value);
+      if (number) number.value = Number(value);
+      if (label) label.textContent = String(value) + (unit || '');
+    }
+  };
+
+  const animation = c.animations || {};
+  setExplicitPair('anim-slider-speed','anim-num-speed','anim-val-speed',animation.speed ?? 10,'s');
+  setExplicitPair('anim-slider-delay','anim-num-delay','anim-val-delay',animation.delay ?? 0,'s');
+  setExplicitPair('anim-slider-duration','anim-num-duration','anim-val-duration',animation.duration ?? 500,'ms');
+  setExplicitPair('effects-slider-intensity','effects-num-intensity','effects-val-intensity',c.effects?.intensity ?? 100,'%');
+  const fontAnim = c.fontAnimations || {};
+  setExplicitPair('fontanim-slider-speed','fontanim-num-speed','fontanim-val-speed',fontAnim.speed ?? 10,'s');
+  setExplicitPair('fontanim-slider-delay','fontanim-num-delay','fontanim-val-delay',fontAnim.delay ?? 0,'s');
+  setExplicitPair('fontanim-slider-duration','fontanim-num-duration','fontanim-val-duration',fontAnim.duration ?? 500,'ms');
+
+  const activeAnimations = Array.isArray(animation.activeItems) ? animation.activeItems : [];
+  document.querySelectorAll('#anim-lib-grid .s-anim-card').forEach((card, index) => {
+    card.classList.toggle('active', activeAnimations.includes(index));
+  });
+  const activeEffects = Array.isArray(c.effects?.activeItems) ? c.effects.activeItems : [];
+  document.querySelectorAll('#effects-grid .s-effect-card').forEach((card, index) => {
+    card.classList.toggle('active', activeEffects.includes(index));
+  });
+  const activeComponents = Array.isArray(c.components?.activeItems) ? c.components.activeItems : [];
+  document.querySelectorAll('#components-grid .s-comp-card').forEach((card, index) => {
+    card.classList.toggle('active', activeComponents.includes(index));
+  });
+  const fontIndex = Number.isInteger(Number(fontAnim.active)) ? Number(fontAnim.active) : 0;
+  document.querySelectorAll('#font-anim-list .s-fa-item').forEach((item, index) => {
+    item.classList.toggle('active', index === fontIndex);
+  });
+
+  const animationTargets = Array.isArray(animation.targets) ? animation.targets : ['Headings'];
+  document.querySelectorAll('#anim-target-chips .s-chip').forEach(chip => {
+    chip.classList.toggle('active', animationTargets.includes(chip.textContent.trim()));
+  });
+  const direction = animation.direction || 'Normal';
+  document.querySelectorAll('#anim-direction-chips .s-chip').forEach(chip => {
+    chip.classList.toggle('active', chip.textContent.trim() === direction);
+  });
+  const scrollToggle = document.getElementById('anim-scroll-trigger');
+  const repeatToggle = document.getElementById('anim-repeat-toggle');
+  if (scrollToggle) scrollToggle.classList.toggle('on', animation.scrollTrigger !== false);
+  if (repeatToggle) repeatToggle.classList.toggle('on', animation.repeatEveryView === true);
+
+  const fontTargets = Array.isArray(fontAnim.targets) ? fontAnim.targets : ['Hero Heading'];
+  document.querySelectorAll('#fontanim-target-chips .s-chip').forEach(chip => {
+    chip.classList.toggle('active', fontTargets.includes(chip.textContent.trim()));
+  });
+  document.querySelectorAll('#fontanim-repeat-chips .s-chip').forEach(chip => {
+    chip.classList.toggle('active', chip.textContent.trim() === (fontAnim.repeat || 'Once'));
+  });
+
+  document.querySelectorAll('#theme-grid .s-theme-card').forEach((card, index) => {
+    card.classList.toggle('active', index === Number(c.theme?.active || 0));
+  });
+
   syncPreviewStyles();
 }
 
