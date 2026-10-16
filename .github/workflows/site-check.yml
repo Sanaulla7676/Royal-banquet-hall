@@ -22,6 +22,6 @@ jobs:
           node --check server.js
           node --check lib/admin-auth.js
           node --check lib/cms-db.js
-          find api -name '*.js' -print0 | xargs -0 -n1 node --check
+          if [ -d api ]; then find api -name '*.js' -print0 | xargs -0 -r -n1 node --check; fi
       - name: Python syntax
         run: python -m py_compile server.py
