@@ -687,6 +687,7 @@ function buildStudioSelectionAnimationCss(settings) {
     const styleProps = [
       'color','background-color','font-size','font-family','font-weight','text-align',
       'border-radius','opacity','width','height','padding','margin','object-position',
+      'line-height','letter-spacing','text-transform','position','left','top','z-index',
       'cursor','display','--rbh-vb-duration','--rbh-vb-delay','--rbh-vb-easing'
     ];
     const styles = {};
@@ -771,10 +772,36 @@ function buildStudioSelectionAnimationCss(settings) {
     if (prop === 'opacity') return Number.isFinite(Number(v)) && Number(v) >= 0 && Number(v) <= 1;
     if (prop === 'font-weight') return /^(normal|bold|[1-9]00)$/i.test(v);
     if (prop === 'font-family') return /^[a-zA-Z0-9 ,"'-]{1,100}$/.test(v);
+    if (prop === 'line-height') return /^(normal|[0-9]*\.?[0-9]+(?:px|rem|em|%)?)$/i.test(v);
+    if (prop === 'letter-spacing') return /^(normal|[-+]?[0-9]*\.?[0-9]+(?:px|rem|em|%)?)$/i.test(v);
+    if (prop === 'text-transform') return ['none','capitalize','uppercase','lowercase','full-width'].includes(v);
+    if (prop === 'position') return ['static','relative','absolute','fixed','sticky'].includes(v);
+    if (prop === 'left' || prop === 'top') return /^(auto|[-+]?[0-9]*\.?[0-9]+(?:px|rem|em|vh|vw|%)?)$/i.test(v);
+    if (prop === 'z-index') return /^\d{1,4}$/.test(v) && Number(v) <= 9999;
     if (prop === 'text-align') return ['left','right','center','justify','start','end'].includes(v);
     if (prop === 'object-position') return /^[a-zA-Z0-9.%\s-]+$/.test(v) && v.length < 60;
     if (prop === 'cursor') return ['pointer','default','grab','grabbing','move','text','not-allowed'].includes(v);
     return false;
+  }
+
+  const rbhVisualBuilderFontWhitelist = new Set([
+    'Playfair Display','Cormorant Garamond','Libre Baskerville','Lora','Cinzel','Prata',
+    'Bodoni Moda','DM Serif Display','Source Serif 4','Merriweather','Crimson Pro','EB Garamond',
+    'Inter','DM Sans','Manrope','Montserrat','Poppins','Lato','Open Sans','Nunito Sans',
+    'Plus Jakarta Sans','Work Sans','Urbanist','Oswald'
+  ]);
+  function rbhVisualBuilderLoadFontFromStack(stack) {
+    const fontName = String(stack || '').split(',')[0].replace(/['"]/g,'').trim();
+    if (!rbhVisualBuilderFontWhitelist.has(fontName)) return;
+    const id = 'rbh-vb-site-font-' + fontName.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+    if (document.getElementById(id)) return;
+    const link = document.createElement('link');
+    link.id = id;
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=' +
+      encodeURIComponent(fontName).replace(/%20/g,'+') +
+      ':wght@400;500;600;700;800&display=swap';
+    document.head.appendChild(link);
   }
 
   function rbhVisualBuilderSetText(el, text, base) {
@@ -785,7 +812,7 @@ function buildStudioSelectionAnimationCss(settings) {
   }
 
   function rbhVisualBuilderApplyMotion(el, motion) {
-    const presets = ['none','fade-in','fade-up','zoom-in','slide-left','slide-right','float'];
+    const presets = ['none','fade-in','fade-up','slide-down','zoom-in','slide-left','slide-right','blur-in','bounce','pulse','rotate','shimmer','float'];
     if (!motion || !presets.includes(motion.preset)) return;
     el.setAttribute('data-rbh-vb-motion',motion.preset);
     const duration = Math.max(100,Math.min(15000,Number(motion.duration) || 800));
@@ -808,13 +835,25 @@ function buildStudioSelectionAnimationCss(settings) {
         '@keyframes rbhVbSlideLeft{from{opacity:.2;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}',
         '@keyframes rbhVbSlideRight{from{opacity:.2;transform:translateX(-24px)}to{opacity:1;transform:translateX(0)}}',
         '@keyframes rbhVbFloat{from{transform:translateY(0)}to{transform:translateY(-8px)}}',
+        '@keyframes rbhVbSlideDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}',
+        '@keyframes rbhVbBlurIn{from{opacity:0;filter:blur(12px)}to{opacity:1;filter:blur(0)}}',
+        '@keyframes rbhVbBounce{0%{opacity:0;transform:translateY(18px)}60%{opacity:1;transform:translateY(-4px)}100%{transform:translateY(0)}}',
+        '@keyframes rbhVbPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}',
+        '@keyframes rbhVbRotate{from{opacity:.2;transform:rotate(-6deg) scale(.96)}to{opacity:1;transform:rotate(0) scale(1)}}',
+        '@keyframes rbhVbShimmer{0%,100%{filter:brightness(1)}50%{filter:brightness(1.26) drop-shadow(0 0 8px rgba(198,161,91,.45))}}',
         '[data-rbh-vb-motion="none"]{animation:none!important}',
         '[data-rbh-vb-motion="fade-in"]{animation:rbhVbFadeIn var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease) var(--rbh-vb-delay,0ms) both!important}',
         '[data-rbh-vb-motion="fade-up"]{animation:rbhVbFadeUp var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
         '[data-rbh-vb-motion="zoom-in"]{animation:rbhVbZoomIn var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
         '[data-rbh-vb-motion="slide-left"]{animation:rbhVbSlideLeft var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
         '[data-rbh-vb-motion="slide-right"]{animation:rbhVbSlideRight var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
-        '[data-rbh-vb-motion="float"]{animation:rbhVbFloat 3s ease-in-out infinite alternate}'
+        '[data-rbh-vb-motion="slide-down"]{animation:rbhVbSlideDown var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
+        '[data-rbh-vb-motion="blur-in"]{animation:rbhVbBlurIn var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
+        '[data-rbh-vb-motion="bounce"]{animation:rbhVbBounce var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
+        '[data-rbh-vb-motion="pulse"]{animation:rbhVbPulse var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-in-out) var(--rbh-vb-delay,0ms) both!important}',
+        '[data-rbh-vb-motion="rotate"]{animation:rbhVbRotate var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
+        '[data-rbh-vb-motion="shimmer"]{animation:rbhVbShimmer var(--rbh-vb-duration,1200ms) var(--rbh-vb-easing,ease-in-out) var(--rbh-vb-delay,0ms) both!important}',
+        '[data-rbh-vb-motion="float"]{animation:rbhVbFloat var(--rbh-vb-duration,3000ms) var(--rbh-vb-easing,ease-in-out) var(--rbh-vb-delay,0ms) infinite alternate}'
       ].join('\n');
       document.head.appendChild(style);
     }
@@ -871,9 +910,12 @@ function buildStudioSelectionAnimationCss(settings) {
     }
     const styleMap = {
       color:'color',backgroundColor:'background-color',fontSize:'font-size',fontFamily:'font-family',
-      fontWeight:'font-weight',textAlign:'text-align',borderRadius:'border-radius',opacity:'opacity',
-      width:'width',height:'height',padding:'padding',margin:'margin',objectPosition:'object-position'
+      fontWeight:'font-weight',textAlign:'text-align',lineHeight:'line-height',letterSpacing:'letter-spacing',
+      textTransform:'text-transform',borderRadius:'border-radius',opacity:'opacity',
+      width:'width',height:'height',padding:'padding',margin:'margin',objectPosition:'object-position',
+      position:'position',left:'left',top:'top',zIndex:'z-index'
     };
+    if (entry.styles && entry.styles.fontFamily) rbhVisualBuilderLoadFontFromStack(entry.styles.fontFamily);
     Object.entries(entry.styles || {}).forEach(([key,value]) => {
       const prop = styleMap[key];
       if (prop && rbhVisualBuilderValidStyle(prop,value)) el.style.setProperty(prop,String(value),'important');
