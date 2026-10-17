@@ -382,3 +382,55 @@ test('public page renderer applies published page-specific hero, button and free
   await expect(page.locator('.site-header .brand[data-rbh-logo-placement="custom"]')).toHaveCount(0);
   await expect(page.locator('.site-header .brand')).toBeAttached();
 });
+
+
+test('visual builder edits a real preview, saves page-specific properties and preserves unrelated motion settings', async ({ page }) => {
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.message));
+  const backend = await mockBackend(page);
+  await signIn(page);
+  const animationsBefore = JSON.parse(JSON.stringify(backend.snapshot().draft.animations));
+
+  await page.goto(BASE_URL + '/visual-editor.html');
+  await expect(page.locator('#vb-app')).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('#vb-page-frame')).toBeAttached();
+  await page.locator('#vb-page-select').selectOption('events.html');
+  const preview = page.frameLocator('#vb-page-frame');
+  await expect(preview.locator('.page-hero h1').first()).toBeVisible({ timeout: 15000 });
+  await preview.locator('.page-hero h1').first().click();
+  await expect(page.locator('#vb-inspector-title')).not.toHaveText('Select an element');
+  await page.locator('#vb-text').fill('Visual Builder QA Heading');
+  await page.locator('#vb-color').evaluate((node) => {
+    node.value = '#abcddf';
+    node.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await page.locator('#vb-motion').selectOption('fade-up');
+  await page.locator('#vb-motion-duration').fill('650');
+  await page.locator('#vb-save-draft').click();
+
+  await expect(preview.locator('.page-hero h1').first()).toHaveText('Visual Builder QA Heading');
+  await expect(preview.locator('.page-hero h1').first()).toHaveAttribute('data-rbh-vb-motion','fade-up');
+  await expect.poll(() => backend.calls.save).toBeGreaterThan(0);
+  const draft = backend.snapshot().draft;
+  const entries = Object.values(draft.pageOverrides['events.html'].elements || {});
+  const edited = entries.find(entry => entry.text === 'Visual Builder QA Heading');
+  expect(edited).toBeTruthy();
+  expect(edited.styles.color).toBe('#abcddf');
+  expect(edited.motion).toMatchObject({ preset:'fade-up', duration:650 });
+  expect(draft.animations).toEqual(animationsBefore);
+
+  await page.locator('#vb-publish').click();
+  await expect(page.locator('#vb-confirm')).toBeVisible();
+  await page.locator('#vb-confirm-publish').click();
+  await expect.poll(() => backend.calls.publish).toBe(1);
+  await page.goto(BASE_URL + '/events.html');
+  await expect(page.locator('.page-hero h1').first()).toHaveText('Visual Builder QA Heading');
+  await expect(page.locator('.page-hero h1').first()).toHaveAttribute('data-rbh-vb-motion','fade-up');
+  const rendered = await page.locator('.page-hero h1').first().evaluate(node => ({
+    color: getComputedStyle(node).color,
+    transition: getComputedStyle(document.querySelector('.page-hero .btn')).transition
+  }));
+  expect(rendered.color).toBe('rgb(171, 205, 223)');
+  expect(rendered.transition).toContain('transform');
+  expect(pageErrors).toEqual([]);
+});
