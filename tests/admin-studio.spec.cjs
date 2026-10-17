@@ -374,7 +374,7 @@ test('public page renderer applies published page-specific hero, button and free
   await page.evaluate(cms => window.postMessage({type:'STUDIO_PREVIEW_SYNC',cms}, '*'), resetCms);
   await expect(page.locator('.page-hero h1')).toContainText('Bring your people');
   await expect(page.locator('.page-hero h1')).toContainText('together beautifully.');
-  await expect(page.locator('.page-hero-media img')).toHaveAttribute('src','assets/images/stage-celebration.jpg');
+  await expect.poll(()=>page.locator('.page-hero-media img').getAttribute('src')).toMatch(/^https:\/\/res\.cloudinary\.com\/pspn79yf\/image\/upload\//);
   await expect(page.locator('.page-hero .btn-row a.btn-gold')).not.toHaveText('Published Events CTA');
   await expect.poll(()=>page.locator('.page-hero').evaluate(node=>node.style.minHeight)).toBe('');
   await expect.poll(()=>page.locator('.page-hero-media img').evaluate(node=>node.style.objectPosition)).toBe('');
