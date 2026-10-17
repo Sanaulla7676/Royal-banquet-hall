@@ -662,6 +662,309 @@ function buildStudioSelectionAnimationCss(settings) {
     }
   }
 
+
+  // Visual Builder component overrides. Existing motion hooks are untouched unless
+  // a component explicitly receives a motion override in the published CMS.
+  const rbhVisualBuilderOriginals = new WeakMap();
+  const rbhVisualBuilderTouched = new Set();
+  const rbhVisualBuilderLastApplied = new WeakMap();
+  let rbhVisualBuilderDraftOverride = null;
+  const rbhVisualBuilderSelector = new WeakMap();
+  let rbhVisualBuilderLastPublished = null;
+  let rbhVisualBuilderLastMobile = window.matchMedia('(max-width: 767px)').matches;
+
+  function rbhVisualBuilderCapture(el) {
+    let base = rbhVisualBuilderOriginals.get(el);
+    if (base) return base;
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) {
+      if (node.parentElement && !node.parentElement.closest('script,style,svg')) {
+        textNodes.push({ node, value: node.nodeValue });
+      }
+    }
+    const styleProps = [
+      'color','background-color','font-size','font-family','font-weight','text-align',
+      'border-radius','opacity','width','height','padding','margin','object-position',
+      'cursor','display','--rbh-vb-duration','--rbh-vb-delay','--rbh-vb-easing'
+    ];
+    const styles = {};
+    styleProps.forEach(prop => styles[prop] = {
+      value: el.style.getPropertyValue(prop),
+      priority: el.style.getPropertyPriority(prop)
+    });
+    base = {
+      textNodes,
+      href: el.getAttribute('href'), src: el.getAttribute('src'),
+      alt: el.getAttribute('alt'), target: el.getAttribute('target'),
+      rel: el.getAttribute('rel'), hidden: el.hasAttribute('hidden'), styles,
+      motion: el.getAttribute('data-rbh-vb-motion'),
+      duration: el.getAttribute('data-rbh-vb-duration'),
+      delay: el.getAttribute('data-rbh-vb-delay'),
+      easing: el.getAttribute('data-rbh-vb-easing')
+    };
+    rbhVisualBuilderOriginals.set(el, base);
+    return base;
+  }
+
+  function rbhVisualBuilderLiveTextNodes(el) {
+    const nodes = [];
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) {
+      if (node.parentElement && !node.parentElement.closest('script,style,svg')) nodes.push(node);
+    }
+    return nodes;
+  }
+
+  function rbhVisualBuilderRestore(el) {
+    const base = rbhVisualBuilderOriginals.get(el);
+    if (!base) return;
+    const originalsStillConnected = base.textNodes.every(item => item.node && item.node.isConnected && el.contains(item.node));
+    if (originalsStillConnected) {
+      base.textNodes.forEach(item => { item.node.nodeValue = item.value; });
+    } else {
+      // Some existing CMS routines rebuild a heading's innerHTML. Restore its text
+      // in the current nodes rather than leaving an obsolete override in place.
+      const currentNodes = rbhVisualBuilderLiveTextNodes(el);
+      currentNodes.forEach((node,index) => {
+        node.nodeValue = base.textNodes[index] ? base.textNodes[index].value : '';
+      });
+    }
+    [['href',base.href],['src',base.src],['alt',base.alt],['target',base.target],['rel',base.rel]].forEach(item => {
+      if (item[1] === null) el.removeAttribute(item[0]); else el.setAttribute(item[0], item[1]);
+    });
+    if (base.hidden) el.setAttribute('hidden',''); else el.removeAttribute('hidden');
+    Object.entries(base.styles).forEach(([prop,item]) => {
+      if (item.value) el.style.setProperty(prop,item.value,item.priority);
+      else el.style.removeProperty(prop);
+    });
+    [['data-rbh-vb-motion',base.motion],['data-rbh-vb-duration',base.duration],
+     ['data-rbh-vb-delay',base.delay],['data-rbh-vb-easing',base.easing]].forEach(item => {
+      if (item[1] === null) el.removeAttribute(item[0]); else el.setAttribute(item[0],item[1]);
+    });
+  }
+
+  function rbhVisualBuilderSafeSelector(selector) {
+    return typeof selector === 'string' && selector.length < 1200 &&
+      !/[{};]/.test(selector) && /^[a-zA-Z0-9_#.:>\[\]="'\\*+~()\-\s]+$/.test(selector);
+  }
+
+  function rbhVisualBuilderSafeUrl(value, media) {
+    if (typeof value !== 'string' || value.length > 2000) return false;
+    const v = value.trim();
+    if (media) return /^https?:\/\//i.test(v) || v.startsWith('/') || v.startsWith('assets/') || v.startsWith('./') || v.startsWith('../');
+    return /^(https?:\/\/|\/|\.\/|\.\.\/|#|mailto:|tel:)/i.test(v) ||
+      (/^[a-z0-9][a-z0-9._/-]*(?:[?#].*)?$/i.test(v) && !/^(javascript|data|vbscript):/i.test(v));
+  }
+
+  function rbhVisualBuilderValidStyle(prop, value) {
+    if (value === '' || value === null || value === undefined) return false;
+    const v = String(value).trim();
+    if (v.length > 180 || /[;{}<>]/.test(v) || /url\s*\(|expression\s*\(|javascript:/i.test(v)) return false;
+    if (['font-size','width','height','padding','margin','border-radius'].includes(prop)) {
+      return /^(auto|inherit|initial|unset|normal|none|fit-content|max-content|min-content|0|[-+]?(?:\d+\.?\d*|\.\d+)(?:px|rem|em|vh|vw|%|ch|ex|svh|dvh)?)(?:\s+[-+]?(?:\d+\.?\d*|\.\d+)(?:px|rem|em|vh|vw|%|ch|ex|svh|dvh)?){0,3}$/i.test(v) ||
+        /^calc\([0-9a-zA-Z.%+*/()\s-]+\)$/i.test(v);
+    }
+    if (['color','background-color'].includes(prop)) return /^(#[0-9a-f]{3,8}|rgba?\([\d.,%\s]+\)|hsla?\([\d.,%\sdeg-]+\)|[a-z]{1,25}|var\(--[a-z0-9-]+\))$/i.test(v);
+    if (prop === 'opacity') return Number.isFinite(Number(v)) && Number(v) >= 0 && Number(v) <= 1;
+    if (prop === 'font-weight') return /^(normal|bold|[1-9]00)$/i.test(v);
+    if (prop === 'font-family') return /^[a-zA-Z0-9 ,"'-]{1,100}$/.test(v);
+    if (prop === 'text-align') return ['left','right','center','justify','start','end'].includes(v);
+    if (prop === 'object-position') return /^[a-zA-Z0-9.%\s-]+$/.test(v) && v.length < 60;
+    if (prop === 'cursor') return ['pointer','default','grab','grabbing','move','text','not-allowed'].includes(v);
+    return false;
+  }
+
+  function rbhVisualBuilderSetText(el, text, base) {
+    const nodes = rbhVisualBuilderLiveTextNodes(el);
+    if (!nodes.length) return;
+    nodes[0].nodeValue = String(text).slice(0,12000);
+    nodes.slice(1).forEach(node => { node.nodeValue = ''; });
+  }
+
+  function rbhVisualBuilderApplyMotion(el, motion) {
+    const presets = ['none','fade-in','fade-up','zoom-in','slide-left','slide-right','float'];
+    if (!motion || !presets.includes(motion.preset)) return;
+    el.setAttribute('data-rbh-vb-motion',motion.preset);
+    const duration = Math.max(100,Math.min(15000,Number(motion.duration) || 800));
+    const delay = Math.max(0,Math.min(10000,Number(motion.delay) || 0));
+    const easing = ['ease','ease-in','ease-out','ease-in-out','linear','cubic-bezier(.2,.7,.2,1)'].includes(motion.easing) ? motion.easing : 'ease-out';
+    el.setAttribute('data-rbh-vb-duration',String(duration));
+    el.setAttribute('data-rbh-vb-delay',String(delay));
+    el.setAttribute('data-rbh-vb-easing',easing);
+    el.style.setProperty('--rbh-vb-duration',duration+'ms');
+    el.style.setProperty('--rbh-vb-delay',delay+'ms');
+    el.style.setProperty('--rbh-vb-easing',easing);
+    let style = document.getElementById('rbh-visual-builder-motion-css');
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'rbh-visual-builder-motion-css';
+      style.textContent = [
+        '@keyframes rbhVbFadeIn{from{opacity:0}to{opacity:1}}',
+        '@keyframes rbhVbFadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}',
+        '@keyframes rbhVbZoomIn{from{opacity:.5;transform:scale(.94)}to{opacity:1;transform:scale(1)}}',
+        '@keyframes rbhVbSlideLeft{from{opacity:.2;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}',
+        '@keyframes rbhVbSlideRight{from{opacity:.2;transform:translateX(-24px)}to{opacity:1;transform:translateX(0)}}',
+        '@keyframes rbhVbFloat{from{transform:translateY(0)}to{transform:translateY(-8px)}}',
+        '[data-rbh-vb-motion="none"]{animation:none!important}',
+        '[data-rbh-vb-motion="fade-in"]{animation:rbhVbFadeIn var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease) var(--rbh-vb-delay,0ms) both!important}',
+        '[data-rbh-vb-motion="fade-up"]{animation:rbhVbFadeUp var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
+        '[data-rbh-vb-motion="zoom-in"]{animation:rbhVbZoomIn var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
+        '[data-rbh-vb-motion="slide-left"]{animation:rbhVbSlideLeft var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
+        '[data-rbh-vb-motion="slide-right"]{animation:rbhVbSlideRight var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
+        '[data-rbh-vb-motion="float"]{animation:rbhVbFloat 3s ease-in-out infinite alternate}'
+      ].join('\n');
+      document.head.appendChild(style);
+    }
+  }
+
+  function rbhVisualBuilderRestoreResponsive(el, entry, base, mobile) {
+    const styleMap = { fontSize:'font-size', width:'width' };
+    ['fontSize','width'].forEach(key => {
+      const prop = styleMap[key];
+      const configured = entry.styles && entry.styles[key];
+      if (configured && rbhVisualBuilderValidStyle(prop,configured)) el.style.setProperty(prop,configured,'important');
+      else {
+        const original = base.styles[prop];
+        if (original && original.value) el.style.setProperty(prop,original.value,original.priority);
+        else el.style.removeProperty(prop);
+      }
+    });
+    if (entry.hidden === true) el.style.setProperty('display','none','important');
+    else {
+      const original = base.styles.display;
+      if (original && original.value) el.style.setProperty('display',original.value,original.priority);
+      else el.style.removeProperty('display');
+    }
+    if (!mobile) return;
+    const responsive = entry.responsive && entry.responsive.mobile ? entry.responsive.mobile : null;
+    if (!responsive) return;
+    if (responsive.fontSize && rbhVisualBuilderValidStyle('font-size',responsive.fontSize)) el.style.setProperty('font-size',responsive.fontSize,'important');
+    if (responsive.width && rbhVisualBuilderValidStyle('width',responsive.width)) el.style.setProperty('width',responsive.width,'important');
+    if (responsive.hidden === true) el.style.setProperty('display','none','important');
+  }
+
+  function rbhVisualBuilderApplyEntry(el, selector, entry, allowMotionRestart = true) {
+    const base = rbhVisualBuilderCapture(el);
+    rbhVisualBuilderTouched.add(el);
+    rbhVisualBuilderSelector.set(el, selector);
+    if (entry.text !== undefined) rbhVisualBuilderSetText(el,entry.text,base);
+    if (entry.href !== undefined && el.tagName.toLowerCase() === 'a' && rbhVisualBuilderSafeUrl(entry.href,false)) el.setAttribute('href',entry.href);
+    if (entry.src !== undefined && ['img','video','source'].includes(el.tagName.toLowerCase()) && rbhVisualBuilderSafeUrl(entry.src,true)) el.setAttribute('src',entry.src);
+    if (entry.alt !== undefined && el.tagName.toLowerCase() === 'img') el.setAttribute('alt',String(entry.alt).slice(0,500));
+    if (entry.target !== undefined && el.tagName.toLowerCase() === 'a') {
+      el.setAttribute('target',entry.target === '_blank' ? '_blank' : '_self');
+      if (entry.target === '_blank') el.setAttribute('rel','noopener noreferrer');
+      else if (base.rel === null) el.removeAttribute('rel');
+      else el.setAttribute('rel',base.rel);
+    }
+    if (entry.hidden === true) {
+      el.setAttribute('hidden','');
+      el.style.setProperty('display','none','important');
+    } else if (entry.hidden === false) {
+      el.removeAttribute('hidden');
+      const display = base.styles.display;
+      if (display && display.value) el.style.setProperty('display',display.value,display.priority);
+      else el.style.removeProperty('display');
+    }
+    const styleMap = {
+      color:'color',backgroundColor:'background-color',fontSize:'font-size',fontFamily:'font-family',
+      fontWeight:'font-weight',textAlign:'text-align',borderRadius:'border-radius',opacity:'opacity',
+      width:'width',height:'height',padding:'padding',margin:'margin',objectPosition:'object-position'
+    };
+    Object.entries(entry.styles || {}).forEach(([key,value]) => {
+      const prop = styleMap[key];
+      if (prop && rbhVisualBuilderValidStyle(prop,value)) el.style.setProperty(prop,String(value),'important');
+    });
+    if (entry.cursor && rbhVisualBuilderValidStyle('cursor',entry.cursor)) el.style.setProperty('cursor',entry.cursor,'important');
+    rbhVisualBuilderRestoreResponsive(el,entry,base,window.matchMedia('(max-width: 767px)').matches);
+    if (entry.motion && typeof entry.motion === 'object') {
+      const targetPreset = entry.motion.preset;
+      const targetDuration = String(Math.max(100,Math.min(15000,Number(entry.motion.duration) || 800)));
+      const targetDelay = String(Math.max(0,Math.min(10000,Number(entry.motion.delay) || 0)));
+      const targetEasing = ['ease','ease-in','ease-out','ease-in-out','linear','cubic-bezier(.2,.7,.2,1)'].includes(entry.motion.easing) ? entry.motion.easing : 'ease-out';
+      const motionDiffers = el.getAttribute('data-rbh-vb-motion') !== targetPreset ||
+        el.getAttribute('data-rbh-vb-duration') !== targetDuration ||
+        el.getAttribute('data-rbh-vb-delay') !== targetDelay ||
+        el.getAttribute('data-rbh-vb-easing') !== targetEasing;
+      if (allowMotionRestart || motionDiffers) rbhVisualBuilderApplyMotion(el,entry.motion);
+    }
+    rbhVisualBuilderLastApplied.set(el,JSON.stringify(entry));
+  }
+
+  function applyVisualElementOverrides(pub) {
+    if (!pub || typeof pub !== 'object') return;
+    rbhVisualBuilderLastPublished = pub;
+    const pageKey = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
+    const page = pub.pageOverrides && pub.pageOverrides[pageKey] && typeof pub.pageOverrides[pageKey] === 'object' ? pub.pageOverrides[pageKey] : {};
+    let entries = page.elements && typeof page.elements === 'object' ? page.elements : {};
+    if (rbhVisualBuilderDraftOverride && rbhVisualBuilderDraftOverride.pageKey === pageKey) {
+      entries = rbhVisualBuilderDraftOverride.elements;
+    }
+    const activeSelectors = new Set(Object.keys(entries).filter(rbhVisualBuilderSafeSelector));
+
+    // Remove old overrides only when their configuration was removed from the
+    // new CMS snapshot. Unchanged components are not touched again, so entrance
+    // animations, counters, and ongoing interactions are not restarted by a
+    // second CMS load from localStorage or the server.
+    Array.from(rbhVisualBuilderTouched).forEach(el => {
+      const selector = rbhVisualBuilderSelector.get(el);
+      if (!selector || !activeSelectors.has(selector)) {
+        rbhVisualBuilderRestore(el);
+        rbhVisualBuilderTouched.delete(el);
+        rbhVisualBuilderLastApplied.delete(el);
+        rbhVisualBuilderSelector.delete(el);
+      }
+    });
+
+    activeSelectors.forEach(selector => {
+      const entry = entries[selector];
+      if (!entry || typeof entry !== 'object') return;
+      let el;
+      try { el = document.querySelector(selector); } catch { return; }
+      if (!el) return;
+      const signature = JSON.stringify(entry);
+      const prior = rbhVisualBuilderLastApplied.get(el);
+      if (prior !== signature) {
+        if (prior !== undefined) rbhVisualBuilderRestore(el);
+        rbhVisualBuilderApplyEntry(el,selector,entry);
+      } else {
+        // Re-assert text, media, visibility and styles if another CMS pass has
+        // rebuilt an element, but do not restart an unchanged entrance timeline.
+        rbhVisualBuilderApplyEntry(el,selector,entry,false);
+      }
+    });
+    rbhVisualBuilderLastMobile = window.matchMedia('(max-width: 767px)').matches;
+  }
+
+  function rbhVisualBuilderRefreshResponsive() {
+    const mobile = window.matchMedia('(max-width: 767px)').matches;
+    const pageKey = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
+    const publishedPage = rbhVisualBuilderLastPublished &&
+      rbhVisualBuilderLastPublished.pageOverrides &&
+      rbhVisualBuilderLastPublished.pageOverrides[pageKey];
+    let entries = publishedPage && publishedPage.elements ? publishedPage.elements : {};
+    if (rbhVisualBuilderDraftOverride && rbhVisualBuilderDraftOverride.pageKey === pageKey) {
+      entries = rbhVisualBuilderDraftOverride.elements;
+    }
+    rbhVisualBuilderTouched.forEach(el => {
+      const selector = rbhVisualBuilderSelector.get(el);
+      const entry = selector && entries[selector];
+      if (entry) rbhVisualBuilderRestoreResponsive(el,entry,rbhVisualBuilderCapture(el),mobile);
+    });
+    rbhVisualBuilderLastMobile = mobile;
+  }
+
+  if (!window.__rbhVisualBuilderResponsiveListener) {
+    window.__rbhVisualBuilderResponsiveListener = true;
+    window.addEventListener('resize',() => {
+      const mobile = window.matchMedia('(max-width: 767px)').matches;
+      if (mobile !== rbhVisualBuilderLastMobile && rbhVisualBuilderLastPublished) rbhVisualBuilderRefreshResponsive();
+    },{passive:true});
+  }
+
   function applyStudioPublished(pub) {
     if (!pub || typeof pub !== 'object') return;
     cmsData.studioPublished = pub;
@@ -927,6 +1230,7 @@ function buildStudioSelectionAnimationCss(settings) {
     applySectionOrdering();
     applyStudioAdvancedStyles(pub);
     applyPageSpecificOverrides(pub);
+    applyVisualElementOverrides(pub);
   }
 
   try {
@@ -967,8 +1271,35 @@ function buildStudioSelectionAnimationCss(settings) {
 
   // Listen for studio preview postMessage
   window.addEventListener('message', ev => {
-    if (ev.data && ev.data.type === 'STUDIO_PREVIEW_SYNC') {
+    if (ev.origin !== window.location.origin || !ev.data) return;
+    if (ev.data.type === 'STUDIO_PREVIEW_SYNC') {
       applyStudioPublished(ev.data.cms);
+      return;
+    }
+    if (ev.data.type === 'RBH_VB_PREVIEW_ELEMENTS') {
+      const actualPageKey = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
+      const requestedPage = typeof ev.data.pageKey === 'string' ? ev.data.pageKey.toLowerCase() : '';
+      if (requestedPage !== actualPageKey) return;
+      const elements = ev.data.elements && typeof ev.data.elements === 'object' ? ev.data.elements : {};
+      rbhVisualBuilderDraftOverride = { pageKey: actualPageKey, elements };
+      applyVisualElementOverrides({ pageOverrides: { [actualPageKey]: { elements } } });
+      return;
+    }
+    if (ev.data.type === 'RBH_VB_REPLAY_MOTION') {
+      const selector = ev.data.selector;
+      if (!rbhVisualBuilderSafeSelector(selector)) return;
+      const actualPageKey = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
+      const page = rbhVisualBuilderDraftOverride && rbhVisualBuilderDraftOverride.pageKey === actualPageKey
+        ? rbhVisualBuilderDraftOverride
+        : null;
+      const entry = page && page.elements ? page.elements[selector] : null;
+      if (!entry || !entry.motion || !entry.motion.preset || entry.motion.preset === 'preserve') return;
+      let el;
+      try { el = document.querySelector(selector); } catch { return; }
+      if (!el) return;
+      el.removeAttribute('data-rbh-vb-motion');
+      void el.offsetWidth;
+      rbhVisualBuilderApplyMotion(el, entry.motion);
     }
   });
 

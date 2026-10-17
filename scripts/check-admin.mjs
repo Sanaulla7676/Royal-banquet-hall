@@ -6,13 +6,18 @@ const root = process.cwd();
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 
 for (const file of [
-  'admin-studio.html', 'assets/js/admin-studio.js', 'assets/js/royal-cms.js',
+  'admin-studio.html', 'visual-editor.html', 'assets/js/admin-studio.js', 'assets/js/visual-editor.js', 'assets/js/royal-cms.js', 'assets/css/visual-editor.css',
   'server.js', 'lib/admin-auth.js', 'vercel.json'
 ]) {
   if (!fs.existsSync(path.join(root, file))) throw new Error('Missing required admin file: ' + file);
 }
 
 const html = read('admin-studio.html');
+const visualEditorHtml = read('visual-editor.html');
+if (!html.includes('href="visual-editor.html"')) throw new Error('Admin Studio does not link to the Visual Builder.');
+for (const control of ['id="vb-page-select"','id="vb-page-frame"','id="vb-layer-tree"','id="vb-save-draft"','id="vb-publish"','data-pane="motion"']) {
+  if (!visualEditorHtml.includes(control)) throw new Error('Missing Visual Builder feature: ' + control);
+}
 const pages = ['logo','navbar','hero-image','hero-heading','hero-sub','background','video','image-library','themes','animations','effects','components','font-animations'];
 for (const page of pages) {
   if (!html.includes('id="page-' + page + '"')) throw new Error('Missing numbered Studio section: ' + page);
@@ -47,6 +52,9 @@ for (const marker of [
   "buildStudioSelectionAnimationCss(c)"
 ]) {
   if (!studioJs.includes(marker)) throw new Error('Studio interaction wiring is missing: ' + marker);
+}
+for (const marker of ['function applyVisualElementOverrides(pub)', 'rbhVisualBuilderApplyMotion', 'rbhVisualBuilderRestoreResponsive']) {
+  if (!runtimeJs.includes(marker)) throw new Error('Visual Builder public rendering behavior is missing: ' + marker);
 }
 if (!runtimeJs.includes('buildStudioSelectionAnimationCss(pub)')) throw new Error('Published hero/heading/background animation styles are not applied.');
 if (!runtimeJs.includes('const sizing = pub.imageSizing')) throw new Error('Published image display-size settings are not applied.');

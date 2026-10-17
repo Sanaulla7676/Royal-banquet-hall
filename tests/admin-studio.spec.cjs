@@ -382,3 +382,81 @@ test('public page renderer applies published page-specific hero, button and free
   await expect(page.locator('.site-header .brand[data-rbh-logo-placement="custom"]')).toHaveCount(0);
   await expect(page.locator('.site-header .brand')).toBeAttached();
 });
+
+
+test('visual builder edits a real preview, saves page-specific properties and preserves unrelated motion settings', async ({ page }) => {
+  test.setTimeout(90000);
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.message));
+  const backend = await mockBackend(page);
+  await signIn(page);
+  console.log('[visual-builder] authenticated');
+  const animationsBefore = JSON.parse(JSON.stringify(backend.snapshot().draft.animations));
+
+  await page.goto(BASE_URL + '/visual-editor.html');
+  console.log('[visual-builder] editor document loaded');
+  await expect(page.locator('#vb-app')).toBeVisible({ timeout: 15000 });
+  console.log('[visual-builder] app visible');
+  await expect(page.locator('#vb-page-frame')).toBeAttached();
+  await page.locator('#vb-page-select').selectOption('events.html');
+  console.log('[visual-builder] page selected');
+  const preview = page.frameLocator('#vb-page-frame');
+  await expect(preview.locator('.page-hero .lede').first()).toBeVisible({ timeout: 15000 });
+  console.log('[visual-builder] preview heading visible');
+  await preview.locator('.page-hero .lede').first().click();
+  console.log('[visual-builder] heading selected');
+  await expect(page.locator('#vb-inspector-title')).not.toHaveText('Select an element');
+  await page.locator('#vb-text').fill('Visual Builder QA summary copy');
+  console.log('[visual-builder] content changed');
+  await page.locator('[data-tab="design"]').click();
+  await page.locator('#vb-color').evaluate((node) => {
+    node.value = '#abcddf';
+    node.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  console.log('[visual-builder] design changed');
+  await page.locator('[data-tab="motion"]').click();
+  await page.locator('#vb-motion').selectOption('fade-up');
+  await page.locator('#vb-motion-duration').fill('650');
+  console.log('[visual-builder] motion configured');
+  await page.locator('#vb-save-draft').click();
+  console.log('[visual-builder] draft save clicked');
+
+  await expect(preview.locator('.page-hero .lede').first()).toHaveText('Visual Builder QA summary copy');
+  console.log('[visual-builder] preview reflects saved heading');
+  await expect(preview.locator('.page-hero .lede').first()).toHaveAttribute('data-rbh-vb-motion','fade-up');
+  await expect.poll(() => backend.calls.save).toBeGreaterThan(0);
+  const draft = backend.snapshot().draft;
+  const entries = Object.values(draft.pageOverrides['events.html'].elements || {});
+  const edited = entries.find(entry => entry.text === 'Visual Builder QA summary copy');
+  expect(edited).toBeTruthy();
+  expect(edited.styles.color).toBe('#abcddf');
+  expect(edited.motion).toMatchObject({ preset:'fade-up', duration:650 });
+  expect(draft.animations).toEqual(animationsBefore);
+
+  await page.locator('#vb-publish').click();
+  await expect(page.locator('#vb-confirm')).toBeVisible();
+  await page.locator('#vb-confirm-publish').click();
+  console.log('[visual-builder] publish confirmed');
+  await expect.poll(() => backend.calls.publish).toBe(1);
+  const publishedPageElements = backend.snapshot().published.pageOverrides['events.html'].elements || {};
+  console.log('[visual-builder] published selectors', JSON.stringify(Object.keys(publishedPageElements)));
+  await page.goto(BASE_URL + '/events.html');
+  console.log('[visual-builder] public page loaded');
+  console.log('[visual-builder] public selector matches', JSON.stringify(await page.evaluate((selectors) => selectors.map(selector => {
+    let node = null; try { node = document.querySelector(selector); } catch {}
+    return { selector, matched: Boolean(node), text: node?.textContent || null, motion: node?.getAttribute('data-rbh-vb-motion') || null };
+  }), Object.keys(publishedPageElements))));
+  console.log('[visual-builder] public loaded CMS selectors', JSON.stringify(await page.evaluate(() => {
+    try { return Object.keys(JSON.parse(localStorage.getItem('royal_cms_published') || '{}').pageOverrides?.['events.html']?.elements || {}); } catch { return []; }
+  })));
+  await expect(page.locator('.page-hero .lede').first()).toHaveText('Visual Builder QA summary copy');
+  await expect(page.locator('.page-hero .lede').first()).toHaveAttribute('data-rbh-vb-motion','fade-up');
+  const rendered = await page.locator('.page-hero .lede').first().evaluate(node => ({
+    color: getComputedStyle(node).color,
+    transition: getComputedStyle(document.querySelector('.page-hero .btn')).transition
+  }));
+  expect(rendered.color).toBe('rgb(171, 205, 223)');
+  expect(rendered.transition).not.toBe('none');
+  expect(rendered.transition).not.toBe('0s');
+  expect(pageErrors).toEqual([]);
+});

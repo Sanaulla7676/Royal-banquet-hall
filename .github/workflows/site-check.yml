@@ -18,6 +18,7 @@ jobs:
       - name: JavaScript syntax
         run: |
           node --check assets/js/admin-studio.js
+          node --check assets/js/visual-editor.js
           node --check assets/js/royal-cms.js
           node --check server.js
           node --check lib/admin-auth.js
