@@ -259,7 +259,7 @@ test('media library crop and display dimensions are real CMS actions', async ({ 
   await expect.poll(()=>page.evaluate(()=>window.STUDIO.cms.mediaLibrary.length)).toBe(cropCountBefore+1,{timeout:15000});
   expect(backend.calls.upload).toBe(1);
   const asset=await page.evaluate(()=>window.STUDIO.cms.mediaLibrary.at(-1));
-  expect(asset.publicId).toContain('royal-banquet/qa-asset-');
+  expect(asset.publicId).toContain('royal-banquet/test-asset-');
   expect(asset.name).toContain('Cropped');
   expect(pageErrors).toEqual([]);
 });
