@@ -36,6 +36,15 @@ for (const page of pages) {
 }
 
 const server = read('server.js');
+for (const marker of [
+  'const PUBLIC_HTML_FILES = new Set(',
+  "app.get('/', (req,res,next) =>",
+  'const PUBLIC_ASSET_CATEGORIES = new Set(',
+  'path.relative(assetRoot,filePath)',
+  "res.setHeader('X-Content-Type-Options','nosniff')"
+]) {
+  if (!server.includes(marker)) throw new Error('Safe Render website hosting is missing: ' + marker);
+}
 for (const route of [
   "app.post('/api/auth/login'", "app.get('/api/auth/session'", "app.post('/api/auth/logout'",
   "app.get('/api/cloudinary/signature'", "app.get('/api/cloudinary/status'",
