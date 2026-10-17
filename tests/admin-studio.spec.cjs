@@ -408,12 +408,16 @@ test('visual builder edits a real preview, saves page-specific properties and pr
   await expect(page.locator('#vb-inspector-title')).not.toHaveText('Select an element');
   await page.locator('#vb-text').fill('Visual Builder QA Heading');
   console.log('[visual-builder] content changed');
+  await page.locator('[data-tab="design"]').click();
   await page.locator('#vb-color').evaluate((node) => {
     node.value = '#abcddf';
     node.dispatchEvent(new Event('input', { bubbles: true }));
   });
+  console.log('[visual-builder] design changed');
+  await page.locator('[data-tab="motion"]').click();
   await page.locator('#vb-motion').selectOption('fade-up');
   await page.locator('#vb-motion-duration').fill('650');
+  console.log('[visual-builder] motion configured');
   await page.locator('#vb-save-draft').click();
   console.log('[visual-builder] draft save clicked');
 
