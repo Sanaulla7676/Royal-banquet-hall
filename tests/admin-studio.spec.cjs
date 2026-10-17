@@ -20,7 +20,7 @@ function initialCms() {
     components: { activeItems:[] },
     fontAnimations: { active:0, targets:['Hero Heading'], speed:10, delay:0, duration:500, repeat:'Once' },
     settings: { autoSave:false, livePreview:true, keyboardShortcuts:true, animationPreviews:true, confirmDestructive:false },
-    mediaLibrary:[], mediaLabels:{}, hiddenMediaAssets:[], imageSizing:{},
+    mediaLibrary:[], mediaLabels:{}, hiddenMediaAssets:[], imageSizing:{}, pageOverrides:{},
     integrations:{cloudinary:{cloudName:'test-cloud'}}
   };
 }
@@ -266,4 +266,102 @@ test('media library crop and display dimensions are real CMS actions', async ({ 
   expect(asset.publicId).toContain('royal-banquet/test-asset-');
   expect(asset.name).toContain('Cropped');
   expect(pageErrors).toEqual([]);
+});
+
+
+test('top-bar page selector edits and publishes page-specific hero, CTA buttons and logo placement', async ({ page }) => {
+  test.setTimeout(90000);
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.message));
+  const backend = await mockBackend(page);
+  await signIn(page);
+
+  await page.locator('#page-selector').selectOption('events.html');
+  await expect.poll(() => page.evaluate(() => window.STUDIO.currentEditPage)).toBe('events.html');
+  await expect.poll(() => page.locator('iframe[title="Hero Preview"]').getAttribute('src')).toContain('events.html');
+
+  await page.locator('.s-nav-item[data-page="hero-image"]').click();
+  await page.locator('#page-hero-src').fill('/assets/images/photo-02.jpeg');
+  await page.locator('#page-hero-title').fill('Events Page Only');
+  await page.locator('#page-hero-subtitle').fill('A separate hero description for the Events page.');
+  await page.locator('#page-hero-num-posx').fill('72');
+  await page.locator('#page-hero-num-posy').fill('28');
+  await page.locator('#page-hero-num-height').fill('64');
+  await page.locator('#page-hero-num-opacity').fill('36');
+  await page.locator('#page-hero-overlay-color').fill('#112233');
+  await expect.poll(() => page.evaluate(() => window.STUDIO.cms.pageOverrides['events.html']?.hero?.title)).toBe('Events Page Only');
+
+  await page.locator('#page-button-target').selectOption('primary');
+  await page.locator('#page-button-label').fill('Enquire about this event');
+  await page.locator('#page-button-href').fill('booking.html?event=events-page');
+  await page.locator('#page-button-bg').fill('#234567');
+  await page.locator('#page-button-color').fill('#ffffff');
+  await page.locator('#page-button-radius').fill('18');
+  await page.locator('#page-button-size').fill('17');
+
+  await page.locator('.s-nav-item[data-page="logo"]').click();
+  await page.locator('#page-logo-placement').selectOption('custom');
+  await page.locator('#page-logo-num-x').fill('72');
+  await page.locator('#page-logo-num-y').fill('24');
+  await expect.poll(() => page.evaluate(() => window.STUDIO.cms.pageOverrides['events.html']?.logo?.placement)).toBe('custom');
+
+  await page.locator('.s-nav-item[data-page="hero-image"]').click();
+  const preview = page.frameLocator('iframe[title="Hero Preview"]');
+  await expect(preview.locator('.page-hero h1')).toHaveText('Events Page Only', {timeout:12000});
+  await expect(preview.locator('.page-hero-media img')).toHaveAttribute('src', '/assets/images/photo-02.jpeg', {timeout:12000});
+  await expect(preview.locator('.page-hero .btn-row a.btn-gold')).toHaveText('Enquire about this event', {timeout:12000});
+  await expect(preview.locator('.page-hero .btn-row a.btn-gold')).toHaveAttribute('href','booking.html?event=events-page');
+
+  await page.locator('#btn-studio-save').click();
+  await expect.poll(() => backend.calls.save).toBeGreaterThan(0);
+  await page.locator('#btn-open-publish').click();
+  await page.locator('#btn-confirm-publish').click();
+  await expect.poll(() => backend.calls.publish).toBe(1);
+  const stored = backend.snapshot().published;
+  expect(stored.pageOverrides['events.html'].hero).toMatchObject({
+    src:'/assets/images/photo-02.jpeg',title:'Events Page Only',
+    subtitle:'A separate hero description for the Events page.',
+    posX:72,posY:28,height:64,overlayOpacity:36,overlayColor:'#112233'
+  });
+  expect(stored.pageOverrides['events.html'].buttons.primary).toMatchObject({
+    label:'Enquire about this event',href:'booking.html?event=events-page',
+    bgColor:'#234567',textColor:'#ffffff',borderRadius:18,fontSize:17
+  });
+  expect(stored.pageOverrides['events.html'].logo).toMatchObject({placement:'custom',x:72,y:24});
+  expect(pageErrors).toEqual([]);
+});
+
+test('public page renderer applies published page-specific hero, button and free logo position', async ({ page }) => {
+  const published = initialCms();
+  published.pageOverrides = {
+    'events.html': {
+      hero: {
+        src:'/assets/images/photo-02.jpeg',title:'Published Events Hero',
+        subtitle:'A page-specific published summary.',posX:64,posY:30,height:62,
+        overlayOpacity:25,overlayColor:'#223344'
+      },
+      buttons: {
+        primary:{label:'Published Events CTA',href:'booking.html?event=published',bgColor:'#345678',textColor:'#ffffff',borderRadius:16,fontSize:18}
+      },
+      logo:{placement:'custom',x:68,y:22}
+    }
+  };
+  await page.route('**/api/load-cms', route => route.fulfill({
+    status:200,contentType:'application/json',
+    body:JSON.stringify({success:true,data:published,source:'test-published'})
+  }));
+  await page.goto(BASE_URL + '/events.html');
+  await expect(page.locator('.page-hero h1')).toHaveText('Published Events Hero');
+  await expect(page.locator('.page-hero-media img')).toHaveAttribute('src','/assets/images/photo-02.jpeg');
+  await expect(page.locator('.page-hero .lede')).toHaveText('A page-specific published summary.');
+  const cta=page.locator('.page-hero .btn-row a.btn-gold');
+  await expect(cta).toHaveText('Published Events CTA');
+  await expect(cta).toHaveAttribute('href','booking.html?event=published');
+  await expect(page.locator('[data-rbh-logo-placement="custom"]')).toBeAttached();
+  const logoPlacement=await page.locator('[data-rbh-logo-placement="custom"]').evaluate(node=>({
+    position:getComputedStyle(node).position,
+    x:node.style.getPropertyValue('--rbh-logo-x'),
+    y:node.style.getPropertyValue('--rbh-logo-y')
+  }));
+  expect(logoPlacement).toEqual({position:'fixed',x:'68%',y:'22%'});
 });
