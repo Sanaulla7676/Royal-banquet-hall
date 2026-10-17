@@ -137,7 +137,7 @@
     bindStyle('vb-margin', 'margin');
     bindStyle('vb-object-position', 'objectPosition');
     $('#vb-opacity').addEventListener('input', event => { $('#vb-opacity-label').textContent = Math.round(Number(event.target.value) * 100) + '%'; updateStyle('opacity', event.target.value); });
-    $('#vb-cursor').addEventListener('change', event => updateStyle('cursor', event.target.value));
+    $('#vb-cursor').addEventListener('change', event => updateElementProperty('cursor', event.target.value));
     $('#vb-hidden').addEventListener('change', event => updateElementProperty('hidden', event.target.checked));
     $('#vb-mobile-font-size').addEventListener('change', event => updateResponsive('fontSize', event.target.value));
     $('#vb-mobile-width').addEventListener('change', event => updateResponsive('width', event.target.value));
@@ -785,6 +785,10 @@
         currentElement.setAttribute('target',entry.target);
         if (entry.target === '_blank') currentElement.setAttribute('rel','noopener noreferrer');
       }
+    } else if (key === 'cursor') {
+      if (value && !isAllowedStyle('cursor',value)) { toast('That cursor option is not supported.',true); return; }
+      if (value) { entry.cursor = value; currentElement.style.setProperty('cursor',value,'important'); }
+      else { delete entry.cursor; const base = captureBase(currentElement).styleValues.cursor; if (base.value) currentElement.style.setProperty('cursor',base.value,base.priority); else currentElement.style.removeProperty('cursor'); }
     } else if (key === 'hidden') {
       entry.hidden = Boolean(value);
       if (entry.hidden) currentElement.style.setProperty('display','none','important');
