@@ -187,7 +187,7 @@
     $('#vb-height-preset').addEventListener('change', event => applyDimensionPreset('height',event.target.value));
     document.querySelectorAll('[data-font-size]').forEach(button => button.addEventListener('click', () => applySliderValue('vb-font-size',button.dataset.fontSize,'px','vb-font-size-number','vb-font-size-label')));
     document.querySelectorAll('[data-line-height]').forEach(button => button.addEventListener('click', () => applySliderValue('vb-line-height',button.dataset.lineHeight,'','vb-line-height-number','vb-line-height-label')));
-    $('.vb-motion-card').forEach(button => button.addEventListener('click', () => {
+    $$('.vb-motion-card').forEach(button => button.addEventListener('click', () => {
       field('vb-motion').value = button.dataset.motionPreset;
       renderMotionUpdate();
       replayMotion();
@@ -720,7 +720,7 @@
     if (!frameDoc) return;
     const tree = $('#vb-layer-tree');
     tree.replaceChildren();
-    const roots = Array.from(frameDoc.body.children).filter(el => !['SCRIPT','STYLE','NOSCRIPT','LINK','META'].includes(el.tagName) && !el.classList.contains('rbh-vb-selected'));
+    const roots = Array.from(frameDoc.body.children).filter(el => !['SCRIPT','STYLE','NOSCRIPT','LINK','META'].includes(el.tagName));
     const allRows = [];
     let count = 0;
     function addNode(el, parent, depth) {
@@ -807,7 +807,7 @@
     if (selected && !$('#vb-layer-search').value.trim()) selected.row.scrollIntoView({block:'nearest'});
   }
   function setLayersExpanded(expanded) {
-    $('#vb-layer-tree .vb-layer-group').forEach(group => {
+    $$('#vb-layer-tree .vb-layer-group').forEach(group => {
       const childWrap = group.querySelector(':scope > .vb-layer-children');
       const row = group.querySelector(':scope > .vb-layer-row');
       const arrow = row && row.querySelector('.vb-layer-disclose');
@@ -1055,7 +1055,7 @@
     setField('vb-motion-duration',motion.duration || 800);
     setField('vb-motion-delay',motion.delay || 0);
     setField('vb-motion-easing',motion.easing || 'ease-out');
-    $('.vb-motion-card').forEach(button => button.classList.toggle('is-active',button.dataset.motionPreset === (motion.preset || 'preserve')));
+    $$('.vb-motion-card').forEach(button => button.classList.toggle('is-active',button.dataset.motionPreset === (motion.preset || 'preserve')));
     $('#vb-inspector-title').textContent = describeElement(el);
   }
 
