@@ -793,7 +793,15 @@ function syncPreviewStyles() {
   getAllIframeDocs().forEach(({ doc, win }) => {
     try {
       installPageButtonPicker(doc);
-      if (STUDIO.selectingPageButton) setPageButtonPickMode(true);
+      if (STUDIO.selectingPageButton) {
+        let pickerStyle = doc.getElementById('studio-page-button-pick-styles');
+        if (!pickerStyle) {
+          pickerStyle = doc.createElement('style');
+          pickerStyle.id = 'studio-page-button-pick-styles';
+          (doc.head || doc.body).appendChild(pickerStyle);
+        }
+        pickerStyle.textContent = '.site-header .nav-actions a.btn,.hero .btn-row a.btn,.hero-section .btn-row a.btn,.page-hero .btn-row a.btn,.cta-banner a.btn{outline:2px dashed #c6a15b!important;outline-offset:4px!important;cursor:crosshair!important}';
+      }
       // Remove any lingering site-intro elements in iframe preview
       const intro = doc.getElementById('site-intro');
       if (intro) intro.remove();
