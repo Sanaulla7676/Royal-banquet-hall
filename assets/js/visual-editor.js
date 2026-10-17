@@ -722,7 +722,7 @@
     const allRows = [];
     let count = 0;
     function addNode(el, parent, depth) {
-      if (count >= 200 || !el || !el.tagName || ['SCRIPT','STYLE','NOSCRIPT','SVG','PATH','META','LINK'].includes(el.tagName)) return;
+      if (count >= 600 || !el || !el.tagName || ['SCRIPT','STYLE','NOSCRIPT','SVG','PATH','META','LINK'].includes(el.tagName)) return;
       if (el.id === 'royal-admin-dock' || el.classList.contains('rbh-visual-editor-toolbar')) return;
       count++;
       const selector = stableSelector(el);
@@ -759,7 +759,7 @@
       });
       group.appendChild(row);
       allRows.push({row,selector,el,name});
-      if (children.length && depth < 5) {
+      if (children.length && depth < 8) {
         const childWrap = document.createElement('div');
         childWrap.className = 'vb-layer-children';
         children.forEach(child => addNode(child,childWrap,depth+1));
@@ -823,6 +823,150 @@
   function field(id) { return $('#' + id); }
   function setField(id,value) { const node = field(id); if (node) node.value = value == null ? '' : String(value); }
   function showRow(id,visible) { const node = $('#' + id); if (node) node.hidden = !visible; }
+  function clampRange(id,value) {
+    const node = field(id), number = Number(value);
+    return clamp(Number.isFinite(number) ? number : Number(node?.value || 0),Number(node?.min || 0),Number(node?.max || 100));
+  }
+  function formatValue(value) {
+    return String(Math.round(Number(value) * 100) / 100).replace(/\.0+$/,'');
+  }
+  function syncSliderControls(rangeId,numberId,labelId,value,suffix='') {
+    const range = field(rangeId), number = field(numberId);
+    if (!range || !number) return;
+    const n = clampRange(rangeId,value);
+    range.value = String(n);
+    number.value = String(n);
+    const label = labelId && field(labelId);
+    if (label) label.textContent = formatValue(n) + suffix;
+  }
+  function applySliderValue(rangeId,value,unit,numberId,labelId) {
+    if (!currentElement || !ready) return;
+    syncSliderControls(rangeId,numberId,labelId,value,unit);
+    const numeric = field(rangeId).value;
+    const cssValue = unit ? numeric + unit : numeric;
+    const keys = {'vb-font-size':'fontSize','vb-line-height':'lineHeight','vb-letter-spacing':'letterSpacing','vb-width':'width','vb-height':'height'};
+    const key = keys[rangeId];
+    if (!key) return;
+    if (key === 'width') setField('vb-width-preset','');
+    if (key === 'height') setField('vb-height-preset','');
+    updateStyle(key,cssValue);
+  }
+  function bindSliderStyle(rangeId,key,unit,numberId,labelId) {
+    const range = field(rangeId), number = field(numberId);
+    const sync = source => {
+      const value = clampRange(rangeId,source.value);
+      syncSliderControls(rangeId,numberId,labelId,value,unit);
+      if (key === 'width') setField('vb-width-preset','');
+      if (key === 'height') setField('vb-height-preset','');
+      updateStyle(key,unit ? formatValue(value) + unit : formatValue(value));
+    };
+    [range,number].forEach(node => {
+      node.addEventListener('focus',beginEdit);
+      node.addEventListener('input',event => sync(event.target));
+      node.addEventListener('change',event => { sync(event.target); finishEdit(); });
+    });
+  }
+  function computedPixelValue(el,cssProperty,fallback=0) {
+    if (!el || !frameDoc) return fallback;
+    const style = frameDoc.defaultView.getComputedStyle(el);
+    const value = parseFloat(style.getPropertyValue(cssProperty));
+    if (Number.isFinite(value)) return value;
+    const rect = el.getBoundingClientRect();
+    if (cssProperty === 'width') return rect.width || fallback;
+    if (cssProperty === 'height') return rect.height || fallback;
+    return fallback;
+  }
+  function applyDimensionPreset(key,value) {
+    if (!value || !currentElement) return;
+    const labelId = key === 'width' ? 'vb-width-label' : 'vb-height-label';
+    const label = field(labelId);
+    if (label) label.textContent = value;
+    updateStyle(key,value);
+    toast((key === 'width' ? 'Width' : 'Height') + ' set to ' + value + '.');
+  }
+  function googleFontHref(fontName) {
+    const font = fontOptions.find(item => item.name === fontName);
+    if (!font) return '';
+    return 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(font.name).replace(/%20/g,'+') + ':wght@400;500;600;700;800&display=swap';
+  }
+  function loadGoogleFontForDocument(doc,fontName) {
+    if (!doc || !fontName) return;
+    const href = googleFontHref(fontName);
+    if (!href) return;
+    const id = 'rbh-vb-font-' + fontName.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+    let link = doc.getElementById(id);
+    if (link) return;
+    link = doc.createElement('link');
+    link.id = id;
+    link.rel = 'stylesheet';
+    link.href = href;
+    doc.head.appendChild(link);
+  }
+  function loadFontLibrary(doc) {
+    if (!doc || doc.getElementById('rbh-vb-font-library')) return;
+    const query = fontOptions.map(font => 'family=' + encodeURIComponent(font.name).replace(/%20/g,'+') + ':wght@400;500;600;700;800').join('&');
+    const link = doc.createElement('link');
+    link.id = 'rbh-vb-font-library';
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?' + query + '&display=swap';
+    doc.head.appendChild(link);
+  }
+  function openFontPicker() {
+    if (!currentElement) { toast('Select a heading, subheading, or text element first.',true); return; }
+    loadFontLibrary(document);
+    loadFontLibrary(frameDoc);
+    renderFontChoices();
+    $('#vb-font-picker').hidden = false;
+    $('#vb-font-search').focus();
+  }
+  function closeFontPicker() {
+    $('#vb-font-picker').hidden = true;
+    $('#vb-open-font-picker').focus();
+  }
+  function renderFontChoices() {
+    const grid = $('#vb-font-grid');
+    if (!grid) return;
+    const query = ($('#vb-font-search').value || '').trim().toLowerCase();
+    const current = String(field('vb-font-family').value || '').toLowerCase();
+    const visible = fontOptions.filter(font =>
+      (activeFontCategory === 'all' || font.category === activeFontCategory) &&
+      (!query || (font.name + ' ' + font.category).toLowerCase().includes(query))
+    );
+    grid.replaceChildren();
+    visible.forEach(font => {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'vb-font-card' + (current.includes(font.name.toLowerCase()) ? ' is-active' : '');
+      card.setAttribute('role','listitem');
+      const sample = document.createElement('span');
+      sample.className = 'vb-font-preview';
+      sample.style.fontFamily = font.stack;
+      sample.textContent = font.sample;
+      const name = document.createElement('span');
+      name.className = 'vb-font-name';
+      name.textContent = font.name;
+      const meta = document.createElement('span');
+      meta.className = 'vb-font-meta';
+      meta.textContent = ({serif:'Classic serif',sans:'Modern sans serif',display:'Statement display',editorial:'Editorial serif'})[font.category] || font.category;
+      card.append(sample,name,meta);
+      card.addEventListener('click',() => {
+        loadGoogleFontForDocument(document,font.name);
+        loadGoogleFontForDocument(frameDoc,font.name);
+        setField('vb-font-family',font.stack);
+        updateStyle('fontFamily',font.stack);
+        closeFontPicker();
+        toast(font.name + ' applied to the selected element.');
+      });
+      grid.appendChild(card);
+    });
+    $('#vb-font-count').textContent = visible.length + (visible.length === 1 ? ' font' : ' fonts');
+    if (!visible.length) {
+      const empty = document.createElement('div');
+      empty.className = 'vb-font-empty';
+      empty.textContent = 'No fonts match that search. Try another name or category.';
+      grid.appendChild(empty);
+    }
+  }
   function colorToHex(value,fallback) {
     if (!value) return fallback;
     const match = String(value).match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
@@ -864,16 +1008,38 @@
     setField('vb-color-text',color);
     setField('vb-bg',colorToHex(bg,'#ffffff'));
     setField('vb-bg-text',bg);
-    setField('vb-font-size',styles.fontSize !== undefined ? styles.fontSize : getStyleValue(el,'fontSize'));
-    setField('vb-font-family',styles.fontFamily !== undefined ? styles.fontFamily : getStyleValue(el,'fontFamily'));
+    const computed = frameDoc.defaultView.getComputedStyle(el);
+    const fontSizePx = computedPixelValue(el,'font-size',48);
+    syncSliderControls('vb-font-size','vb-font-size-number','vb-font-size-label',fontSizePx,'px');
+    const familyValue = styles.fontFamily !== undefined ? styles.fontFamily : getStyleValue(el,'fontFamily');
+    setField('vb-font-family',familyValue);
+    const familyName = String(familyValue || '').split(',')[0].replace(/['"]/g,'').trim();
+    loadGoogleFontForDocument(frameDoc,familyName);
     setField('vb-font-weight',styles.fontWeight !== undefined ? styles.fontWeight : getStyleValue(el,'fontWeight'));
     setField('vb-text-align',styles.textAlign !== undefined ? styles.textAlign : getStyleValue(el,'textAlign'));
+    setField('vb-text-transform',styles.textTransform !== undefined ? styles.textTransform : getStyleValue(el,'textTransform'));
+    let lineHeightValue = styles.lineHeight !== undefined ? Number(styles.lineHeight) : NaN;
+    if (!Number.isFinite(lineHeightValue) || lineHeightValue > 3) {
+      const lineHeightPx = parseFloat(computed.lineHeight);
+      lineHeightValue = Number.isFinite(lineHeightPx) && fontSizePx > 0 ? lineHeightPx / fontSizePx : 1.4;
+    }
+    syncSliderControls('vb-line-height','vb-line-height-number','vb-line-height-label',lineHeightValue || 1.4,'');
+    const letterPx = styles.letterSpacing !== undefined ? computedPixelValue(el,'letter-spacing',0) : computedPixelValue(el,'letter-spacing',0);
+    syncSliderControls('vb-letter-spacing','vb-letter-spacing-number','vb-letter-spacing-label',letterPx,'px');
     setField('vb-radius',styles.borderRadius !== undefined ? styles.borderRadius : getStyleValue(el,'borderRadius'));
     const opacity = styles.opacity !== undefined ? Number(styles.opacity) : Number(getStyleValue(el,'opacity'));
     setField('vb-opacity',Number.isFinite(opacity) ? opacity : 1);
     $('#vb-opacity-label').textContent = Math.round(Number(field('vb-opacity').value) * 100) + '%';
-    setField('vb-width',styles.width !== undefined ? styles.width : el.style.width);
-    setField('vb-height',styles.height !== undefined ? styles.height : el.style.height);
+    const widthValue = styles.width !== undefined ? styles.width : (el.style.width || '');
+    const heightValue = styles.height !== undefined ? styles.height : (el.style.height || '');
+    syncSliderControls('vb-width','vb-width-number','vb-width-label',computedPixelValue(el,'width',640),'px');
+    syncSliderControls('vb-height','vb-height-number','vb-height-label',computedPixelValue(el,'height',360),'px');
+    setField('vb-width-preset',['auto','fit-content','25%','50%','75%','100%'].includes(widthValue) ? widthValue : '');
+    setField('vb-height-preset',['auto','25vh','50vh','70vh','100vh'].includes(heightValue) ? heightValue : '');
+    if (field('vb-width-preset').value === '') $('#vb-width-label').textContent = widthValue || ('Auto · ' + Math.round(computedPixelValue(el,'width',640)) + 'px');
+    else $('#vb-width-label').textContent = widthValue;
+    if (field('vb-height-preset').value === '') $('#vb-height-label').textContent = heightValue || ('Auto · ' + Math.round(computedPixelValue(el,'height',360)) + 'px');
+    else $('#vb-height-label').textContent = heightValue;
     setField('vb-padding',styles.padding !== undefined ? styles.padding : el.style.padding);
     setField('vb-margin',styles.margin !== undefined ? styles.margin : el.style.margin);
     setField('vb-object-position',styles.objectPosition !== undefined ? styles.objectPosition : (el.style.objectPosition || ''));
@@ -887,6 +1053,7 @@
     setField('vb-motion-duration',motion.duration || 800);
     setField('vb-motion-delay',motion.delay || 0);
     setField('vb-motion-easing',motion.easing || 'ease-out');
+    $('.vb-motion-card').forEach(button => button.classList.toggle('is-active',button.dataset.motionPreset === (motion.preset || 'preserve')));
     $('#vb-inspector-title').textContent = describeElement(el);
   }
 
