@@ -327,22 +327,69 @@
   function stableSelector(el) {
     if (!el || !el.tagName) return '';
     if (el.id) return '#' + cssEscape(el.id);
-    const parts = [];
-    let node = el;
-    while (node && node.nodeType === 1 && node !== frameDoc.documentElement) {
-      if (node.id) { parts.unshift('#' + cssEscape(node.id)); break; }
-      let part = node.tagName.toLowerCase();
-      const classes = Array.from(node.classList || []).filter(name => !/^(is-|has-|aos-|gsap|active$|open$|visible$|rbh-vb)/i.test(name)).slice(0, 2);
-      if (classes.length) part += classes.map(name => '.' + cssEscape(name)).join('');
-      if (node.parentElement) {
-        const sameTag = Array.from(node.parentElement.children).filter(sibling => sibling.tagName === node.tagName);
-        if (sameTag.length > 1) part += ':nth-of-type(' + (sameTag.indexOf(node) + 1) + ')';
+
+    const stableAttributeNames = ['data-section-id','data-component','data-block-id','data-testid','aria-label'];
+    for (const name of stableAttributeNames) {
+      const value = el.getAttribute(name);
+      if (!value || value.length > 120 || /[\\"']/ .test(value)) continue;
+      const selector = el.tagName.toLowerCase() + '[' + name + '="' + value + '"]';
+      try { if (frameDoc.querySelectorAll(selector).length === 1) return selector; } catch {}
+    }
+
+    const dynamicClass = /^(?:is-|has-|aos-|gsap|active$|open$|visible$|rbh-vb|site-revealed$|fx-|story-reveal$|reveal(?:$|-)|scroll-reveal|animate(?:$|-)|animation(?:$|-)|motion(?:$|-))/i;
+    const stableClasses = node => Array.from(node.classList || [])
+      .filter(name => !dynamicClass.test(name) && !/^(?:fx-|aos-|gsap|is-|has-)/i.test(name))
+      .filter(name => /^[a-zA-Z_][a-zA-Z0-9_-]*$/.test(name))
+      .sort((a,b) => a.length-b.length)
+      .slice(0, 3);
+    const partFor = node => {
+      const tag = node.tagName.toLowerCase();
+      const classes = stableClasses(node);
+      return tag + classes.map(name => '.' + cssEscape(name)).join('');
+    };
+
+    const targetPart = partFor(el);
+    const candidates = [targetPart];
+    // Prefer a short, unique selector anchored in a stable semantic ancestor.
+    // Use descendant combinators rather than nth-of-type, since scroll/animation
+    // classes and dynamically inserted wrappers may differ on the public page.
+    let ancestor = el.parentElement;
+    while (ancestor && ancestor !== frameDoc.body && ancestor !== frameDoc.documentElement) {
+      const ancestorPart = partFor(ancestor);
+      if (stableClasses(ancestor).length || ['main','header','footer','nav'].includes(ancestor.tagName.toLowerCase())) {
+        candidates.push(ancestorPart + ' ' + targetPart);
+        const chain = [];
+        let node = el;
+        while (node && node !== ancestor && node !== frameDoc.body && node !== frameDoc.documentElement) {
+          chain.unshift(partFor(node));
+          node = node.parentElement;
+        }
+        if (node === ancestor) candidates.push([ancestorPart].concat(chain).join(' '));
       }
-      parts.unshift(part);
-      if (node === frameDoc.body) break;
+      try {
+        for (const candidate of candidates) {
+          if (frameDoc.querySelectorAll(candidate).length === 1) return candidate;
+        }
+      } catch {}
+      ancestor = ancestor.parentElement;
+      if (ancestor && ['MAIN','HEADER','FOOTER','NAV'].includes(ancestor.tagName)) {
+        const rootPart = partFor(ancestor);
+        const rootCandidate = rootPart + ' ' + targetPart;
+        try { if (frameDoc.querySelectorAll(rootCandidate).length === 1) return rootCandidate; } catch {}
+      }
+    }
+
+    // Last-resort path: stable classes and tags only, never transient body classes.
+    const path = [];
+    let node = el;
+    while (node && node !== frameDoc.body && node !== frameDoc.documentElement) {
+      path.unshift(partFor(node));
+      if (node.tagName === 'MAIN' || node.tagName === 'HEADER' || node.tagName === 'FOOTER' || node.tagName === 'NAV') break;
       node = node.parentElement;
     }
-    return parts.join(' > ');
+    const fallback = path.join(' ');
+    try { if (fallback && frameDoc.querySelectorAll(fallback).length === 1) return fallback; } catch {}
+    return targetPart;
   }
 
   function selectElement(el) {
