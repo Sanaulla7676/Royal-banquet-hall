@@ -460,3 +460,47 @@ test('visual builder edits a real preview, saves page-specific properties and pr
   expect(rendered.transition).not.toBe('0s');
   expect(pageErrors).toEqual([]);
 });
+
+
+test('guided typography, animation presets and layer navigation are selectable controls', async ({ page }) => {
+  test.setTimeout(90000);
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.message));
+  const backend = await mockBackend(page);
+  await signIn(page);
+
+  await page.goto(BASE_URL + '/visual-editor.html');
+  await expect(page.locator('#vb-app')).toBeVisible({ timeout: 15000 });
+  await page.locator('#vb-page-select').selectOption('events.html');
+  const preview = page.frameLocator('#vb-page-frame');
+  const heading = preview.locator('.page-hero .lede').first();
+  await expect(heading).toBeVisible({ timeout: 15000 });
+  await heading.click();
+
+  await page.locator('#vb-open-font-picker').click();
+  await expect(page.locator('#vb-font-picker')).toBeVisible();
+  await page.locator('.vb-font-card').filter({ hasText: 'Cinzel' }).click();
+
+  await page.locator('#vb-font-size').evaluate(node => {
+    node.value = '54';
+    node.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await page.locator('[data-tab="motion"]').click();
+  await page.locator('[data-motion-preset="shimmer"]').click();
+
+  await page.locator('#vb-expand-layers').click();
+  await page.locator('#vb-collapse-layers').click();
+  await page.locator('#vb-move-mode').click();
+  await expect(page.locator('#vb-move-mode')).toHaveClass(/is-active/);
+  await page.locator('#vb-move-mode').click();
+
+  await page.locator('#vb-save-draft').click();
+  await expect.poll(() => backend.calls.save).toBeGreaterThan(0);
+  const draft = backend.snapshot().draft;
+  const entries = Object.values(draft.pageOverrides['events.html'].elements || {});
+  const edited = entries.find(entry => entry.styles?.fontFamily?.includes('Cinzel'));
+  expect(edited).toBeTruthy();
+  expect(edited.styles.fontSize).toBe('54px');
+  expect(edited.motion).toMatchObject({ preset: 'shimmer' });
+  expect(pageErrors).toEqual([]);
+});

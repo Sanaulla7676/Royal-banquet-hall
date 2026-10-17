@@ -15,9 +15,21 @@ for (const file of [
 const html = read('admin-studio.html');
 const visualEditorHtml = read('visual-editor.html');
 if (!html.includes('href="visual-editor.html"')) throw new Error('Admin Studio does not link to the Visual Builder.');
-for (const control of ['id="vb-page-select"','id="vb-page-frame"','id="vb-layer-tree"','id="vb-save-draft"','id="vb-publish"','data-pane="motion"']) {
+for (const control of [
+  'id="vb-page-select"','id="vb-page-frame"','id="vb-layer-tree"','id="vb-save-draft"','id="vb-publish"',
+  'data-pane="motion"','id="vb-open-font-picker"','id="vb-font-picker"','id="vb-move-mode"',
+  'id="vb-expand-layers"','id="vb-font-size-number"','data-motion-preset="shimmer"'
+]) {
   if (!visualEditorHtml.includes(control)) throw new Error('Missing Visual Builder feature: ' + control);
 }
+const visualJs = read('assets/js/visual-editor.js');
+for (const marker of [
+  'function renderFontChoices()', 'function bindSliderStyle(', 'function startCanvasDrag(',
+  'function setLayersExpanded(', 'function setMoveMode(', 'prefers-reduced-motion:reduce'
+]) {
+  if (!visualJs.includes(marker)) throw new Error('Visual Builder guided interaction is missing: ' + marker);
+}
+
 const pages = ['logo','navbar','hero-image','hero-heading','hero-sub','background','video','image-library','themes','animations','effects','components','font-animations'];
 for (const page of pages) {
   if (!html.includes('id="page-' + page + '"')) throw new Error('Missing numbered Studio section: ' + page);
@@ -82,7 +94,7 @@ if (!config.rewrites?.some(route =>
 
 const forbiddenCredentialMarker = /Royal@07|Royal@O7|Royal@o7|royal2026|234231665841756/;
 for (const file of [
-  'server.js', 'lib/admin-auth.js', 'assets/js/admin-studio.js',
+  'server.js', 'lib/admin-auth.js', 'assets/js/admin-studio.js', 'assets/js/visual-editor.js',
   'assets/js/royal-cms.js', 'scripts/upload-to-cloudinary.mjs', 'scripts/admin-server.mjs'
 ]) {
   if (forbiddenCredentialMarker.test(read(file))) throw new Error('Hardcoded credential marker found in ' + file);

@@ -853,7 +853,8 @@ function buildStudioSelectionAnimationCss(settings) {
         '[data-rbh-vb-motion="pulse"]{animation:rbhVbPulse var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-in-out) var(--rbh-vb-delay,0ms) both!important}',
         '[data-rbh-vb-motion="rotate"]{animation:rbhVbRotate var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
         '[data-rbh-vb-motion="shimmer"]{animation:rbhVbShimmer var(--rbh-vb-duration,1200ms) var(--rbh-vb-easing,ease-in-out) var(--rbh-vb-delay,0ms) both!important}',
-        '[data-rbh-vb-motion="float"]{animation:rbhVbFloat var(--rbh-vb-duration,3000ms) var(--rbh-vb-easing,ease-in-out) var(--rbh-vb-delay,0ms) infinite alternate}'
+        '[data-rbh-vb-motion="float"]{animation:rbhVbFloat var(--rbh-vb-duration,3000ms) var(--rbh-vb-easing,ease-in-out) var(--rbh-vb-delay,0ms) infinite alternate}',
+        '@media(prefers-reduced-motion:reduce){[data-rbh-vb-motion]{animation:none!important;transition:none!important}}'
       ].join('\n');
       document.head.appendChild(style);
     }

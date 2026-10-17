@@ -657,7 +657,8 @@
       '[data-rbh-vb-motion="pulse"]{animation:rbhVbPulse var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-in-out) var(--rbh-vb-delay,0ms) both!important}',
       '[data-rbh-vb-motion="rotate"]{animation:rbhVbRotate var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
       '[data-rbh-vb-motion="shimmer"]{animation:rbhVbShimmer var(--rbh-vb-duration,1200ms) var(--rbh-vb-easing,ease-in-out) var(--rbh-vb-delay,0ms) both!important}',
-      '[data-rbh-vb-motion="float"]{animation:rbhVbFloat var(--rbh-vb-duration,3000ms) var(--rbh-vb-easing,ease-in-out) var(--rbh-vb-delay,0ms) infinite alternate}'
+      '[data-rbh-vb-motion="float"]{animation:rbhVbFloat var(--rbh-vb-duration,3000ms) var(--rbh-vb-easing,ease-in-out) var(--rbh-vb-delay,0ms) infinite alternate}',
+      '@media(prefers-reduced-motion:reduce){[data-rbh-vb-motion]{animation:none!important;transition:none!important}}'
     ].join('\n');
     el.style.setProperty('--rbh-vb-duration', clamp(Number(motion.duration) || 800,100,15000) + 'ms');
     el.style.setProperty('--rbh-vb-delay', clamp(Number(motion.delay) || 0,0,10000) + 'ms');
@@ -1339,7 +1340,9 @@
       return;
     }
     if (enabled && currentElement) {
-      const logo = currentElement.closest('.site-header .brand, .site-header .brand-lockup, .site-header .brand-logo');
+      // Move the whole brand lockup first so the logo mark and wordmark stay together.
+      const logo = currentElement.closest('.site-header .brand, .site-header .brand-lockup') ||
+        currentElement.closest('.site-header .brand-logo');
       if (logo && logo !== currentElement) selectElement(logo);
     }
     moveMode = Boolean(enabled);
