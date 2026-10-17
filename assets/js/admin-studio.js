@@ -437,8 +437,13 @@ function initPageSpecificControls() {
     selector.addEventListener('change',()=>{
       STUDIO.currentEditPage=currentEditPageKey();
       document.querySelectorAll('.s-right-panel iframe').forEach(frame=>{
-        frame.setAttribute('src',STUDIO.currentEditPage);
+        const currentSrc = (frame.getAttribute('src') || '').split('?')[0].split('/').pop();
+        if (currentSrc === STUDIO.currentEditPage) {
+          syncPreviewStyles();
+          return;
+        }
         frame.addEventListener('load',()=>syncPreviewStyles(),{once:true});
+        frame.setAttribute('src',STUDIO.currentEditPage);
       });
       syncPageSpecificControls();setTimeout(syncPreviewStyles,100);
     });
@@ -518,7 +523,9 @@ function initPageSpecificControls() {
     syncPageSpecificControls();syncPreviewStyles();markDirty();
   });
   document.querySelectorAll('.s-right-panel iframe').forEach(frame=>{
-    frame.setAttribute('src',STUDIO.currentEditPage);frame.addEventListener('load',()=>syncPreviewStyles());
+    const currentSrc = (frame.getAttribute('src') || '').split('?')[0].split('/').pop();
+    frame.addEventListener('load',()=>syncPreviewStyles());
+    if (currentSrc !== STUDIO.currentEditPage) frame.setAttribute('src',STUDIO.currentEditPage);
   });
   syncPageSpecificControls();
 }
