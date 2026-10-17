@@ -1961,8 +1961,9 @@ function initImageLibraryPage() {
       const image = new Image();
       image.crossOrigin = 'anonymous';
       const loaded = new Promise((resolve, reject) => {
-        image.onload = () => resolve();
-        image.onerror = () => reject(new Error('This image cannot be loaded for cropping. Try a same-site or Cloudinary image with CORS enabled.'));
+        const timeoutId = setTimeout(() => reject(new Error('Image loading timed out. Try a same-site or Cloudinary image with CORS enabled.')), 12000);
+        image.onload = () => { clearTimeout(timeoutId); resolve(); };
+        image.onerror = () => { clearTimeout(timeoutId); reject(new Error('This image cannot be loaded for cropping. Try a same-site or Cloudinary image with CORS enabled.')); };
       });
       image.src = originalSrc;
       await loaded;
