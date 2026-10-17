@@ -71,8 +71,9 @@
     </div>
   </div>
 
-  <!-- Page selector -->
-  <select id="page-selector" class="s-header-page-select" title="Select page to preview">
+  <!-- The selected page is the active edit target and preview page. -->
+  <label class="s-header-page-label" for="page-selector">EDIT PAGE</label>
+  <select id="page-selector" class="s-header-page-select" aria-label="Choose the website page to edit" title="Choose the page to edit and preview">
     <option value="index.html">🏠 Home</option>
     <option value="events.html">🎉 Events</option>
     <option value="gallery.html">🖼️ Gallery</option>
@@ -431,6 +432,19 @@
             </div>
           </div>
 
+          <div class="s-card s-page-override-card" id="page-specific-logo-card">
+            <div class="s-card-head"><div class="s-card-title">Page-specific Logo Placement</div><span class="s-card-badge" id="page-logo-selected-name">Home</span></div>
+            <p class="s-page-override-note">For this page only, keep the logo in the navbar, move it into the hero or footer, or place it anywhere using custom X/Y screen coordinates.</p>
+            <div class="s-fg"><label class="s-label" for="page-logo-placement">Logo location</label><select id="page-logo-placement" class="s-input">
+              <option value="navbar">Navbar (default)</option><option value="hero-top-left">Hero · top left</option><option value="hero-top-center">Hero · top centre</option><option value="hero-top-right">Hero · top right</option><option value="hero-middle-left">Hero · middle left</option><option value="hero-center">Hero · centre</option><option value="hero-middle-right">Hero · middle right</option><option value="hero-bottom-left">Hero · bottom left</option><option value="hero-bottom-center">Hero · bottom centre</option><option value="hero-bottom-right">Hero · bottom right</option><option value="footer">Footer</option><option value="custom">Custom screen position (X/Y)</option>
+            </select></div>
+            <div class="s-page-override-grid">
+              <div class="s-cp"><div class="s-cp-label"><span>Custom X position</span><span class="sv" id="page-logo-val-x">50%</span></div><div class="s-cp-row"><input type="range" class="s-range" id="page-logo-slider-x" min="0" max="100" value="50"><input type="number" class="s-ni" id="page-logo-num-x" min="0" max="100" value="50"></div></div>
+              <div class="s-cp"><div class="s-cp-label"><span>Custom Y position</span><span class="sv" id="page-logo-val-y">15%</span></div><div class="s-cp-row"><input type="range" class="s-range" id="page-logo-slider-y" min="0" max="100" value="15"><input type="number" class="s-ni" id="page-logo-num-y" min="0" max="100" value="15"></div></div>
+            </div>
+            <button type="button" class="s-btn s-btn-outline s-btn-sm" id="btn-page-logo-reset">Reset logo placement on selected page</button>
+          </div>
+
           <!-- Responsive Behavior -->
           <div class="s-card">
             <div class="s-card-head">
@@ -693,6 +707,38 @@
           <p>Upload, resize, position and animate your hero image with live preview.</p>
         </div>
         <div class="s-panel-scroll">
+
+          <div class="s-card s-page-override-card" id="page-specific-hero-card">
+            <div class="s-card-head"><div class="s-card-title">Page-specific Hero Editor</div><span class="s-card-badge" id="page-hero-selected-name">Home</span></div>
+            <p class="s-page-override-note">Choose a page in the top bar. These settings override only that page; blank text fields inherit its current content.</p>
+            <div class="s-fg"><label class="s-label" for="page-hero-src">Hero image URL / path</label><input type="url" id="page-hero-src" class="s-input" placeholder="Blank = keep this page's current hero image"></div>
+            <div class="s-row" style="gap:8px;margin-bottom:12px;"><input type="file" id="page-hero-upload" accept="image/*" style="display:none"><button type="button" class="s-btn s-btn-outline s-btn-sm" id="btn-page-hero-upload">Upload Hero Image</button></div>
+            <div class="s-fg"><label class="s-label" for="page-hero-title">Hero heading override</label><input type="text" id="page-hero-title" class="s-input" placeholder="Blank = keep the page heading"></div>
+            <div class="s-fg"><label class="s-label" for="page-hero-subtitle">Hero subheading override</label><textarea id="page-hero-subtitle" class="s-input" rows="3" placeholder="Blank = keep the page description"></textarea></div>
+            <div class="s-page-override-grid">
+              <div class="s-cp"><div class="s-cp-label"><span>Image position X</span><span class="sv" id="page-hero-val-posx">50%</span></div><div class="s-cp-row"><input type="range" class="s-range" id="page-hero-slider-posx" min="0" max="100" value="50"><input type="number" class="s-ni" id="page-hero-num-posx" min="0" max="100" value="50"></div></div>
+              <div class="s-cp"><div class="s-cp-label"><span>Image position Y</span><span class="sv" id="page-hero-val-posy">50%</span></div><div class="s-cp-row"><input type="range" class="s-range" id="page-hero-slider-posy" min="0" max="100" value="50"><input type="number" class="s-ni" id="page-hero-num-posy" min="0" max="100" value="50"></div></div>
+              <div class="s-cp"><div class="s-cp-label"><span>Hero height</span><span class="sv" id="page-hero-val-height">Auto</span></div><div class="s-cp-row"><input type="range" class="s-range" id="page-hero-slider-height" min="25" max="100" value="55"><input type="number" class="s-ni" id="page-hero-num-height" min="25" max="100" value="55"></div></div>
+              <div class="s-cp"><div class="s-cp-label"><span>Overlay opacity</span><span class="sv" id="page-hero-val-opacity">0%</span></div><div class="s-cp-row"><input type="range" class="s-range" id="page-hero-slider-opacity" min="0" max="100" value="0"><input type="number" class="s-ni" id="page-hero-num-opacity" min="0" max="100" value="0"></div></div>
+            </div>
+            <div class="s-fg"><label class="s-label" for="page-hero-overlay-color">Hero overlay colour</label><input type="color" id="page-hero-overlay-color" value="#000000" class="s-color-swatch"></div>
+            <button type="button" class="s-btn s-btn-outline s-btn-sm" id="btn-page-hero-reset">Reset selected page hero overrides</button>
+          </div>
+
+          <div class="s-card s-page-override-card" id="page-specific-button-card">
+            <div class="s-card-head"><div class="s-card-title">Page-specific Button Editor</div><span class="s-card-badge" id="page-button-selected-name">Home · Primary hero</span></div>
+            <p class="s-page-override-note">Choose an individual button on the selected page, then edit its label, destination, colour and size.</p>
+            <div class="s-fg"><label class="s-label" for="page-button-target">Button to edit</label><select id="page-button-target" class="s-input"><option value="primary">Primary hero button</option><option value="secondary">Secondary hero button</option><option value="header">Navbar CTA button</option><option value="section">First section CTA button</option></select></div>
+            <div class="s-fg"><label class="s-label" for="page-button-label">Button label</label><input type="text" id="page-button-label" class="s-input" placeholder="Keep the current label"></div>
+            <div class="s-fg"><label class="s-label" for="page-button-href">Button destination (URL/path)</label><input type="text" id="page-button-href" class="s-input" placeholder="e.g. booking.html"></div>
+            <div class="s-page-override-grid">
+              <div class="s-fg"><label class="s-label" for="page-button-bg">Button background</label><input type="color" id="page-button-bg" class="s-color-swatch" value="#c6a15b"></div>
+              <div class="s-fg"><label class="s-label" for="page-button-color">Button text colour</label><input type="color" id="page-button-color" class="s-color-swatch" value="#171d19"></div>
+              <div class="s-fg"><label class="s-label" for="page-button-radius">Corner radius (px)</label><input type="number" id="page-button-radius" class="s-input" min="0" max="80" placeholder="Use current radius"></div>
+              <div class="s-fg"><label class="s-label" for="page-button-size">Font size (px)</label><input type="number" id="page-button-size" class="s-input" min="10" max="36" placeholder="Use current size"></div>
+            </div>
+            <button type="button" class="s-btn s-btn-outline s-btn-sm" id="btn-page-button-reset">Reset this button on selected page</button>
+          </div>
 
           <!-- Hero Image -->
           <div class="s-card">
@@ -1705,6 +1751,6 @@
 </div>
 
 <script src="assets/js/gallery-data.js"></script>
-<script src="assets/js/admin-studio.js?v=1.4"></script>
+<script src="assets/js/admin-studio.js?v=1.5"></script>
 </body>
 </html>
