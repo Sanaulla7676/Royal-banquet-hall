@@ -247,6 +247,7 @@ test('media library crop and display dimensions are real CMS actions', async ({ 
   test.setTimeout(90000);
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.message));
+  await page.route('**/assets/images/photo-01.jpeg', route => route.fulfill({status:200,contentType:'image/png',body:PNG}));
   const backend = await mockBackend(page);
   await signIn(page);
   await page.locator('.s-nav-item[data-page="image-library"]').click();
