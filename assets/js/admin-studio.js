@@ -115,6 +115,7 @@ let studioAuthenticated = false;
 const STUDIO = {
   currentPage: 'dashboard',
   currentEditPage: 'index.html',
+  selectingPageButton: false,
   viewport: 'desktop',
   undoStack: [],
   redoStack: [],
@@ -473,6 +474,10 @@ function initPageSpecificControls() {
     field.addEventListener('change',()=>{captured=false;});field.addEventListener('blur',()=>{captured=false;});
   });
   document.getElementById('page-button-target')?.addEventListener('change',syncPageSpecificControls);
+  document.getElementById('btn-page-button-pick')?.addEventListener('click',()=>{
+    setPageButtonPickMode(true);
+    toast('Click a highlighted CTA in the preview to select it for editing.', 'gold');
+  });
   const bindRange=(sliderId,numberId,section,property)=>{
     const slider=document.getElementById(sliderId),number=document.getElementById(numberId);if(!slider||!number)return;let captured=false;
     const apply=value=>{
@@ -528,6 +533,68 @@ function initPageSpecificControls() {
     if (currentSrc !== STUDIO.currentEditPage) frame.setAttribute('src',STUDIO.currentEditPage);
   });
   syncPageSpecificControls();
+}
+
+
+function setPageButtonPickMode(enabled) {
+  STUDIO.selectingPageButton = !!enabled;
+  const button = document.getElementById('btn-page-button-pick');
+  const status = document.getElementById('page-button-pick-status');
+  if (button) button.textContent = enabled ? 'Click a highlighted button…' : 'Select button in preview';
+  if (status) status.textContent = enabled
+    ? 'Selection mode is on. Click a highlighted hero, navbar or section CTA in the preview.'
+    : 'Choose a button directly in the live preview.';
+  getAllIframeDocs().forEach(({doc}) => {
+    if (!doc) return;
+    let style = doc.getElementById('studio-page-button-pick-styles');
+    if (enabled) {
+      if (!style) { style = doc.createElement('style'); style.id = 'studio-page-button-pick-styles'; (doc.head || doc.body).appendChild(style); }
+      style.textContent = '.site-header .nav-actions a.btn,.hero .btn-row a.btn,.hero-section .btn-row a.btn,.page-hero .btn-row a.btn,.cta-banner a.btn{outline:2px dashed #c6a15b!important;outline-offset:4px!important;cursor:crosshair!important}';
+    } else if (style) {
+      style.remove();
+    }
+  });
+}
+
+function installPageButtonPicker(doc) {
+  if (!doc || !doc.documentElement || doc.documentElement.dataset.rbhPageButtonPickerInstalled === 'true') return;
+  doc.documentElement.dataset.rbhPageButtonPickerInstalled = 'true';
+  doc.addEventListener('click', event => {
+    if (!STUDIO.selectingPageButton) return;
+    const target = event.target && event.target.closest
+      ? event.target.closest('.site-header .nav-actions a.btn,.hero .btn-row a.btn,.hero-section .btn-row a.btn,.page-hero .btn-row a.btn,.cta-banner a.btn')
+      : null;
+    if (!target) return;
+
+    let key = '';
+    if (target.closest('.site-header .nav-actions')) key = 'header';
+    else if (target.closest('.cta-banner')) key = 'section';
+    else if (target.closest('.hero,.hero-section,.page-hero')) {
+      key = target.matches('.btn-outline,.btn-secondary,.btn-dark') ? 'secondary' : 'primary';
+    }
+    if (!key) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    const pageKey = (doc.location.pathname.split('/').pop() || 'index.html').toLowerCase();
+    const selector = document.getElementById('page-selector');
+    if (selector && Object.prototype.hasOwnProperty.call(STUDIO_PAGE_OPTIONS,pageKey) && selector.value !== pageKey) {
+      selector.value = pageKey;
+      selector.dispatchEvent(new Event('change',{bubbles:true}));
+    } else {
+      STUDIO.currentEditPage = currentEditPageKey();
+      syncPageSpecificControls();
+    }
+    const targetSelect = document.getElementById('page-button-target');
+    if (targetSelect) targetSelect.value = key;
+    setPageButtonPickMode(false);
+    syncPageSpecificControls();
+    navigateTo('hero-image');
+    toast('Selected the ' + ({primary:'primary hero',secondary:'secondary hero',header:'navbar CTA',section:'section CTA'}[key] || 'button') +
+      ' on ' + (STUDIO_PAGE_OPTIONS[pageKey] || 'the selected page') + '. Edit its label, link or style on the left.', 'gold');
+  }, true);
 }
 
 function syncPreviewStyles() {
@@ -725,6 +792,8 @@ function syncPreviewStyles() {
 
   getAllIframeDocs().forEach(({ doc, win }) => {
     try {
+      installPageButtonPicker(doc);
+      if (STUDIO.selectingPageButton) setPageButtonPickMode(true);
       // Remove any lingering site-intro elements in iframe preview
       const intro = doc.getElementById('site-intro');
       if (intro) intro.remove();
