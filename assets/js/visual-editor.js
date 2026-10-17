@@ -14,11 +14,39 @@
     { file: 'booking.html', label: 'Booking', icon: '▦', route: '/booking.html' },
     { file: 'packages.html', label: 'Packages', icon: '◇', route: '/packages.html' }
   ];
+  const fontOptions = [
+    { name:'Playfair Display', category:'serif', stack:"'Playfair Display', serif", sample:'Royal Celebrations' },
+    { name:'Cormorant Garamond', category:'serif', stack:"'Cormorant Garamond', serif", sample:'A Royal Celebration' },
+    { name:'Libre Baskerville', category:'serif', stack:"'Libre Baskerville', serif", sample:'The Grand Occasion' },
+    { name:'Lora', category:'editorial', stack:"'Lora', serif", sample:'A Day to Remember' },
+    { name:'Cinzel', category:'display', stack:"'Cinzel', serif", sample:'ROYAL BANQUET' },
+    { name:'Prata', category:'display', stack:"'Prata', serif", sample:'Elegant Moments' },
+    { name:'Bodoni Moda', category:'editorial', stack:"'Bodoni Moda', serif", sample:'The Art of Celebration' },
+    { name:'DM Serif Display', category:'display', stack:"'DM Serif Display', serif", sample:'Unforgettable Events' },
+    { name:'Source Serif 4', category:'serif', stack:"'Source Serif 4', serif", sample:'The Perfect Venue' },
+    { name:'Merriweather', category:'serif', stack:"'Merriweather', serif", sample:'Moments Made Special' },
+    { name:'Crimson Pro', category:'editorial', stack:"'Crimson Pro', serif", sample:'A Beautiful Beginning' },
+    { name:'EB Garamond', category:'serif', stack:"'EB Garamond', serif", sample:'Celebrate in Style' },
+    { name:'Inter', category:'sans', stack:"'Inter', sans-serif", sample:'Make Every Moment Count' },
+    { name:'DM Sans', category:'sans', stack:"'DM Sans', sans-serif", sample:'Designed for Your Day' },
+    { name:'Manrope', category:'sans', stack:"'Manrope', sans-serif", sample:'A Place for Every Occasion' },
+    { name:'Montserrat', category:'sans', stack:"'Montserrat', sans-serif", sample:'Create Lasting Memories' },
+    { name:'Poppins', category:'sans', stack:"'Poppins', sans-serif", sample:'Celebrate Something Special' },
+    { name:'Lato', category:'sans', stack:"'Lato', sans-serif", sample:'Moments that Matter' },
+    { name:'Open Sans', category:'sans', stack:"'Open Sans', sans-serif", sample:'The Perfect Celebration' },
+    { name:'Nunito Sans', category:'sans', stack:"'Nunito Sans', sans-serif", sample:'Your Day, Your Way' },
+    { name:'Plus Jakarta Sans', category:'sans', stack:"'Plus Jakarta Sans', sans-serif", sample:'An Experience to Remember' },
+    { name:'Work Sans', category:'sans', stack:"'Work Sans', sans-serif", sample:'Beautifully Done' },
+    { name:'Urbanist', category:'sans', stack:"'Urbanist', sans-serif", sample:'Every Detail Matters' },
+    { name:'Oswald', category:'display', stack:"'Oswald', sans-serif", sample:'MAKE IT MEMORABLE' }
+  ];
   const styleProps = {
     color: 'color', backgroundColor: 'background-color', fontSize: 'font-size',
     fontFamily: 'font-family', fontWeight: 'font-weight', textAlign: 'text-align',
+    lineHeight: 'line-height', letterSpacing: 'letter-spacing', textTransform: 'text-transform',
     borderRadius: 'border-radius', opacity: 'opacity', width: 'width', height: 'height',
-    padding: 'padding', margin: 'margin', objectPosition: 'object-position'
+    padding: 'padding', margin: 'margin', objectPosition: 'object-position',
+    position: 'position', left: 'left', top: 'top', zIndex: 'z-index'
   };
   const safeLength = /^(auto|inherit|initial|unset|normal|none|fit-content|max-content|min-content|0|[-+]?(?:\d+\.?\d*|\.\d+)(?:px|rem|em|vh|vw|%|ch|ex|svh|dvh)?)(?:\s+[-+]?(?:\d+\.?\d*|\.\d+)(?:px|rem|em|vh|vw|%|ch|ex|svh|dvh)?){0,3}$/i;
   let cms = {};
@@ -38,6 +66,9 @@
   let hoveredElement = null;
   let zoom = 1;
   let toastTimer = null;
+  let moveMode = false;
+  let suppressNextCanvasClick = false;
+  let activeFontCategory = 'all';
 
   function clone(value) { return JSON.parse(JSON.stringify(value == null ? {} : value)); }
   function pageRecord(pageKey = activePage) {
@@ -103,6 +134,19 @@
     $('#vb-undo').addEventListener('click', undo);
     $('#vb-redo').addEventListener('click', redo);
     $('#vb-collapse-left').addEventListener('click', collapseLeft);
+    $('#vb-expand-layers').addEventListener('click', () => setLayersExpanded(true));
+    $('#vb-collapse-layers').addEventListener('click', () => setLayersExpanded(false));
+    $('#vb-move-mode').addEventListener('click', () => setMoveMode(!moveMode));
+    $('#vb-open-font-picker').addEventListener('click', openFontPicker);
+    $('#vb-close-font-picker').addEventListener('click', closeFontPicker);
+    $('#vb-close-font-picker-backdrop').addEventListener('click', closeFontPicker);
+    $('#vb-cancel-font-picker').addEventListener('click', closeFontPicker);
+    $('#vb-font-search').addEventListener('input', renderFontChoices);
+    $('#vb-font-categories').querySelectorAll('[data-font-category]').forEach(button => button.addEventListener('click', () => {
+      activeFontCategory = button.dataset.fontCategory || 'all';
+      $('#vb-font-categories').querySelectorAll('[data-font-category]').forEach(item => item.classList.toggle('is-active',item === button));
+      renderFontChoices();
+    }));
     $('#vb-reset-element').addEventListener('click', resetElement);
     $('#vb-inspector-reset').addEventListener('click', resetElement);
     $('#vb-tool-reset').addEventListener('click', resetElement);
@@ -126,16 +170,28 @@
     bindInput('vb-src', 'src', 'change');
     bindInput('vb-alt', 'alt', 'change');
     bindInput('vb-target', 'target', 'change');
-    bindStyle('vb-font-size', 'fontSize');
-    bindStyle('vb-font-family', 'fontFamily');
+    $('#vb-font-family').addEventListener('change', event => updateStyle('fontFamily',event.target.value));
     bindStyle('vb-font-weight', 'fontWeight');
     bindStyle('vb-text-align', 'textAlign');
+    bindStyle('vb-text-transform', 'textTransform');
     bindStyle('vb-radius', 'borderRadius');
-    bindStyle('vb-width', 'width');
-    bindStyle('vb-height', 'height');
     bindStyle('vb-padding', 'padding');
     bindStyle('vb-margin', 'margin');
     bindStyle('vb-object-position', 'objectPosition');
+    bindSliderStyle('vb-font-size','fontSize','px','vb-font-size-number','vb-font-size-label');
+    bindSliderStyle('vb-line-height','lineHeight','','vb-line-height-number','vb-line-height-label');
+    bindSliderStyle('vb-letter-spacing','letterSpacing','px','vb-letter-spacing-number','vb-letter-spacing-label');
+    bindSliderStyle('vb-width','width','px','vb-width-number','vb-width-label');
+    bindSliderStyle('vb-height','height','px','vb-height-number','vb-height-label');
+    $('#vb-width-preset').addEventListener('change', event => applyDimensionPreset('width',event.target.value));
+    $('#vb-height-preset').addEventListener('change', event => applyDimensionPreset('height',event.target.value));
+    document.querySelectorAll('[data-font-size]').forEach(button => button.addEventListener('click', () => applySliderValue('vb-font-size',button.dataset.fontSize,'px','vb-font-size-number','vb-font-size-label')));
+    document.querySelectorAll('[data-line-height]').forEach(button => button.addEventListener('click', () => applySliderValue('vb-line-height',button.dataset.lineHeight,'','vb-line-height-number','vb-line-height-label')));
+    $('.vb-motion-card').forEach(button => button.addEventListener('click', () => {
+      field('vb-motion').value = button.dataset.motionPreset;
+      renderMotionUpdate();
+      replayMotion();
+    }));
     $('#vb-opacity').addEventListener('input', event => { $('#vb-opacity-label').textContent = Math.round(Number(event.target.value) * 100) + '%'; updateStyle('opacity', event.target.value); });
     $('#vb-cursor').addEventListener('change', event => updateElementProperty('cursor', event.target.value));
     $('#vb-hidden').addEventListener('change', event => updateElementProperty('hidden', event.target.checked));
@@ -296,6 +352,13 @@
     frameDoc.documentElement.classList.toggle('rbh-vb-select-mode', selectMode);
     frameDoc.documentElement.classList.toggle('rbh-vb-hand-mode', !selectMode);
     frameDoc.addEventListener('click', event => {
+      if (suppressNextCanvasClick) {
+        suppressNextCanvasClick = false;
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        return;
+      }
       if (!selectMode) return;
       const target = event.target && event.target.nodeType === 1 ? event.target : event.target.parentElement;
       const el = target && target.closest('a,button,img,video,source,h1,h2,h3,h4,h5,h6,p,span,li,article,section,header,footer,nav,main,div');
@@ -305,8 +368,14 @@
       event.stopImmediatePropagation();
       selectElement(el);
     }, true);
+    frameDoc.addEventListener('pointerdown', event => {
+      if (!moveMode || !currentElement || event.button !== 0) return;
+      const target = event.target && event.target.nodeType === 1 ? event.target : event.target.parentElement;
+      if (!(currentElement === target || currentElement.contains(target))) return;
+      startCanvasDrag(event);
+    }, true);
     frameDoc.addEventListener('mouseover', event => {
-      if (!selectMode) return;
+      if (!selectMode || moveMode) return;
       const target = event.target && event.target.nodeType === 1 ? event.target : event.target.parentElement;
       const el = target && target.closest('a,button,img,video,h1,h2,h3,h4,h5,h6,p,span,li,article,section,header,footer,nav,main,div');
       if (hoveredElement && hoveredElement !== currentElement) hoveredElement.classList.remove('rbh-vb-hover');
@@ -314,7 +383,7 @@
       if (hoveredElement && hoveredElement !== currentElement) hoveredElement.classList.add('rbh-vb-hover');
     }, true);
     frameDoc.addEventListener('mouseout', event => {
-      if (!selectMode) return;
+      if (!selectMode || moveMode) return;
       if (hoveredElement && hoveredElement !== currentElement) hoveredElement.classList.remove('rbh-vb-hover');
     }, true);
   }
@@ -546,7 +615,7 @@
   }
 
   function applyMotion(el, motion) {
-    const preset = ['none','fade-in','fade-up','zoom-in','slide-left','slide-right','float'].includes(motion.preset) ? motion.preset : 'preserve';
+    const preset = ['none','fade-in','fade-up','slide-down','zoom-in','slide-left','slide-right','blur-in','bounce','pulse','rotate','shimmer','float'].includes(motion.preset) ? motion.preset : 'preserve';
     if (preset === 'preserve') {
       el.removeAttribute('data-rbh-vb-motion');
       return;
@@ -568,13 +637,25 @@
       '@keyframes rbhVbSlideLeft{from{opacity:.2;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}',
       '@keyframes rbhVbSlideRight{from{opacity:.2;transform:translateX(-24px)}to{opacity:1;transform:translateX(0)}}',
       '@keyframes rbhVbFloat{from{transform:translateY(0)}to{transform:translateY(-8px)}}',
+      '@keyframes rbhVbSlideDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}',
+      '@keyframes rbhVbBlurIn{from{opacity:0;filter:blur(12px)}to{opacity:1;filter:blur(0)}}',
+      '@keyframes rbhVbBounce{0%{opacity:0;transform:translateY(18px)}60%{opacity:1;transform:translateY(-4px)}100%{transform:translateY(0)}}',
+      '@keyframes rbhVbPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}',
+      '@keyframes rbhVbRotate{from{opacity:.2;transform:rotate(-6deg) scale(.96)}to{opacity:1;transform:rotate(0) scale(1)}}',
+      '@keyframes rbhVbShimmer{0%,100%{filter:brightness(1)}50%{filter:brightness(1.26) drop-shadow(0 0 8px rgba(198,161,91,.45))}}',
       '[data-rbh-vb-motion="none"]{animation:none!important}',
       '[data-rbh-vb-motion="fade-in"]{animation:rbhVbFadeIn var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease) var(--rbh-vb-delay,0ms) both!important}',
       '[data-rbh-vb-motion="fade-up"]{animation:rbhVbFadeUp var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
       '[data-rbh-vb-motion="zoom-in"]{animation:rbhVbZoomIn var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
       '[data-rbh-vb-motion="slide-left"]{animation:rbhVbSlideLeft var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
       '[data-rbh-vb-motion="slide-right"]{animation:rbhVbSlideRight var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
-      '[data-rbh-vb-motion="float"]{animation:rbhVbFloat 3s ease-in-out infinite alternate}'
+      '[data-rbh-vb-motion="slide-down"]{animation:rbhVbSlideDown var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
+      '[data-rbh-vb-motion="blur-in"]{animation:rbhVbBlurIn var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
+      '[data-rbh-vb-motion="bounce"]{animation:rbhVbBounce var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
+      '[data-rbh-vb-motion="pulse"]{animation:rbhVbPulse var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-in-out) var(--rbh-vb-delay,0ms) both!important}',
+      '[data-rbh-vb-motion="rotate"]{animation:rbhVbRotate var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
+      '[data-rbh-vb-motion="shimmer"]{animation:rbhVbShimmer var(--rbh-vb-duration,1200ms) var(--rbh-vb-easing,ease-in-out) var(--rbh-vb-delay,0ms) both!important}',
+      '[data-rbh-vb-motion="float"]{animation:rbhVbFloat var(--rbh-vb-duration,3000ms) var(--rbh-vb-easing,ease-in-out) var(--rbh-vb-delay,0ms) infinite alternate}'
     ].join('\n');
     el.style.setProperty('--rbh-vb-duration', clamp(Number(motion.duration) || 800,100,15000) + 'ms');
     el.style.setProperty('--rbh-vb-delay', clamp(Number(motion.delay) || 0,0,10000) + 'ms');
@@ -599,11 +680,16 @@
     const cssProp = styleProps[prop] || prop;
     const val = String(value).trim();
     if (val.length > 180 || /[;{}<>]/.test(val) || /url\s*\(|expression\s*\(|javascript:/i.test(val)) return false;
-    if (['font-size','width','height','padding','margin','border-radius'].includes(cssProp)) return safeLength.test(val) || /^calc\([0-9a-zA-Z.%+*/()\s-]+\)$/i.test(val);
+    if (['font-size','width','height','padding','margin','border-radius','left','top'].includes(cssProp)) return safeLength.test(val) || /^calc\([0-9a-zA-Z.%+*/()\s-]+\)$/i.test(val);
     if (['color','background-color'].includes(cssProp)) return /^(#[0-9a-f]{3,8}|rgba?\([\d.,%\s]+\)|hsla?\([\d.,%\sdeg-]+\)|[a-z]{1,25}|var\(--[a-z0-9-]+\))$/i.test(val);
     if (cssProp === 'opacity') return Number.isFinite(Number(val)) && Number(val) >= 0 && Number(val) <= 1;
     if (cssProp === 'font-weight') return /^(normal|bold|[1-9]00)$/i.test(val);
     if (cssProp === 'font-family') return /^[a-zA-Z0-9 ,"'-]{1,100}$/.test(val);
+    if (cssProp === 'line-height') return /^(normal|[0-9]*\.?[0-9]+(?:px|rem|em|%)?)$/i.test(val);
+    if (cssProp === 'letter-spacing') return /^(normal|[-+]?[0-9]*\.?[0-9]+(?:px|rem|em|%)?)$/i.test(val);
+    if (cssProp === 'text-transform') return ['none','capitalize','uppercase','lowercase','full-width'].includes(val);
+    if (cssProp === 'position') return ['static','relative','absolute','fixed','sticky'].includes(val);
+    if (cssProp === 'z-index') return /^\d{1,4}$/.test(val) && Number(val) <= 9999;
     if (cssProp === 'text-align') return ['left','right','center','justify','start','end'].includes(val);
     if (cssProp === 'object-position') return /^[a-zA-Z0-9.%\s-]+$/.test(val) && val.length < 60;
     if (cssProp === 'cursor') return ['pointer','default','grab','grabbing','move','text','not-allowed'].includes(val);
@@ -694,12 +780,39 @@
     const rows = $('#vb-layer-tree')._vbRows || [];
     rows.forEach(item => {
       const value = [item.name.textContent,item.el.tagName,item.el.id,Array.from(item.el.classList || []).join(' ')].join(' ').toLowerCase();
-      item.row.style.display = !query || value.includes(query) ? 'flex' : 'none';
+      const matches = !query || value.includes(query);
+      item.row.style.display = matches ? 'flex' : 'none';
+      if (matches && query) {
+        let ancestorGroup = item.row.parentElement && item.row.parentElement.parentElement && item.row.parentElement.parentElement.closest('.vb-layer-group');
+        while (ancestorGroup) {
+          const ancestorRow = ancestorGroup.querySelector(':scope > .vb-layer-row');
+          const childWrap = ancestorGroup.querySelector(':scope > .vb-layer-children');
+          if (ancestorRow) ancestorRow.style.display = 'flex';
+          if (childWrap) {
+            childWrap.hidden = false;
+            const arrow = ancestorRow && ancestorRow.querySelector('.vb-layer-disclose');
+            if (arrow && !arrow.disabled) arrow.textContent = '▾';
+          }
+          ancestorGroup = ancestorGroup.parentElement && ancestorGroup.parentElement.closest('.vb-layer-group');
+        }
+      }
     });
   }
   function syncLayerSelection() {
     const rows = $('#vb-layer-tree')._vbRows || [];
     rows.forEach(item => item.row.classList.toggle('is-selected', item.el === currentElement));
+    const selected = rows.find(item => item.el === currentElement);
+    if (selected && !$('#vb-layer-search').value.trim()) selected.row.scrollIntoView({block:'nearest'});
+  }
+  function setLayersExpanded(expanded) {
+    $('#vb-layer-tree .vb-layer-group').forEach(group => {
+      const childWrap = group.querySelector(':scope > .vb-layer-children');
+      const row = group.querySelector(':scope > .vb-layer-row');
+      const arrow = row && row.querySelector('.vb-layer-disclose');
+      if (!childWrap) return;
+      childWrap.hidden = !expanded;
+      if (arrow && !arrow.disabled) arrow.textContent = expanded ? '▾' : '▸';
+    });
   }
   function updateSelectionOutline() {
     if (!frameDoc) return;
@@ -838,6 +951,7 @@
 
   function updateStyle(key,value) {
     if (!currentElement || !currentSelector || !ready) return;
+    if (key === 'fontFamily') loadGoogleFontForDocument(frameDoc, String(value || '').split(',')[0].replace(/['"]/g,'').trim());
     beginEdit();
     const entry = elementRecord(currentSelector,true);
     const next = String(value == null ? '' : value).trim();
