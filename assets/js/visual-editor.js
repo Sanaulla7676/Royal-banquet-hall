@@ -263,7 +263,7 @@
         injectEditorCss();
         attachSelectionEvents();
         buildLayers();
-        applyDraftOverrides();
+        syncDraftOverrides();
         loading.hidden = true;
         updateSelectionOutline();
       } catch (err) {
@@ -563,16 +563,19 @@
     return false;
   }
 
+  function syncDraftOverrides() {
+    if (!frameDoc || !$('#vb-page-frame').contentWindow) return;
+    const page = (cms.pageOverrides || {})[activePage] || {};
+    const elements = page.elements && typeof page.elements === 'object' ? page.elements : {};
+    $('#vb-page-frame').contentWindow.postMessage({
+      type: 'RBH_VB_PREVIEW_ELEMENTS',
+      pageKey: activePage,
+      elements
+    }, window.location.origin);
+  }
+
   function applyDraftOverrides() {
-    if (!frameDoc) return;
-    const elements = (((cms.pageOverrides || {})[activePage] || {}).elements || {});
-    Object.entries(elements).forEach(([selector,entry]) => {
-      if (!isSafeSelector(selector) || !entry || typeof entry !== 'object') return;
-      try {
-        const el = frameDoc.querySelector(selector);
-        if (el) restoreOverride(el,entry);
-      } catch {}
-    });
+    syncDraftOverrides();
   }
   function isSafeSelector(selector) {
     return typeof selector === 'string' && selector.length < 1200 && !/[{};]/.test(selector) && /^[a-zA-Z0-9_#.:>\[\]="'\\*+~()\-\s]+$/.test(selector);
@@ -766,37 +769,22 @@
     if (key === 'text') {
       if (!hasTextContent(currentElement)) return;
       entry.text = String(value).slice(0,12000);
-      const nodes = captureBase(currentElement).textNodes.filter(item => item.node && item.node.isConnected);
-      if (nodes.length) { nodes[0].node.nodeValue = entry.text; nodes.slice(1).forEach(item => { item.node.nodeValue = ''; }); }
     } else if (key === 'href') {
       if (!isSafeHref(value)) { toast('Enter a safe internal, HTTP(S), telephone, or email destination.',true); return; }
       entry.href = String(value).trim();
-      if (currentElement.tagName.toLowerCase() === 'a') currentElement.setAttribute('href',entry.href);
     } else if (key === 'src') {
       if (!isSafeMediaUrl(value)) { toast('Use an HTTPS URL or a site-relative media path.',true); return; }
       entry.src = String(value).trim();
-      currentElement.setAttribute('src',entry.src);
     } else if (key === 'alt') {
       entry.alt = String(value).slice(0,500);
-      if (currentElement.tagName.toLowerCase() === 'img') currentElement.setAttribute('alt',entry.alt);
     } else if (key === 'target') {
       entry.target = value === '_blank' ? '_blank' : '_self';
-      if (currentElement.tagName.toLowerCase() === 'a') {
-        currentElement.setAttribute('target',entry.target);
-        if (entry.target === '_blank') currentElement.setAttribute('rel','noopener noreferrer');
-      }
     } else if (key === 'cursor') {
       if (value && !isAllowedStyle('cursor',value)) { toast('That cursor option is not supported.',true); return; }
-      if (value) { entry.cursor = value; currentElement.style.setProperty('cursor',value,'important'); }
-      else { delete entry.cursor; const base = captureBase(currentElement).styleValues.cursor; if (base.value) currentElement.style.setProperty('cursor',base.value,base.priority); else currentElement.style.removeProperty('cursor'); }
+      if (value) entry.cursor = value;
+      else delete entry.cursor;
     } else if (key === 'hidden') {
       entry.hidden = Boolean(value);
-      if (entry.hidden) currentElement.style.setProperty('display','none','important');
-      else {
-        const base = captureBase(currentElement).styleValues.display;
-        if (base.value) currentElement.style.setProperty('display',base.value,base.priority);
-        else currentElement.style.removeProperty('display');
-      }
     }
     changed();
   }
@@ -806,18 +794,10 @@
     beginEdit();
     const entry = elementRecord(currentSelector,true);
     const next = String(value == null ? '' : value).trim();
-    const prop = styleProps[key] || key;
     if (next && !isAllowedStyle(key,next)) { toast('That CSS value is not supported or is invalid.',true); return; }
     entry.styles = entry.styles || {};
-    if (next === '') {
-      delete entry.styles[key];
-      const base = captureBase(currentElement).styleValues[prop];
-      if (base && base.value) currentElement.style.setProperty(prop,base.value,base.priority);
-      else currentElement.style.removeProperty(prop);
-    } else {
-      entry.styles[key] = next;
-      currentElement.style.setProperty(prop,next,'important');
-    }
+    if (next === '') delete entry.styles[key];
+    else entry.styles[key] = next;
     if (!Object.keys(entry.styles).length) delete entry.styles;
     changed();
   }
@@ -837,7 +817,6 @@
     }
     if (!Object.keys(entry.responsive.mobile).length) delete entry.responsive.mobile;
     if (!Object.keys(entry.responsive).length) delete entry.responsive;
-    applySingleOverride(currentElement,entry);
     changed();
   }
 
@@ -848,17 +827,6 @@
     const preset = field('vb-motion').value;
     if (preset === 'preserve') {
       delete entry.motion;
-      const base = captureBase(currentElement);
-      if (base.motion === null) currentElement.removeAttribute('data-rbh-vb-motion');
-      else currentElement.setAttribute('data-rbh-vb-motion',base.motion);
-      ['duration','delay','easing'].forEach(key => {
-        const attr = 'data-rbh-vb-' + key;
-        const value = base['motion' + key[0].toUpperCase() + key.slice(1)];
-        if (value === null) currentElement.removeAttribute(attr); else currentElement.setAttribute(attr,value);
-      });
-      currentElement.style.removeProperty('--rbh-vb-duration');
-      currentElement.style.removeProperty('--rbh-vb-delay');
-      currentElement.style.removeProperty('--rbh-vb-easing');
     } else {
       entry.motion = {
         preset,
@@ -866,7 +834,6 @@
         delay: clamp(Number(field('vb-motion-delay').value) || 0,0,10000),
         easing: safeEasing(field('vb-motion-easing').value)
       };
-      applyMotion(currentElement,entry.motion);
     }
     changed();
   }
@@ -896,6 +863,7 @@
     $('#vb-draft-label').textContent = 'Unpublished draft';
     $('#vb-save-draft').disabled = false;
     $('#vb-publish').disabled = false;
+    syncDraftOverrides();
     renderPages();
     syncLayerSelection();
     if (currentElement) {
@@ -913,7 +881,6 @@
     beginEdit();
     delete page.elements[currentSelector];
     if (!Object.keys(page.elements).length) delete page.elements;
-    if (currentElement) restoreBase(currentElement);
     renderInspector(currentElement);
     changed();
     toast('Element overrides removed. Original page styling and animation are restored.');
@@ -944,7 +911,6 @@
     dirty = JSON.stringify(cms) !== savedState;
     saveStatus(dirty ? 'Unsaved changes' : 'Saved draft',dirty ? 'is-dirty' : '');
     if (frameDoc) {
-      if (currentElement) restoreBase(currentElement);
       currentElement = null;
       currentSelector = '';
       applyDraftOverrides();
@@ -1067,11 +1033,8 @@
     if (!currentElement) return;
     const entry = elementRecord(currentSelector,false) || {};
     if (entry.motion && entry.motion.preset && entry.motion.preset !== 'preserve') {
-      const preset = entry.motion.preset;
-      currentElement.removeAttribute('data-rbh-vb-motion');
-      void currentElement.offsetWidth;
-      applyMotion(currentElement,entry.motion);
-      toast('Animation replayed in the preview.');
+      $('#vb-page-frame').contentWindow.postMessage({type:'RBH_VB_REPLAY_MOTION',selector:currentSelector},window.location.origin);
+      toast('Animation replay requested in the preview.');
     } else {
       currentElement.animate([{opacity:.65,offset:0},{opacity:1,offset:1}],{duration:450,easing:'ease-out'});
       toast('Existing animation settings are preserved. Previewed a temporary selection fade.');
