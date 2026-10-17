@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Visual website builder for Royal Banquet Hall">
+<title>Royal Banquet Hall | Visual Builder</title>
+<link rel="stylesheet" href="assets/css/visual-editor.css?v=1.0">
+</head>
+<body>
+<div class="vb-login" id="vb-login">
+  <form class="vb-login-card" id="vb-login-form">
+    <div class="vb-login-crest"><img src="assets/images/royal-hall-crest.webp" alt=""></div>
+    <div class="vb-eyebrow">SECURE ADMIN ACCESS</div>
+    <h1>Royal Visual Builder</h1>
+    <p>Sign in to edit the live website safely. Your edits remain drafts until you publish them.</p>
+    <label for="vb-username">Login ID</label>
+    <input id="vb-username" name="username" autocomplete="username" required>
+    <label for="vb-password">Password</label>
+    <input id="vb-password" name="password" type="password" autocomplete="current-password" required>
+    <label class="vb-check"><input id="vb-remember" type="checkbox" checked> Keep me signed in</label>
+    <div class="vb-login-error" id="vb-login-error" role="alert"></div>
+    <button class="vb-btn vb-btn-gold vb-full" type="submit" id="vb-login-submit">Sign in to Visual Builder <span aria-hidden="true">↗</span></button>
+    <a class="vb-muted-link" href="admin-studio.html">Open the existing Admin Studio</a>
+  </form>
+</div>
+
+<div class="vb-app" id="vb-app" hidden>
+  <header class="vb-topbar">
+    <a class="vb-brand" href="visual-editor.html" aria-label="Royal Banquet Hall Visual Builder">
+      <img src="assets/images/royal-hall-crest.webp" alt="">
+      <span><strong>ROYAL <i>BANQUET HALL</i></strong><small>VISUAL BUILDER</small></span>
+    </a>
+    <nav class="vb-main-nav" aria-label="Editor tools">
+      <span class="vb-nav-active"><span>◈</span> Visual Editor</span>
+      <a href="admin-studio.html" title="Open the existing full Admin Studio">Advanced Studio ↗</a>
+    </nav>
+    <div class="vb-top-actions">
+      <button class="vb-icon-btn" id="vb-undo" title="Undo (Ctrl+Z)" disabled aria-label="Undo">↶</button>
+      <button class="vb-icon-btn" id="vb-redo" title="Redo (Ctrl+Y)" disabled aria-label="Redo">↷</button>
+      <span class="vb-save-state" id="vb-save-state"><i></i><span>Loading</span></span>
+      <a class="vb-btn vb-btn-outline" id="vb-open-live" href="index.html" target="_blank" rel="noopener">Preview ↗</a>
+      <button class="vb-btn vb-btn-gold" id="vb-publish">Publish <span aria-hidden="true">⌄</span></button>
+    </div>
+  </header>
+
+  <div class="vb-contextbar">
+    <div class="vb-context-left">
+      <span class="vb-muted-label">CURRENTLY EDITING</span>
+      <select id="vb-page-select" aria-label="Select page">
+        <option value="index.html">Home Page</option>
+        <option value="events.html">Events Page</option>
+        <option value="gallery.html">Gallery Page</option>
+        <option value="experience.html">Experience Page</option>
+        <option value="catering.html">Catering Page</option>
+        <option value="reviews.html">Reviews Page</option>
+        <option value="contact.html">Contact Page</option>
+        <option value="booking.html">Booking Page</option>
+        <option value="packages.html">Packages Page</option>
+      </select>
+      <span class="vb-route" id="vb-route">/</span>
+    </div>
+    <div class="vb-device-switch" aria-label="Preview viewport">
+      <button data-device="desktop" class="is-active" aria-pressed="true"><span>▣</span> Desktop</button>
+      <button data-device="tablet" aria-pressed="false"><span>▯</span> Tablet</button>
+      <button data-device="mobile" aria-pressed="false"><span>▯</span> Mobile</button>
+    </div>
+    <div class="vb-context-right">
+      <span class="vb-draft-indicator" id="vb-draft-label">Draft workspace</span>
+      <button class="vb-text-btn" id="vb-reload">Reload preview ↻</button>
+    </div>
+  </div>
+
+  <main class="vb-workspace">
+    <aside class="vb-left">
+      <div class="vb-panel-title">
+        <div><small>WEBSITE STRUCTURE</small><h2>Pages & Layers</h2></div>
+        <button class="vb-icon-btn vb-small" id="vb-collapse-left" title="Collapse sidebar" aria-label="Collapse sidebar">‹</button>
+      </div>
+      <div class="vb-section-heading"><span>Pages</span><span class="vb-count">9</span></div>
+      <label class="vb-search"><span>⌕</span><input id="vb-page-search" placeholder="Find a page…" aria-label="Find a page"></label>
+      <div class="vb-page-list" id="vb-page-list"></div>
+      <div class="vb-divider"></div>
+      <div class="vb-section-heading"><span>Layers</span><button class="vb-text-btn" id="vb-refresh-layers">Refresh</button></div>
+      <label class="vb-search"><span>⌕</span><input id="vb-layer-search" placeholder="Find an element…" aria-label="Find a layer"></label>
+      <div class="vb-layer-meta" id="vb-layer-meta">Choose an element in the canvas</div>
+      <div class="vb-layer-tree" id="vb-layer-tree"></div>
+      <div class="vb-left-footer"><span class="vb-status-dot"></span> Connected to site preview</div>
+    </aside>
+
+    <section class="vb-canvas-panel" aria-label="Visual preview">
+      <div class="vb-canvas-toolbar">
+        <div class="vb-select-tools">
+          <button id="vb-select-mode" class="is-active" title="Click components to edit">⌖ Select</button>
+          <button id="vb-hand-mode" title="Scroll and interact with the page">✋ Hand</button>
+        </div>
+        <div class="vb-canvas-hint" id="vb-canvas-hint">Click any supported element on the page to edit it</div>
+        <div class="vb-zoom-tools"><button id="vb-zoom-out" aria-label="Zoom out">−</button><span id="vb-zoom-value">100%</span><button id="vb-zoom-in" aria-label="Zoom in">+</button><button id="vb-zoom-reset" title="Reset zoom">Fit</button></div>
+      </div>
+      <div class="vb-canvas-wrap" id="vb-canvas-wrap">
+        <div class="vb-preview-frame vb-device-desktop" id="vb-preview-frame">
+          <div class="vb-frame-loading" id="vb-frame-loading"><span class="vb-spinner"></span><strong>Loading page preview…</strong><small>Existing page scripts and animations are preserved.</small></div>
+          <iframe id="vb-page-frame" title="Website preview canvas" src="index.html"></iframe>
+        </div>
+      </div>
+      <div class="vb-canvas-footer">
+        <span id="vb-selected-summary">Nothing selected</span>
+        <span>Preview uses the actual website page</span>
+      </div>
+      <div class="vb-floating-tools" id="vb-floating-tools">
+        <button id="vb-tool-select" class="is-active" title="Select component">⌖<small>Select</small></button>
+        <button id="vb-tool-hand" title="Scroll page">✋<small>Hand</small></button>
+        <button id="vb-tool-reset" title="Reset selected component">↺<small>Reset</small></button>
+        <button id="vb-tool-save" title="Save draft">✓<small>Save Draft</small></button>
+      </div>
+    </section>
+
+    <aside class="vb-right" id="vb-right">
+      <div class="vb-inspector-head">
+        <div><small>PROPERTIES</small><h2 id="vb-inspector-title">Select an element</h2><p id="vb-inspector-subtitle">Choose any component in the preview.</p></div>
+        <button class="vb-icon-btn vb-small" id="vb-inspector-reset" title="Reset selected component" disabled>↺</button>
+      </div>
+      <div class="vb-selected-chip" id="vb-selected-chip"><span>◈</span><span id="vb-selected-chip-text">No selection</span></div>
+      <div class="vb-inspector-tabs" role="tablist" aria-label="Element properties">
+        <button role="tab" data-tab="content" class="is-active" aria-selected="true">Content</button>
+        <button role="tab" data-tab="design" aria-selected="false">Design</button>
+        <button role="tab" data-tab="layout" aria-selected="false">Layout</button>
+        <button role="tab" data-tab="behavior" aria-selected="false">Behavior</button>
+        <button role="tab" data-tab="responsive" aria-selected="false">Responsive</button>
+        <button role="tab" data-tab="motion" aria-selected="false">Motion</button>
+      </div>
+
+      <div class="vb-inspector-scroll">
+        <section class="vb-inspector-pane is-active" data-pane="content">
+          <div class="vb-property-group">
+            <div class="vb-property-title">Element content</div>
+            <label class="vb-field" id="vb-text-row"><span>Text</span><textarea id="vb-text" rows="3" placeholder="Select a text element"></textarea></label>
+            <label class="vb-field" id="vb-href-row"><span>Link destination</span><input id="vb-href" type="text" placeholder="/booking.html or https://…"></label>
+            <label class="vb-field" id="vb-src-row"><span>Image / video URL</span><input id="vb-src" type="text" placeholder="Select an image or video"></label>
+            <label class="vb-field" id="vb-alt-row"><span>Alternative text</span><input id="vb-alt" type="text" placeholder="Describe the image"></label>
+            <label class="vb-field" id="vb-target-row"><span>Link opens</span><select id="vb-target"><option value="_self">Same tab</option><option value="_blank">New tab</option></select></label>
+            <label class="vb-check vb-field-check" id="vb-hidden-row"><input type="checkbox" id="vb-hidden"> Hide this element on this page</label>
+          </div>
+        </section>
+
+        <section class="vb-inspector-pane" data-pane="design">
+          <div class="vb-property-group">
+            <div class="vb-property-title">Typography</div>
+            <label class="vb-field"><span>Text color</span><div class="vb-color-control"><input type="color" id="vb-color" value="#ffffff"><input id="vb-color-text" type="text" placeholder="#ffffff"></div></label>
+            <label class="vb-field"><span>Background color</span><div class="vb-color-control"><input type="color" id="vb-bg" value="#171d19"><input id="vb-bg-text" type="text" placeholder="transparent / #171d19"></div></label>
+            <label class="vb-field"><span>Font size</span><input id="vb-font-size" type="text" placeholder="e.g. 48px or 3rem"></label>
+            <label class="vb-field"><span>Font family</span><input id="vb-font-family" type="text" placeholder="Inherited or custom font"></label>
+            <label class="vb-field"><span>Font weight</span><select id="vb-font-weight"><option value="">Inherit</option><option value="300">Light · 300</option><option value="400">Regular · 400</option><option value="500">Medium · 500</option><option value="600">Semi-bold · 600</option><option value="700">Bold · 700</option><option value="800">Extra bold · 800</option></select></label>
+            <label class="vb-field"><span>Text alignment</span><select id="vb-text-align"><option value="">Inherit</option><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option><option value="justify">Justify</option></select></label>
+          </div>
+          <div class="vb-property-group">
+            <div class="vb-property-title">Appearance</div>
+            <label class="vb-field"><span>Border radius</span><input id="vb-radius" type="text" placeholder="e.g. 16px"></label>
+            <label class="vb-field"><span>Opacity <b id="vb-opacity-label">100%</b></span><input id="vb-opacity" type="range" min="0" max="1" step="0.05" value="1"></label>
+          </div>
+        </section>
+
+        <section class="vb-inspector-pane" data-pane="layout">
+          <div class="vb-property-group">
+            <div class="vb-property-title">Size and spacing</div>
+            <label class="vb-field"><span>Width</span><input id="vb-width" type="text" placeholder="auto, 100%, 320px"></label>
+            <label class="vb-field"><span>Height</span><input id="vb-height" type="text" placeholder="auto, 50vh, 320px"></label>
+            <label class="vb-field"><span>Padding</span><input id="vb-padding" type="text" placeholder="e.g. 24px 32px"></label>
+            <label class="vb-field"><span>Margin</span><input id="vb-margin" type="text" placeholder="e.g. 0 auto 24px"></label>
+            <label class="vb-field" id="vb-object-position-row"><span>Image focal point</span><select id="vb-object-position"><option value="">Inherit</option><option>center center</option><option>center top</option><option>center bottom</option><option>left center</option><option>right center</option><option>25% 50%</option><option>75% 50%</option></select></label>
+          </div>
+        </section>
+
+        <section class="vb-inspector-pane" data-pane="behavior">
+          <div class="vb-property-group">
+            <div class="vb-property-title">Interaction</div>
+            <p class="vb-help">These controls modify supported element behavior. Existing booking and form logic is not replaced.</p>
+            <label class="vb-field" id="vb-behavior-href-row"><span>Destination</span><input id="vb-behavior-href" type="text" placeholder="Link URL"></label>
+            <label class="vb-field"><span>Pointer cursor</span><select id="vb-cursor"><option value="">Preserve existing</option><option value="pointer">Pointer</option><option value="default">Default</option><option value="grab">Grab</option></select></label>
+          </div>
+        </section>
+
+        <section class="vb-inspector-pane" data-pane="responsive">
+          <div class="vb-property-group">
+            <div class="vb-property-title">Mobile overrides</div>
+            <p class="vb-help">Only applies below 768px. Leave a field empty to inherit its desktop style. The original page breakpoint rules remain active.</p>
+            <label class="vb-field"><span>Mobile font size</span><input id="vb-mobile-font-size" type="text" placeholder="e.g. 32px"></label>
+            <label class="vb-field"><span>Mobile width</span><input id="vb-mobile-width" type="text" placeholder="e.g. 100%"></label>
+            <label class="vb-check vb-field-check"><input type="checkbox" id="vb-mobile-hidden"> Hide on mobile</label>
+          </div>
+        </section>
+
+        <section class="vb-inspector-pane" data-pane="motion">
+          <div class="vb-property-group">
+            <div class="vb-property-title">Animation and effects</div>
+            <div class="vb-motion-notice">Existing animations are preserved by default. Choose a new effect only when you intend to override motion for this element.</div>
+            <label class="vb-field"><span>Animation preset</span><select id="vb-motion"><option value="preserve">Preserve existing animation</option><option value="none">Disable animation on this element</option><option value="fade-in">Fade in</option><option value="fade-up">Fade up</option><option value="zoom-in">Zoom in</option><option value="slide-left">Slide from left</option><option value="slide-right">Slide from right</option><option value="float">Gentle float</option></select></label>
+            <label class="vb-field"><span>Duration (ms)</span><input id="vb-motion-duration" type="number" min="100" max="15000" step="50" value="800"></label>
+            <label class="vb-field"><span>Delay (ms)</span><input id="vb-motion-delay" type="number" min="0" max="10000" step="50" value="0"></label>
+            <label class="vb-field"><span>Easing</span><select id="vb-motion-easing"><option value="ease">Ease</option><option value="ease-out">Ease out</option><option value="ease-in-out">Ease in-out</option><option value="linear">Linear</option><option value="cubic-bezier(.2,.7,.2,1)">Luxury reveal</option></select></label>
+            <button class="vb-btn vb-btn-outline vb-full" id="vb-preview-motion" type="button">Replay effect ↻</button>
+          </div>
+        </section>
+        <div class="vb-no-selection" id="vb-no-selection"><div>⌖</div><strong>Select an element to begin</strong><p>Click text, images, buttons or a section in the website preview. Its editable properties will appear here.</p></div>
+      </div>
+      <div class="vb-inspector-footer">
+        <button class="vb-btn vb-btn-outline" id="vb-reset-element" disabled>Reset element</button>
+        <button class="vb-btn vb-btn-gold" id="vb-save-draft">Save Draft</button>
+      </div>
+    </aside>
+  </main>
+  <div class="vb-toast" id="vb-toast" role="status" aria-live="polite"></div>
+  <div class="vb-confirm" id="vb-confirm" hidden>
+    <div class="vb-confirm-card">
+      <div class="vb-eyebrow">PUBLISH CHANGES</div>
+      <h2>Publish this draft?</h2>
+      <p>Your saved page edits and supported component overrides will become visible on the public website. Existing page logic and animations are preserved unless explicitly overridden.</p>
+      <div class="vb-confirm-actions"><button class="vb-btn vb-btn-outline" id="vb-cancel-publish">Cancel</button><button class="vb-btn vb-btn-gold" id="vb-confirm-publish">Publish live</button></div>
+    </div>
+  </div>
+</div>
+<script src="assets/js/visual-editor.js?v=1.0"></script>
+</body>
+</html>
