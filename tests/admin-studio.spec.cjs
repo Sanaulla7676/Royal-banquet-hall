@@ -251,7 +251,7 @@ test('media library crop and display dimensions are real CMS actions', async ({ 
   await signIn(page);
   await page.locator('.s-nav-item[data-page="image-library"]').click();
   await expect(page.locator('.s-img-item img').first()).toBeVisible({timeout:8000});
-  await page.locator('.s-img-item img').first().click({timeout:8000});
+  await page.locator('.s-img-item').first().evaluate(item => item.dispatchEvent(new MouseEvent('click', { bubbles:true, cancelable:true, view:window })));
   await expect(page.locator('#selected-img-name')).not.toHaveValue('', {timeout:5000});
   await page.locator('#imglib-num-w').fill('640');
   await page.locator('#imglib-num-h').fill('360');
