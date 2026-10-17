@@ -708,12 +708,30 @@ function buildStudioSelectionAnimationCss(settings) {
     return base;
   }
 
+  function rbhVisualBuilderLiveTextNodes(el) {
+    const nodes = [];
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) {
+      if (node.parentElement && !node.parentElement.closest('script,style,svg')) nodes.push(node);
+    }
+    return nodes;
+  }
+
   function rbhVisualBuilderRestore(el) {
     const base = rbhVisualBuilderOriginals.get(el);
     if (!base) return;
-    base.textNodes.forEach(item => {
-      if (item.node && item.node.isConnected) item.node.nodeValue = item.value;
-    });
+    const originalsStillConnected = base.textNodes.every(item => item.node && item.node.isConnected && el.contains(item.node));
+    if (originalsStillConnected) {
+      base.textNodes.forEach(item => { item.node.nodeValue = item.value; });
+    } else {
+      // Some existing CMS routines rebuild a heading's innerHTML. Restore its text
+      // in the current nodes rather than leaving an obsolete override in place.
+      const currentNodes = rbhVisualBuilderLiveTextNodes(el);
+      currentNodes.forEach((node,index) => {
+        node.nodeValue = base.textNodes[index] ? base.textNodes[index].value : '';
+      });
+    }
     [['href',base.href],['src',base.src],['alt',base.alt],['target',base.target],['rel',base.rel]].forEach(item => {
       if (item[1] === null) el.removeAttribute(item[0]); else el.setAttribute(item[0], item[1]);
     });
@@ -760,10 +778,10 @@ function buildStudioSelectionAnimationCss(settings) {
   }
 
   function rbhVisualBuilderSetText(el, text, base) {
-    const nodes = base.textNodes.filter(item => item.node && item.node.isConnected);
+    const nodes = rbhVisualBuilderLiveTextNodes(el);
     if (!nodes.length) return;
-    nodes[0].node.nodeValue = String(text).slice(0,12000);
-    nodes.slice(1).forEach(item => { item.node.nodeValue = ''; });
+    nodes[0].nodeValue = String(text).slice(0,12000);
+    nodes.slice(1).forEach(node => { node.nodeValue = ''; });
   }
 
   function rbhVisualBuilderApplyMotion(el, motion) {
@@ -828,7 +846,7 @@ function buildStudioSelectionAnimationCss(settings) {
     if (responsive.hidden === true) el.style.setProperty('display','none','important');
   }
 
-  function rbhVisualBuilderApplyEntry(el, selector, entry) {
+  function rbhVisualBuilderApplyEntry(el, selector, entry, allowMotionRestart = true) {
     const base = rbhVisualBuilderCapture(el);
     rbhVisualBuilderTouched.add(el);
     rbhVisualBuilderSelector.set(el, selector);
@@ -862,7 +880,17 @@ function buildStudioSelectionAnimationCss(settings) {
     });
     if (entry.cursor && rbhVisualBuilderValidStyle('cursor',entry.cursor)) el.style.setProperty('cursor',entry.cursor,'important');
     rbhVisualBuilderRestoreResponsive(el,entry,base,window.matchMedia('(max-width: 767px)').matches);
-    if (entry.motion && typeof entry.motion === 'object') rbhVisualBuilderApplyMotion(el,entry.motion);
+    if (entry.motion && typeof entry.motion === 'object') {
+      const targetPreset = entry.motion.preset;
+      const targetDuration = String(Math.max(100,Math.min(15000,Number(entry.motion.duration) || 800)));
+      const targetDelay = String(Math.max(0,Math.min(10000,Number(entry.motion.delay) || 0)));
+      const targetEasing = ['ease','ease-in','ease-out','ease-in-out','linear','cubic-bezier(.2,.7,.2,1)'].includes(entry.motion.easing) ? entry.motion.easing : 'ease-out';
+      const motionDiffers = el.getAttribute('data-rbh-vb-motion') !== targetPreset ||
+        el.getAttribute('data-rbh-vb-duration') !== targetDuration ||
+        el.getAttribute('data-rbh-vb-delay') !== targetDelay ||
+        el.getAttribute('data-rbh-vb-easing') !== targetEasing;
+      if (allowMotionRestart || motionDiffers) rbhVisualBuilderApplyMotion(el,entry.motion);
+    }
     rbhVisualBuilderLastApplied.set(el,JSON.stringify(entry));
   }
 
@@ -903,7 +931,9 @@ function buildStudioSelectionAnimationCss(settings) {
         if (prior !== undefined) rbhVisualBuilderRestore(el);
         rbhVisualBuilderApplyEntry(el,selector,entry);
       } else {
-        rbhVisualBuilderRestoreResponsive(el,entry,rbhVisualBuilderCapture(el),window.matchMedia('(max-width: 767px)').matches);
+        // Re-assert text, media, visibility and styles if another CMS pass has
+        // rebuilt an element, but do not restart an unchanged entrance timeline.
+        rbhVisualBuilderApplyEntry(el,selector,entry,false);
       }
     });
     rbhVisualBuilderLastMobile = window.matchMedia('(max-width: 767px)').matches;
