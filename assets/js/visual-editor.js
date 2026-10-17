@@ -864,11 +864,12 @@
     $('#vb-save-draft').disabled = false;
     $('#vb-publish').disabled = false;
     syncDraftOverrides();
-    renderPages();
-    syncLayerSelection();
+    // Avoid rebuilding page and layer navigation for each keystroke/property edit.
+    // Their structure is unchanged by styling; the current element label is updated directly.
     if (currentElement) {
       $('#vb-selected-summary').textContent = '<' + currentElement.tagName.toLowerCase() + '> · ' + describeElement(currentElement);
       $('#vb-selected-chip-text').textContent = describeElement(currentElement);
+      $('#vb-inspector-title').textContent = describeElement(currentElement);
     }
     clearTimeout(changed.timer);
     changed.timer = setTimeout(finishEdit,350);
