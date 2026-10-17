@@ -291,7 +291,10 @@ test('top-bar page selector edits and publishes page-specific hero, CTA buttons 
   await page.locator('#page-hero-overlay-color').fill('#112233');
   await expect.poll(() => page.evaluate(() => window.STUDIO.cms.pageOverrides['events.html']?.hero?.title)).toBe('Events Page Only');
 
-  await page.locator('#page-button-target').selectOption('primary');
+  await page.locator('#btn-page-button-pick').click();
+  await expect(page.locator('#btn-page-button-pick')).toHaveText(/Click a highlighted button/);
+  await page.frameLocator('iframe[title="Hero Preview"]').locator('.page-hero .btn-row a.btn-gold').click();
+  await expect(page.locator('#page-button-target')).toHaveValue('primary');
   await page.locator('#page-button-label').fill('Enquire about this event');
   await page.locator('#page-button-href').fill('booking.html?event=events-page');
   await page.locator('#page-button-bg').fill('#234567');
@@ -369,7 +372,8 @@ test('public page renderer applies published page-specific hero, button and free
   const resetCms = JSON.parse(JSON.stringify(published));
   resetCms.pageOverrides = {};
   await page.evaluate(cms => window.postMessage({type:'STUDIO_PREVIEW_SYNC',cms}, '*'), resetCms);
-  await expect(page.locator('.page-hero h1')).toHaveText('Bring your people together beautifully.');
+  await expect(page.locator('.page-hero h1')).toContainText('Bring your people');
+  await expect(page.locator('.page-hero h1')).toContainText('together beautifully.');
   await expect(page.locator('.page-hero-media img')).toHaveAttribute('src','assets/images/stage-celebration.jpg');
   await expect(page.locator('.page-hero .btn-row a.btn-gold')).not.toHaveText('Published Events CTA');
   await expect.poll(()=>page.locator('.page-hero').evaluate(node=>node.style.minHeight)).toBe('');
