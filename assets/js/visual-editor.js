@@ -342,7 +342,9 @@
       '.rbh-vb-selected{outline:2px solid #5368ee!important;outline-offset:2px!important;cursor:crosshair!important;}',
       '.rbh-vb-hover:not(.rbh-vb-selected){outline:1px dashed #5368ee!important;outline-offset:1px!important;}',
       'html.rbh-vb-select-mode,html.rbh-vb-select-mode *{cursor:crosshair!important;}',
-      'html.rbh-vb-hand-mode,html.rbh-vb-hand-mode *{cursor:auto!important;}'
+      'html.rbh-vb-hand-mode,html.rbh-vb-hand-mode *{cursor:auto!important;}',
+      'html.rbh-vb-move-mode,html.rbh-vb-move-mode *{cursor:move!important;}',
+      'html.rbh-vb-move-mode .rbh-vb-selected{outline:2px solid #d0a641!important;outline-offset:3px!important;cursor:move!important;}'
     ].join('');
     frameDoc.head.appendChild(style);
   }
@@ -1078,6 +1080,21 @@
     node.addEventListener('focus', beginEdit);
     node.addEventListener('change', event => updateStyle(key,event.target.value));
   }
+  function bindSliderStyle(rangeId,key,unit,numberId,labelId) {
+    const range = field(rangeId), number = field(numberId);
+    const sync = source => {
+      const value = clampRange(rangeId,source.value);
+      syncSliderControls(rangeId,numberId,labelId,value,unit);
+      if (key === 'width') setField('vb-width-preset','');
+      if (key === 'height') setField('vb-height-preset','');
+      updateStyle(key,unit ? formatValue(value) + unit : formatValue(value));
+    };
+    [range,number].forEach(node => {
+      node.addEventListener('focus',beginEdit);
+      node.addEventListener('input',event => sync(event.target));
+      node.addEventListener('change',event => { sync(event.target); finishEdit(); });
+    });
+  }
   function beginEdit() {
     if (!editSnapshot) editSnapshot = JSON.stringify(cms);
   }
@@ -1316,16 +1333,110 @@
     }
   }
 
-  function setSelectMode(enabled) {
-    selectMode = Boolean(enabled);
-    ['vb-select-mode','vb-tool-select'].forEach(id => field(id).classList.toggle('is-active',selectMode));
+  function setMoveMode(enabled) {
+    if (enabled && !currentElement) {
+      toast('Select an element first, then use Move to reposition it.',true);
+      return;
+    }
+    if (enabled && currentElement) {
+      const logo = currentElement.closest('.site-header .brand, .site-header .brand-lockup, .site-header .brand-logo');
+      if (logo && logo !== currentElement) selectElement(logo);
+    }
+    moveMode = Boolean(enabled);
+    if (moveMode) selectMode = true;
+    ['vb-move-mode'].forEach(id => field(id).classList.toggle('is-active',moveMode));
+    ['vb-select-mode','vb-tool-select'].forEach(id => field(id).classList.toggle('is-active',selectMode && !moveMode));
     ['vb-hand-mode','vb-tool-hand'].forEach(id => field(id).classList.toggle('is-active',!selectMode));
     if (frameDoc) {
+      frameDoc.documentElement.classList.toggle('rbh-vb-move-mode',moveMode);
       frameDoc.documentElement.classList.toggle('rbh-vb-select-mode',selectMode);
       frameDoc.documentElement.classList.toggle('rbh-vb-hand-mode',!selectMode);
+    }
+    $('#vb-canvas-hint').textContent = moveMode
+      ? 'Move mode: drag the selected element. For the logo, the full brand lockup moves together.'
+      : (selectMode ? 'Click any supported element to edit it' : 'Hand mode: scroll and interact with the page');
+  }
+
+  function startCanvasDrag(event) {
+    if (!currentElement || !currentSelector || !frameDoc) return;
+    const element = currentElement;
+    const selector = currentSelector;
+    const rect = element.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    beginEdit();
+    const entry = elementRecord(selector,true);
+    entry.styles = entry.styles || {};
+    const cssLeft = parseFloat(entry.styles.left !== undefined ? entry.styles.left : element.style.left);
+    const cssTop = parseFloat(entry.styles.top !== undefined ? entry.styles.top : element.style.top);
+    const startLeft = Number.isFinite(cssLeft) ? cssLeft : 0;
+    const startTop = Number.isFinite(cssTop) ? cssTop : 0;
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startDocLeft = rect.left + (frameDoc.defaultView.scrollX || 0);
+    const startDocTop = rect.top + (frameDoc.defaultView.scrollY || 0);
+    const pageWidth = Math.max(frameDoc.documentElement.scrollWidth,frameDoc.body.scrollWidth,frameDoc.defaultView.innerWidth);
+    const pageHeight = Math.max(frameDoc.documentElement.scrollHeight,frameDoc.body.scrollHeight,frameDoc.defaultView.innerHeight);
+    const lowerLeft = startLeft - startDocLeft;
+    const upperLeft = startLeft + pageWidth - startDocLeft - rect.width;
+    const lowerTop = startTop - startDocTop;
+    const upperTop = startTop + pageHeight - startDocTop - rect.height;
+    let moved = false;
+    const pointerTarget = event.target;
+    try { if (pointerTarget.setPointerCapture) pointerTarget.setPointerCapture(event.pointerId); } catch {}
+    const onMove = moveEvent => {
+      if (moveEvent.pointerId !== event.pointerId) return;
+      moveEvent.preventDefault();
+      moveEvent.stopPropagation();
+      const dx = (moveEvent.clientX - startX) / zoom;
+      const dy = (moveEvent.clientY - startY) / zoom;
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
+      const left = clamp(startLeft + dx,Math.min(lowerLeft,upperLeft),Math.max(lowerLeft,upperLeft));
+      const top = clamp(startTop + dy,Math.min(lowerTop,upperTop),Math.max(lowerTop,upperTop));
+      entry.styles.position = 'relative';
+      entry.styles.left = Math.round(left) + 'px';
+      entry.styles.top = Math.round(top) + 'px';
+      entry.styles.zIndex = '1001';
+      element.style.setProperty('position','relative','important');
+      element.style.setProperty('left',entry.styles.left,'important');
+      element.style.setProperty('top',entry.styles.top,'important');
+      element.style.setProperty('z-index','1001','important');
+    };
+    const onEnd = endEvent => {
+      if (endEvent.pointerId !== event.pointerId) return;
+      frameDoc.removeEventListener('pointermove',onMove,true);
+      frameDoc.removeEventListener('pointerup',onEnd,true);
+      frameDoc.removeEventListener('pointercancel',onEnd,true);
+      if (moved) {
+        suppressNextCanvasClick = true;
+        changed();
+        toast('Element position updated. Save Draft to keep it, then Publish to make it live.');
+        setTimeout(() => { suppressNextCanvasClick = false; },0);
+      } else {
+        editSnapshot = null;
+      }
+    };
+    frameDoc.addEventListener('pointermove',onMove,true);
+    frameDoc.addEventListener('pointerup',onEnd,true);
+    frameDoc.addEventListener('pointercancel',onEnd,true);
+  }
+
+  function setSelectMode(enabled) {
+    if (!enabled && moveMode) setMoveMode(false);
+    selectMode = Boolean(enabled);
+    ['vb-select-mode','vb-tool-select'].forEach(id => field(id).classList.toggle('is-active',selectMode && !moveMode));
+    ['vb-hand-mode','vb-tool-hand'].forEach(id => field(id).classList.toggle('is-active',!selectMode));
+    if (frameDoc) {
+      frameDoc.documentElement.classList.toggle('rbh-vb-select-mode',selectMode && !moveMode);
+      frameDoc.documentElement.classList.toggle('rbh-vb-hand-mode',!selectMode);
+      frameDoc.documentElement.classList.toggle('rbh-vb-move-mode',moveMode);
       if (!selectMode && hoveredElement) hoveredElement.classList.remove('rbh-vb-hover');
     }
-    $('#vb-canvas-hint').textContent = selectMode ? 'Click any supported element on the page to edit it' : 'Hand mode: scroll and interact with the page';
+    $('#vb-canvas-hint').textContent = moveMode
+      ? 'Move mode: drag the selected element. For the logo, the full brand lockup moves together.'
+      : (selectMode ? 'Click any supported element to edit it' : 'Hand mode: scroll and interact with the page');
   }
   function setDevice(device) {
     const preview = $('#vb-preview-frame');
