@@ -667,6 +667,8 @@ function buildStudioSelectionAnimationCss(settings) {
   // a component explicitly receives a motion override in the published CMS.
   const rbhVisualBuilderOriginals = new WeakMap();
   const rbhVisualBuilderTouched = new Set();
+  const rbhVisualBuilderLastApplied = new WeakMap();
+  const rbhVisualBuilderSelector = new WeakMap();
   let rbhVisualBuilderLastPublished = null;
   let rbhVisualBuilderLastMobile = window.matchMedia('(max-width: 767px)').matches;
 
@@ -799,54 +801,112 @@ function buildStudioSelectionAnimationCss(settings) {
     }
   }
 
+  function rbhVisualBuilderRestoreResponsive(el, entry, base, mobile) {
+    const styleMap = { fontSize:'font-size', width:'width' };
+    ['fontSize','width'].forEach(key => {
+      const prop = styleMap[key];
+      const configured = entry.styles && entry.styles[key];
+      if (configured && rbhVisualBuilderValidStyle(prop,configured)) el.style.setProperty(prop,configured,'important');
+      else {
+        const original = base.styles[prop];
+        if (original && original.value) el.style.setProperty(prop,original.value,original.priority);
+        else el.style.removeProperty(prop);
+      }
+    });
+    if (entry.hidden === true) el.style.setProperty('display','none','important');
+    else {
+      const original = base.styles.display;
+      if (original && original.value) el.style.setProperty('display',original.value,original.priority);
+      else el.style.removeProperty('display');
+    }
+    if (!mobile) return;
+    const responsive = entry.responsive && entry.responsive.mobile ? entry.responsive.mobile : null;
+    if (!responsive) return;
+    if (responsive.fontSize && rbhVisualBuilderValidStyle('font-size',responsive.fontSize)) el.style.setProperty('font-size',responsive.fontSize,'important');
+    if (responsive.width && rbhVisualBuilderValidStyle('width',responsive.width)) el.style.setProperty('width',responsive.width,'important');
+    if (responsive.hidden === true) el.style.setProperty('display','none','important');
+  }
+
+  function rbhVisualBuilderApplyEntry(el, selector, entry) {
+    const base = rbhVisualBuilderCapture(el);
+    rbhVisualBuilderTouched.add(el);
+    rbhVisualBuilderSelector.set(el, selector);
+    if (entry.text !== undefined) rbhVisualBuilderSetText(el,entry.text,base);
+    if (entry.href !== undefined && el.tagName.toLowerCase() === 'a' && rbhVisualBuilderSafeUrl(entry.href,false)) el.setAttribute('href',entry.href);
+    if (entry.src !== undefined && ['img','video','source'].includes(el.tagName.toLowerCase()) && rbhVisualBuilderSafeUrl(entry.src,true)) el.setAttribute('src',entry.src);
+    if (entry.alt !== undefined && el.tagName.toLowerCase() === 'img') el.setAttribute('alt',String(entry.alt).slice(0,500));
+    if (entry.target !== undefined && el.tagName.toLowerCase() === 'a') {
+      el.setAttribute('target',entry.target === '_blank' ? '_blank' : '_self');
+      if (entry.target === '_blank') el.setAttribute('rel','noopener noreferrer');
+      else if (base.rel === null) el.removeAttribute('rel');
+      else el.setAttribute('rel',base.rel);
+    }
+    if (entry.hidden === true) el.style.setProperty('display','none','important');
+    const styleMap = {
+      color:'color',backgroundColor:'background-color',fontSize:'font-size',fontFamily:'font-family',
+      fontWeight:'font-weight',textAlign:'text-align',borderRadius:'border-radius',opacity:'opacity',
+      width:'width',height:'height',padding:'padding',margin:'margin',objectPosition:'object-position'
+    };
+    Object.entries(entry.styles || {}).forEach(([key,value]) => {
+      const prop = styleMap[key];
+      if (prop && rbhVisualBuilderValidStyle(prop,value)) el.style.setProperty(prop,String(value),'important');
+    });
+    if (entry.cursor && rbhVisualBuilderValidStyle('cursor',entry.cursor)) el.style.setProperty('cursor',entry.cursor,'important');
+    rbhVisualBuilderRestoreResponsive(el,entry,base,window.matchMedia('(max-width: 767px)').matches);
+    if (entry.motion && typeof entry.motion === 'object') rbhVisualBuilderApplyMotion(el,entry.motion);
+    rbhVisualBuilderLastApplied.set(el,JSON.stringify(entry));
+  }
+
   function applyVisualElementOverrides(pub) {
     if (!pub || typeof pub !== 'object') return;
-    // Restore the original page before reapplying the latest CMS snapshot, so the
-    // local and server configuration cannot stack styles or duplicate animations.
-    rbhVisualBuilderTouched.forEach(el => rbhVisualBuilderRestore(el));
-    rbhVisualBuilderTouched.clear();
     rbhVisualBuilderLastPublished = pub;
     const pageKey = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
     const page = pub.pageOverrides && pub.pageOverrides[pageKey] && typeof pub.pageOverrides[pageKey] === 'object' ? pub.pageOverrides[pageKey] : {};
     const entries = page.elements && typeof page.elements === 'object' ? page.elements : {};
-    const mobile = window.matchMedia('(max-width: 767px)').matches;
-    const styleMap = {
-      color:'color','backgroundColor':'background-color','fontSize':'font-size','fontFamily':'font-family',
-      fontWeight:'font-weight','textAlign':'text-align','borderRadius':'border-radius','opacity':'opacity',
-      width:'width',height:'height',padding:'padding',margin:'margin',objectPosition:'object-position'
-    };
-    Object.entries(entries).forEach(([selector,entry]) => {
-      if (!rbhVisualBuilderSafeSelector(selector) || !entry || typeof entry !== 'object') return;
+    const activeSelectors = new Set(Object.keys(entries).filter(rbhVisualBuilderSafeSelector));
+
+    // Remove old overrides only when their configuration was removed from the
+    // new CMS snapshot. Unchanged components are not touched again, so entrance
+    // animations, counters, and ongoing interactions are not restarted by a
+    // second CMS load from localStorage or the server.
+    Array.from(rbhVisualBuilderTouched).forEach(el => {
+      const selector = rbhVisualBuilderSelector.get(el);
+      if (!selector || !activeSelectors.has(selector)) {
+        rbhVisualBuilderRestore(el);
+        rbhVisualBuilderTouched.delete(el);
+        rbhVisualBuilderLastApplied.delete(el);
+        rbhVisualBuilderSelector.delete(el);
+      }
+    });
+
+    activeSelectors.forEach(selector => {
+      const entry = entries[selector];
+      if (!entry || typeof entry !== 'object') return;
       let el;
       try { el = document.querySelector(selector); } catch { return; }
       if (!el) return;
-      const base = rbhVisualBuilderCapture(el);
-      rbhVisualBuilderTouched.add(el);
-      if (entry.text !== undefined) rbhVisualBuilderSetText(el,entry.text,base);
-      if (entry.href !== undefined && el.tagName.toLowerCase() === 'a' && rbhVisualBuilderSafeUrl(entry.href,false)) {
-        el.setAttribute('href',entry.href);
+      const signature = JSON.stringify(entry);
+      const prior = rbhVisualBuilderLastApplied.get(el);
+      if (prior !== signature) {
+        if (prior !== undefined) rbhVisualBuilderRestore(el);
+        rbhVisualBuilderApplyEntry(el,selector,entry);
+      } else {
+        rbhVisualBuilderRestoreResponsive(el,entry,rbhVisualBuilderCapture(el),window.matchMedia('(max-width: 767px)').matches);
       }
-      if (entry.src !== undefined && ['img','video','source'].includes(el.tagName.toLowerCase()) && rbhVisualBuilderSafeUrl(entry.src,true)) {
-        el.setAttribute('src',entry.src);
-      }
-      if (entry.alt !== undefined && el.tagName.toLowerCase() === 'img') el.setAttribute('alt',String(entry.alt).slice(0,500));
-      if (entry.target !== undefined && el.tagName.toLowerCase() === 'a') {
-        el.setAttribute('target',entry.target === '_blank' ? '_blank' : '_self');
-        if (entry.target === '_blank') el.setAttribute('rel','noopener noreferrer');
-      }
-      if (entry.hidden === true) el.style.setProperty('display','none','important');
-      Object.entries(entry.styles || {}).forEach(([key,value]) => {
-        const prop = styleMap[key];
-        if (prop && rbhVisualBuilderValidStyle(prop,value)) el.style.setProperty(prop,String(value),'important');
-      });
-      if (entry.cursor && rbhVisualBuilderValidStyle('cursor',entry.cursor)) el.style.setProperty('cursor',entry.cursor,'important');
-      const responsive = mobile && entry.responsive && entry.responsive.mobile ? entry.responsive.mobile : null;
-      if (responsive) {
-        if (responsive.fontSize && rbhVisualBuilderValidStyle('font-size',responsive.fontSize)) el.style.setProperty('font-size',responsive.fontSize,'important');
-        if (responsive.width && rbhVisualBuilderValidStyle('width',responsive.width)) el.style.setProperty('width',responsive.width,'important');
-        if (responsive.hidden === true) el.style.setProperty('display','none','important');
-      }
-      if (entry.motion && typeof entry.motion === 'object') rbhVisualBuilderApplyMotion(el,entry.motion);
+    });
+    rbhVisualBuilderLastMobile = window.matchMedia('(max-width: 767px)').matches;
+  }
+
+  function rbhVisualBuilderRefreshResponsive() {
+    const mobile = window.matchMedia('(max-width: 767px)').matches;
+    rbhVisualBuilderTouched.forEach(el => {
+      const selector = rbhVisualBuilderSelector.get(el);
+      const entry = selector && rbhVisualBuilderLastPublished &&
+        rbhVisualBuilderLastPublished.pageOverrides &&
+        rbhVisualBuilderLastPublished.pageOverrides[(window.location.pathname.split('/').pop() || 'index.html').toLowerCase()] &&
+        rbhVisualBuilderLastPublished.pageOverrides[(window.location.pathname.split('/').pop() || 'index.html').toLowerCase()].elements &&
+        rbhVisualBuilderLastPublished.pageOverrides[(window.location.pathname.split('/').pop() || 'index.html').toLowerCase()].elements[selector];
+      if (entry) rbhVisualBuilderRestoreResponsive(el,entry,rbhVisualBuilderCapture(el),mobile);
     });
     rbhVisualBuilderLastMobile = mobile;
   }
@@ -855,10 +915,7 @@ function buildStudioSelectionAnimationCss(settings) {
     window.__rbhVisualBuilderResponsiveListener = true;
     window.addEventListener('resize',() => {
       const mobile = window.matchMedia('(max-width: 767px)').matches;
-      if (mobile !== rbhVisualBuilderLastMobile && rbhVisualBuilderLastPublished) {
-        rbhVisualBuilderLastMobile = mobile;
-        applyVisualElementOverrides(rbhVisualBuilderLastPublished);
-      }
+      if (mobile !== rbhVisualBuilderLastMobile && rbhVisualBuilderLastPublished) rbhVisualBuilderRefreshResponsive();
     },{passive:true});
   }
 
