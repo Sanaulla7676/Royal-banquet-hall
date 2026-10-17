@@ -50,6 +50,20 @@ for (const marker of [
 }
 if (!runtimeJs.includes('buildStudioSelectionAnimationCss(pub)')) throw new Error('Published hero/heading/background animation styles are not applied.');
 if (!runtimeJs.includes('const sizing = pub.imageSizing')) throw new Error('Published image display-size settings are not applied.');
+for (const control of [
+  'id="page-selector"', 'id="page-specific-hero-card"', 'id="page-specific-button-card"',
+  'id="page-specific-logo-card"', 'id="page-hero-src"', 'id="page-button-target"',
+  'id="page-logo-placement"', 'id="btn-page-hero-reset"', 'id="btn-page-button-reset"', 'id="btn-page-logo-reset"'
+]) if (!html.includes(control)) throw new Error('Missing page-specific edit control: ' + control);
+for (const marker of ['function initPageSpecificControls()', 'pageOverrides', 'currentEditPageKey()', 'btn-page-hero-upload']) {
+  if (!studioJs.includes(marker)) throw new Error('Missing page-specific Studio behavior: ' + marker);
+}
+for (const marker of ['applyPageSpecificOverrides(pub)', 'applyPageLogoPlacement(pub,page)', "page.hero", "page.buttons"]) {
+  if (!runtimeJs.includes(marker)) throw new Error('Missing public per-page override application: ' + marker);
+}
+if (!read('assets/css/site.css').includes('rbh-page-logo-positioned[data-rbh-logo-placement="custom"]')) {
+  throw new Error('Custom free-coordinate logo placement styles are missing.');
+}
 if (server.includes('express.static(BASE_DIR)')) throw new Error('Render exposes repository files through express.static.');
 
 const config = JSON.parse(read('vercel.json'));

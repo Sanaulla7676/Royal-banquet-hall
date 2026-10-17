@@ -472,6 +472,196 @@ function buildStudioSelectionAnimationCss(settings) {
   }
 
   // Load published Studio customizations (only when published from studio!)
+
+  function applyPageSpecificOverrides(pub) {
+    if (!pub || typeof pub !== 'object') return;
+    const pageKey = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
+    const page = pub.pageOverrides && typeof pub.pageOverrides[pageKey] === 'object' ? pub.pageOverrides[pageKey] : {};
+    const heroOverride = page.hero && typeof page.hero === 'object' ? page.hero : {};
+    const hero = document.querySelector('.hero, .hero-section, .page-hero');
+
+    if (hero) {
+      const images = Array.from(hero.querySelectorAll('.hero-media img, .hero-slide, .hero-slideshow [data-hero-slide], .page-hero-media img'));
+      images.forEach(img => {
+        if (img.dataset.rbhPageBaseSrc === undefined) img.dataset.rbhPageBaseSrc = img.getAttribute('src') || img.src || '';
+        if (img.dataset.rbhPageBaseObjectPosition === undefined) img.dataset.rbhPageBaseObjectPosition = img.style.objectPosition || '';
+        const safeSrc = typeof heroOverride.src === 'string' && (/^https:\/\//i.test(heroOverride.src) || heroOverride.src.startsWith('/') || heroOverride.src.startsWith('assets/')) ? heroOverride.src : '';
+        if (safeSrc) img.src = safeSrc;
+        else if (img.dataset.rbhPageBaseSrc) img.src = img.dataset.rbhPageBaseSrc;
+        if (heroOverride.posX !== undefined || heroOverride.posY !== undefined) {
+          const x = Math.max(0,Math.min(100,Number(heroOverride.posX ?? 50)));
+          const y = Math.max(0,Math.min(100,Number(heroOverride.posY ?? 50)));
+          img.style.setProperty('object-position',x + '% ' + y + '%','important');
+        } else {
+          img.style.objectPosition = img.dataset.rbhPageBaseObjectPosition || '';
+        }
+      });
+      if (hero.dataset.rbhPageBaseMinHeight === undefined) hero.dataset.rbhPageBaseMinHeight = hero.style.minHeight || '';
+      if (heroOverride.height !== undefined && Number.isFinite(Number(heroOverride.height))) {
+        hero.style.setProperty('min-height',Math.max(25,Math.min(100,Number(heroOverride.height))) + 'vh','important');
+      } else {
+        hero.style.minHeight = hero.dataset.rbhPageBaseMinHeight || '';
+      }
+      let overlay = hero.querySelector(':scope > .rbh-page-hero-overlay');
+      const overlayOpacity = Math.max(0,Math.min(100,Number(heroOverride.overlayOpacity ?? 0))) / 100;
+      const overlayColor = /^#[0-9a-f]{6}$/i.test(heroOverride.overlayColor || '') ? heroOverride.overlayColor : '#000000';
+      if (overlayOpacity > 0) {
+        if (!overlay) {
+          overlay = document.createElement('div');
+          overlay.className = 'rbh-page-hero-overlay';
+          overlay.setAttribute('aria-hidden','true');
+          hero.appendChild(overlay);
+        }
+        if (getComputedStyle(hero).position === 'static' && !hero.dataset.rbhPagePositionOriginal) {
+          hero.dataset.rbhPagePositionOriginal = hero.style.position || '';
+          hero.style.position = 'relative';
+        }
+        overlay.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1';
+        overlay.style.background = 'rgba(' + parseInt(overlayColor.slice(1,3),16) + ',' +
+          parseInt(overlayColor.slice(3,5),16) + ',' + parseInt(overlayColor.slice(5,7),16) + ',' + overlayOpacity + ')';
+        const content = hero.querySelector('.hero-content, .container');
+        if (content) {
+          if (content.dataset.rbhPageBasePosition === undefined) content.dataset.rbhPageBasePosition = content.style.position || '';
+          if (content.dataset.rbhPageBaseZIndex === undefined) content.dataset.rbhPageBaseZIndex = content.style.zIndex || '';
+          content.style.position = 'relative';
+          content.style.zIndex = '2';
+        }
+      } else if (overlay) {
+        overlay.remove();
+        if (hero.dataset.rbhPagePositionOriginal !== undefined) {
+          hero.style.position = hero.dataset.rbhPagePositionOriginal;
+          delete hero.dataset.rbhPagePositionOriginal;
+        }
+        const content = hero.querySelector('.hero-content, .container');
+        if (content && content.dataset.rbhPageBasePosition !== undefined) {
+          content.style.position = content.dataset.rbhPageBasePosition;
+          content.style.zIndex = content.dataset.rbhPageBaseZIndex || '';
+          delete content.dataset.rbhPageBasePosition;
+          delete content.dataset.rbhPageBaseZIndex;
+        }
+      }
+
+      const heading = hero.querySelector('.hero-content h1') || hero.querySelector('h1');
+      if (heading) {
+        if (heading.dataset.rbhPageBaseHtml === undefined) heading.dataset.rbhPageBaseHtml = heading.innerHTML;
+        heading.innerHTML = heading.dataset.rbhPageBaseHtml;
+        if (typeof heroOverride.title === 'string' && heroOverride.title.trim()) {
+          heading.textContent = heroOverride.title.trim();
+          heading.style.whiteSpace = 'pre-line';
+        } else {
+          heading.style.removeProperty('white-space');
+        }
+      }
+      const subheading = hero.querySelector('.hero-content .lede') || hero.querySelector('.hero-content p') || hero.querySelector('p.lede');
+      if (subheading) {
+        if (subheading.dataset.rbhPageBaseText === undefined) subheading.dataset.rbhPageBaseText = subheading.textContent || '';
+        subheading.textContent = subheading.dataset.rbhPageBaseText;
+        if (typeof heroOverride.subtitle === 'string' && heroOverride.subtitle.trim()) subheading.textContent = heroOverride.subtitle.trim();
+      }
+    }
+
+    const buttonOverrides = page.buttons && typeof page.buttons === 'object' ? page.buttons : {};
+    const heroRoot = hero || document;
+    const findButton = key => {
+      if (key === 'header') return document.querySelector('.site-header .nav-actions a.btn-gold, .site-header .nav-actions .btn');
+      if (key === 'section') return document.querySelector('main .cta-banner a.btn-gold, main .cta-banner a.btn');
+      if (key === 'secondary') {
+        return heroRoot.querySelector('.btn-row a.btn-outline, .btn-row a.btn-secondary, .hero-content .btn-outline, a.btn-outline') ||
+          heroRoot.querySelectorAll('.btn-row a.btn')[1] || null;
+      }
+      return heroRoot.querySelector('.hero-content .btn-row a.btn-gold, .page-hero .btn-row a.btn-gold, .hero-content a.btn-gold, .page-hero a.btn-gold, .hero-content .btn-row a.btn-primary, .page-hero a.btn-primary, .hero-content .btn-row a.btn');
+    };
+    ['primary','secondary','header','section'].forEach(key => {
+      const button = findButton(key);
+      if (!button) return;
+      if (button.dataset.rbhPageBaseHtml === undefined) {
+        button.dataset.rbhPageBaseHtml = button.innerHTML;
+        button.dataset.rbhPageBaseHref = button.getAttribute('href') || '';
+        button.dataset.rbhPageBaseStyle = JSON.stringify({
+          background:button.style.backgroundColor || '',
+          color:button.style.color || '',
+          radius:button.style.borderRadius || '',
+          size:button.style.fontSize || ''
+        });
+      }
+      button.innerHTML = button.dataset.rbhPageBaseHtml;
+      if (button.dataset.rbhPageBaseHref) button.setAttribute('href',button.dataset.rbhPageBaseHref);
+      else button.removeAttribute('href');
+      let baseStyle = {};
+      try { baseStyle = JSON.parse(button.dataset.rbhPageBaseStyle || '{}'); } catch {}
+      button.style.backgroundColor = baseStyle.background || '';
+      button.style.color = baseStyle.color || '';
+      button.style.borderRadius = baseStyle.radius || '';
+      button.style.fontSize = baseStyle.size || '';
+      const settings = buttonOverrides[key];
+      if (!settings || typeof settings !== 'object') return;
+      if (typeof settings.label === 'string' && settings.label.trim()) button.textContent = settings.label.trim();
+      if (typeof settings.href === 'string' && settings.href.trim() &&
+          !/^\s*javascript:/i.test(settings.href)) button.setAttribute('href',settings.href.trim());
+      if (/^#[0-9a-f]{6}$/i.test(settings.bgColor || '')) button.style.setProperty('background-color',settings.bgColor,'important');
+      if (/^#[0-9a-f]{6}$/i.test(settings.textColor || '')) button.style.setProperty('color',settings.textColor,'important');
+      if (Number.isFinite(Number(settings.borderRadius))) button.style.setProperty('border-radius',Math.max(0,Math.min(80,Number(settings.borderRadius))) + 'px','important');
+      if (Number.isFinite(Number(settings.fontSize))) button.style.setProperty('font-size',Math.max(10,Math.min(36,Number(settings.fontSize))) + 'px','important');
+    });
+
+    applyPageLogoPlacement(pub,page);
+  }
+
+  function applyPageLogoPlacement(pub,page) {
+    const logoSettings = pub.logo && typeof pub.logo === 'object' ? pub.logo : {};
+    let brand = window.__RBHStudioBrandNode ||
+      document.querySelector('.site-header .brand, .site-header .brand-lockup');
+    if (!brand) return;
+    if (!window.__RBHStudioBrandHome) {
+      window.__RBHStudioBrandHome = { parent:brand.parentElement, next:brand.nextSibling };
+      window.__RBHStudioBrandNode = brand;
+    } else {
+      brand = window.__RBHStudioBrandNode || brand;
+    }
+    const home = window.__RBHStudioBrandHome;
+    const pageLogo = page.logo && typeof page.logo === 'object' ? page.logo : {};
+    const placement = pageLogo.placement || 'navbar';
+    const hero = document.querySelector('.hero, .hero-section, .page-hero');
+    const isHeroPlacement = placement.startsWith('hero-') || placement === 'hero-center';
+    if (!isHeroPlacement && hero && hero.dataset.rbhLogoOriginalPosition !== undefined) {
+      hero.style.position = hero.dataset.rbhLogoOriginalPosition;
+      delete hero.dataset.rbhLogoOriginalPosition;
+    }
+
+    if (placement === 'navbar') {
+      if (home.parent && brand.parentElement !== home.parent) {
+        if (home.next && home.next.parentElement === home.parent) home.parent.insertBefore(brand,home.next);
+        else home.parent.appendChild(brand);
+      }
+      brand.classList.remove('rbh-page-logo-positioned');
+      brand.removeAttribute('data-rbh-logo-placement');
+      ['--rbh-logo-x','--rbh-logo-y','position','top','left','right','bottom','transform','z-index','margin','padding'].forEach(prop=>brand.style.removeProperty(prop));
+    } else {
+      let target=document.body;
+      if(placement==='footer') target=document.querySelector('.site-footer .container')||document.querySelector('.site-footer')||document.body;
+      else if(placement.startsWith('hero-')||placement==='hero-center') target=hero||document.body;
+      if((placement.startsWith('hero-')||placement==='hero-center')&&target&&getComputedStyle(target).position==='static'&&!target.dataset.rbhLogoOriginalPosition) {
+        target.dataset.rbhLogoOriginalPosition=target.style.position||'';
+        target.style.position='relative';
+      }
+      if(target&&brand.parentElement!==target) {
+        if(placement.startsWith('hero-')||placement==='hero-center') target.prepend(brand);
+        else target.appendChild(brand);
+      }
+      brand.classList.add('rbh-page-logo-positioned');
+      brand.setAttribute('data-rbh-logo-placement',placement);
+      brand.style.setProperty('--rbh-logo-x',Math.max(0,Math.min(100,Number(pageLogo.x??50)))+'%');
+      brand.style.setProperty('--rbh-logo-y',Math.max(0,Math.min(100,Number(pageLogo.y??15)))+'%');
+    }
+    const img=brand.querySelector('img');
+    if(img) {
+      if(logoSettings.src)img.src=logoSettings.src;
+      if(Number.isFinite(Number(logoSettings.width)))img.style.setProperty('width',Math.max(40,Math.min(500,Number(logoSettings.width)))+'px','important');
+      if(Number.isFinite(Number(logoSettings.height)))img.style.setProperty('height',Math.max(24,Math.min(260,Number(logoSettings.height)))+'px','important');
+      img.style.setProperty('object-fit','contain','important');
+    }
+  }
+
   function applyStudioPublished(pub) {
     if (!pub || typeof pub !== 'object') return;
     cmsData.studioPublished = pub;
@@ -736,6 +926,7 @@ function buildStudioSelectionAnimationCss(settings) {
     applyVenueDetails();
     applySectionOrdering();
     applyStudioAdvancedStyles(pub);
+    applyPageSpecificOverrides(pub);
   }
 
   try {

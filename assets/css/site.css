@@ -3128,3 +3128,25 @@ body.site-revealed .hero .hero-brand-crest.fx-logo-pop{
 
 
 @media(min-width:761px){.mobile-hero-crest-seal{display:none!important}}
+
+
+/* Per-page Admin Studio hero and logo placement. */
+.rbh-page-hero-overlay{position:absolute;inset:0;pointer-events:none!important;z-index:1!important}
+.hero:has(.rbh-page-hero-overlay) .hero-content,
+.page-hero:has(.rbh-page-hero-overlay)>.container,
+.hero-section:has(.rbh-page-hero-overlay)>.container{position:relative;z-index:2}
+.rbh-page-logo-positioned{display:flex!important;align-items:center;justify-content:center;gap:0;max-width:min(45vw,500px);width:max-content;margin:0!important;padding:8px!important;z-index:30!important;text-decoration:none!important;line-height:0}
+.rbh-page-logo-positioned .brand-logo{display:block;object-fit:contain!important;max-width:min(45vw,500px)!important}
+.rbh-page-logo-positioned[data-rbh-logo-placement^="hero-"]{position:absolute!important;transform:translate(0,0);filter:drop-shadow(0 4px 18px rgba(0,0,0,.3))}
+.rbh-page-logo-positioned[data-rbh-logo-placement="hero-top-left"]{top:12px;left:12px}
+.rbh-page-logo-positioned[data-rbh-logo-placement="hero-top-center"]{top:12px;left:50%;transform:translateX(-50%)}
+.rbh-page-logo-positioned[data-rbh-logo-placement="hero-top-right"]{top:12px;right:12px}
+.rbh-page-logo-positioned[data-rbh-logo-placement="hero-middle-left"]{top:50%;left:12px;transform:translateY(-50%)}
+.rbh-page-logo-positioned[data-rbh-logo-placement="hero-center"]{top:50%;left:50%;transform:translate(-50%,-50%)}
+.rbh-page-logo-positioned[data-rbh-logo-placement="hero-middle-right"]{top:50%;right:12px;transform:translateY(-50%)}
+.rbh-page-logo-positioned[data-rbh-logo-placement="hero-bottom-left"]{bottom:12px;left:12px}
+.rbh-page-logo-positioned[data-rbh-logo-placement="hero-bottom-center"]{bottom:12px;left:50%;transform:translateX(-50%)}
+.rbh-page-logo-positioned[data-rbh-logo-placement="hero-bottom-right"]{bottom:12px;right:12px}
+.rbh-page-logo-positioned[data-rbh-logo-placement="footer"]{position:relative!important;top:auto!important;left:auto!important;right:auto!important;bottom:auto!important;transform:none!important;margin:12px 0!important;max-width:100%;filter:none}
+.rbh-page-logo-positioned[data-rbh-logo-placement="custom"]{position:fixed!important;top:var(--rbh-logo-y,15%);left:var(--rbh-logo-x,50%);transform:translate(-50%,-50%);z-index:9999!important;filter:drop-shadow(0 4px 18px rgba(0,0,0,.3))}
+@media(max-width:760px){.rbh-page-logo-positioned{max-width:40vw!important;padding:4px!important}.rbh-page-logo-positioned .brand-logo{max-width:40vw!important;height:auto!important}}

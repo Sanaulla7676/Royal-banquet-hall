@@ -611,3 +611,14 @@ img { display: block; max-width: 100%; }
 .studio-login-btn:hover svg { transform: translateX(3px); }
 .studio-login-btn:active { transform: translateY(0); }
 
+
+
+/* Page-aware editor controls */
+.s-header-page-label{font-size:.58rem;font-weight:800;letter-spacing:.12em;color:var(--s-gold);white-space:nowrap}
+.s-page-override-card{border-color:rgba(198,161,91,.27)!important}
+.s-page-override-note{font-size:.7rem;line-height:1.6;color:var(--s-text-muted);margin:4px 0 14px}
+.s-page-override-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.s-page-override-grid .s-cp,.s-page-override-grid .s-fg{min-width:0}
+.s-page-override-card .s-input{width:100%;min-width:0}
+.s-page-override-card .s-color-swatch{width:56px;height:38px}
+@media(max-width:960px){.s-header-page-label{display:none}.s-page-override-grid{grid-template-columns:1fr}}
