@@ -728,6 +728,10 @@
           <div class="s-card s-page-override-card" id="page-specific-button-card">
             <div class="s-card-head"><div class="s-card-title">Page-specific Button Editor</div><span class="s-card-badge" id="page-button-selected-name">Home · Primary hero</span></div>
             <p class="s-page-override-note">Choose an individual button on the selected page, then edit its label, destination, colour and size.</p>
+            <div class="s-row" style="gap:8px;align-items:center;margin:8px 0 12px;flex-wrap:wrap;">
+              <button type="button" class="s-btn s-btn-outline s-btn-sm" id="btn-page-button-pick">Select button in preview</button>
+              <span id="page-button-pick-status" class="s-page-override-note" role="status" aria-live="polite" style="margin:0;">Choose a button directly in the live preview.</span>
+            </div>
             <div class="s-fg"><label class="s-label" for="page-button-target">Button to edit</label><select id="page-button-target" class="s-input"><option value="primary">Primary hero button</option><option value="secondary">Secondary hero button</option><option value="header">Navbar CTA button</option><option value="section">First section CTA button</option></select></div>
             <div class="s-fg"><label class="s-label" for="page-button-label">Button label</label><input type="text" id="page-button-label" class="s-input" placeholder="Keep the current label"></div>
             <div class="s-fg"><label class="s-label" for="page-button-href">Button destination (URL/path)</label><input type="text" id="page-button-href" class="s-input" placeholder="e.g. booking.html"></div>
