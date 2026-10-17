@@ -364,4 +364,16 @@ test('public page renderer applies published page-specific hero, button and free
     y:node.style.getPropertyValue('--rbh-logo-y')
   }));
   expect(logoPlacement).toEqual({position:'fixed',x:'68%',y:'22%'});
+
+  // Removing the per-page override must restore the original hero and navbar layout.
+  const resetCms = JSON.parse(JSON.stringify(published));
+  resetCms.pageOverrides = {};
+  await page.evaluate(cms => window.postMessage({type:'STUDIO_PREVIEW_SYNC',cms}, '*'), resetCms);
+  await expect(page.locator('.page-hero h1')).toHaveText('Bring your people together beautifully.');
+  await expect(page.locator('.page-hero-media img')).toHaveAttribute('src','assets/images/stage-celebration.jpg');
+  await expect(page.locator('.page-hero .btn-row a.btn-gold')).not.toHaveText('Published Events CTA');
+  await expect.poll(()=>page.locator('.page-hero').evaluate(node=>node.style.minHeight)).toBe('');
+  await expect.poll(()=>page.locator('.page-hero-media img').evaluate(node=>node.style.objectPosition)).toBe('');
+  await expect(page.locator('.site-header .brand[data-rbh-logo-placement="custom"]')).toHaveCount(0);
+  await expect(page.locator('.site-header .brand')).toBeAttached();
 });
