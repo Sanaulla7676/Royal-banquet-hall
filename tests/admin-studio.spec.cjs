@@ -438,8 +438,17 @@ test('visual builder edits a real preview, saves page-specific properties and pr
   await page.locator('#vb-confirm-publish').click();
   console.log('[visual-builder] publish confirmed');
   await expect.poll(() => backend.calls.publish).toBe(1);
+  const publishedPageElements = backend.snapshot().published.pageOverrides['events.html'].elements || {};
+  console.log('[visual-builder] published selectors', JSON.stringify(Object.keys(publishedPageElements)));
   await page.goto(BASE_URL + '/events.html');
   console.log('[visual-builder] public page loaded');
+  console.log('[visual-builder] public selector matches', JSON.stringify(await page.evaluate((selectors) => selectors.map(selector => {
+    let node = null; try { node = document.querySelector(selector); } catch {}
+    return { selector, matched: Boolean(node), text: node?.textContent || null, motion: node?.getAttribute('data-rbh-vb-motion') || null };
+  }), Object.keys(publishedPageElements))));
+  console.log('[visual-builder] public loaded CMS selectors', JSON.stringify(await page.evaluate(() => {
+    try { return Object.keys(JSON.parse(localStorage.getItem('royal_cms_published') || '{}').pageOverrides?.['events.html']?.elements || {}); } catch { return []; }
+  })));
   await expect(page.locator('.page-hero h1').first()).toHaveText('Visual Builder QA Heading');
   await expect(page.locator('.page-hero h1').first()).toHaveAttribute('data-rbh-vb-motion','fade-up');
   const rendered = await page.locator('.page-hero h1').first().evaluate(node => ({
