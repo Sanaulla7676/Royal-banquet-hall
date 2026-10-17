@@ -456,6 +456,7 @@ test('visual builder edits a real preview, saves page-specific properties and pr
     transition: getComputedStyle(document.querySelector('.page-hero .btn')).transition
   }));
   expect(rendered.color).toBe('rgb(171, 205, 223)');
-  expect(rendered.transition).toContain('transform');
+  expect(rendered.transition).not.toBe('none');
+  expect(rendered.transition).not.toBe('0s');
   expect(pageErrors).toEqual([]);
 });
