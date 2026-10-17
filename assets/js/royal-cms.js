@@ -911,13 +911,17 @@ function buildStudioSelectionAnimationCss(settings) {
 
   function rbhVisualBuilderRefreshResponsive() {
     const mobile = window.matchMedia('(max-width: 767px)').matches;
+    const pageKey = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
+    const publishedPage = rbhVisualBuilderLastPublished &&
+      rbhVisualBuilderLastPublished.pageOverrides &&
+      rbhVisualBuilderLastPublished.pageOverrides[pageKey];
+    let entries = publishedPage && publishedPage.elements ? publishedPage.elements : {};
+    if (rbhVisualBuilderDraftOverride && rbhVisualBuilderDraftOverride.pageKey === pageKey) {
+      entries = rbhVisualBuilderDraftOverride.elements;
+    }
     rbhVisualBuilderTouched.forEach(el => {
       const selector = rbhVisualBuilderSelector.get(el);
-      const entry = selector && rbhVisualBuilderLastPublished &&
-        rbhVisualBuilderLastPublished.pageOverrides &&
-        rbhVisualBuilderLastPublished.pageOverrides[(window.location.pathname.split('/').pop() || 'index.html').toLowerCase()] &&
-        rbhVisualBuilderLastPublished.pageOverrides[(window.location.pathname.split('/').pop() || 'index.html').toLowerCase()].elements &&
-        rbhVisualBuilderLastPublished.pageOverrides[(window.location.pathname.split('/').pop() || 'index.html').toLowerCase()].elements[selector];
+      const entry = selector && entries[selector];
       if (entry) rbhVisualBuilderRestoreResponsive(el,entry,rbhVisualBuilderCapture(el),mobile);
     });
     rbhVisualBuilderLastMobile = mobile;
