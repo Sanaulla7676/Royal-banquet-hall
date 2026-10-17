@@ -864,12 +864,15 @@
     $('#vb-save-draft').disabled = false;
     $('#vb-publish').disabled = false;
     syncDraftOverrides();
-    // Avoid rebuilding page and layer navigation for each keystroke/property edit.
-    // Their structure is unchanged by styling; the current element label is updated directly.
+    // Do not traverse the live iframe DOM from the inspector change handler. Some
+    // site scripts measure animated content during text edits, so keep this path
+    // synchronous, small, and independent of the selected element's subtree.
     if (currentElement) {
-      $('#vb-selected-summary').textContent = '<' + currentElement.tagName.toLowerCase() + '> · ' + describeElement(currentElement);
-      $('#vb-selected-chip-text').textContent = describeElement(currentElement);
-      $('#vb-inspector-title').textContent = describeElement(currentElement);
+      const tag = currentElement.tagName.toLowerCase();
+      const label = currentSelector || tag;
+      $('#vb-selected-summary').textContent = '<' + tag + '> · ' + label.slice(0, 72);
+      $('#vb-selected-chip-text').textContent = label.slice(0, 40);
+      $('#vb-inspector-title').textContent = tag;
     }
     clearTimeout(changed.timer);
     changed.timer = setTimeout(finishEdit,350);
