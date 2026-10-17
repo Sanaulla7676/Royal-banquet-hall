@@ -114,6 +114,7 @@ let studioAuthenticated = false;
 
 const STUDIO = {
   currentPage: 'dashboard',
+  currentEditPage: 'index.html',
   viewport: 'desktop',
   undoStack: [],
   redoStack: [],
@@ -130,9 +131,11 @@ const STUDIO = {
     animations: { activeItems: [] },
     effects: { activeItems: [] },
     components: { activeItems: [] },
-    fontAnimations: { active: 0, targets: {} }
+    fontAnimations: { active: 0, targets: {} },
+    pageOverrides: {}
   }
 };
+STUDIO.cms.pageOverrides = STUDIO.cms.pageOverrides && typeof STUDIO.cms.pageOverrides === 'object' ? STUDIO.cms.pageOverrides : {};
 
 // Backfill fields introduced after the first local/browser drafts were created.
 STUDIO.cms.animations = {
@@ -224,7 +227,8 @@ const STUDIO_RESET_DEFAULTS = {
   mediaLabels:{},
   hiddenMediaAssets:[],
   imageSizing:{},
-  settings:{autoSave:true,livePreview:true,keyboardShortcuts:true,animationPreviews:true,confirmDestructive:true}
+  settings:{autoSave:true,livePreview:true,keyboardShortcuts:true,animationPreviews:true,confirmDestructive:true},
+  pageOverrides: {}
 };
 
 /* ── DOM HELPERS ── */
@@ -354,6 +358,169 @@ function buildStudioSelectionAnimationCss(settings) {
     (headingIndex ? 'body.site-revealed .hero-content h1,body.site-revealed .hero-title-primary,body.site-revealed .hero-title-accent{animation:none!important}' : '') +
     '}';
   return [heroCss,headingCss,backgroundCss,(heroIndex || headingIndex || backgroundIndex) ? reducedMotionRules : ''].filter(Boolean).join('\n');
+}
+
+
+const STUDIO_PAGE_OPTIONS = {
+  'index.html':'Home','events.html':'Events','gallery.html':'Gallery','experience.html':'Experience',
+  'catering.html':'Catering','reviews.html':'Reviews','contact.html':'Contact','booking.html':'Booking','packages.html':'Packages'
+};
+function currentEditPageKey() {
+  const value=document.getElementById('page-selector')?.value||STUDIO.currentEditPage||'index.html';
+  return Object.prototype.hasOwnProperty.call(STUDIO_PAGE_OPTIONS,value)?value:'index.html';
+}
+function getSelectedPageOverride(create=true) {
+  STUDIO.cms.pageOverrides=STUDIO.cms.pageOverrides&&typeof STUDIO.cms.pageOverrides==='object'?STUDIO.cms.pageOverrides:{};
+  const key=currentEditPageKey();
+  if(!STUDIO.cms.pageOverrides[key]&&create)STUDIO.cms.pageOverrides[key]={};
+  return STUDIO.cms.pageOverrides[key]||null;
+}
+function cleanPageOverride(key,section) {
+  const page=STUDIO.cms.pageOverrides?.[key];
+  if(page&&page[section]&&typeof page[section]==='object'&&!Object.keys(page[section]).length)delete page[section];
+  if(page&&!Object.keys(page).length)delete STUDIO.cms.pageOverrides[key];
+}
+function assignPageOverride(section,property,value,target=null) {
+  const key=currentEditPageKey(),page=getSelectedPageOverride(true);
+  if(target) {
+    page[section]=page[section]&&typeof page[section]==='object'?page[section]:{};
+    page[section][target]=page[section][target]&&typeof page[section][target]==='object'?page[section][target]:{};
+    if(value===''||value===null||value===undefined)delete page[section][target][property];else page[section][target][property]=value;
+    if(!Object.keys(page[section][target]).length)delete page[section][target];
+  } else {
+    page[section]=page[section]&&typeof page[section]==='object'?page[section]:{};
+    if(value===''||value===null||value===undefined)delete page[section][property];else page[section][property]=value;
+  }
+  cleanPageOverride(key,section);
+  syncPreviewStyles();
+  markDirty();
+}
+function setPageOverrideField(id,value){const field=document.getElementById(id);if(field)field.value=value===null||value===undefined?'':String(value);}
+function syncPageOverridePair(sliderId,numberId,labelId,value,fallback,suffix='%') {
+  const n=Number.isFinite(Number(value))?Number(value):fallback;
+  const slider=document.getElementById(sliderId),number=document.getElementById(numberId),label=document.getElementById(labelId);
+  if(slider)slider.value=String(n);if(number)number.value=String(n);
+  if(label)label.textContent=value===undefined&&suffix==='vh'?'Auto':String(n)+suffix;
+}
+function syncPageSpecificControls() {
+  const key=currentEditPageKey();STUDIO.currentEditPage=key;
+  const name=STUDIO_PAGE_OPTIONS[key]||key;
+  ['page-hero-selected-name','page-logo-selected-name'].forEach(id=>{const node=document.getElementById(id);if(node)node.textContent=name;});
+  const page=getSelectedPageOverride(false)||{},hero=page.hero||{};
+  setPageOverrideField('page-hero-src',hero.src||'');
+  setPageOverrideField('page-hero-title',hero.title||'');
+  setPageOverrideField('page-hero-subtitle',hero.subtitle||'');
+  syncPageOverridePair('page-hero-slider-posx','page-hero-num-posx','page-hero-val-posx',hero.posX,50,'%');
+  syncPageOverridePair('page-hero-slider-posy','page-hero-num-posy','page-hero-val-posy',hero.posY,50,'%');
+  syncPageOverridePair('page-hero-slider-height','page-hero-num-height','page-hero-val-height',hero.height,55,'vh');
+  syncPageOverridePair('page-hero-slider-opacity','page-hero-num-opacity','page-hero-val-opacity',hero.overlayOpacity,0,'%');
+  const overlay=document.getElementById('page-hero-overlay-color');
+  if(overlay)overlay.value=/^#[0-9a-f]{6}$/i.test(hero.overlayColor||'')?hero.overlayColor:'#000000';
+  const target=document.getElementById('page-button-target')?.value||'primary',btn=(page.buttons||{})[target]||{};
+  setPageOverrideField('page-button-label',btn.label||'');setPageOverrideField('page-button-href',btn.href||'');
+  const bg=document.getElementById('page-button-bg'),color=document.getElementById('page-button-color');
+  if(bg)bg.value=/^#[0-9a-f]{6}$/i.test(btn.bgColor||'')?btn.bgColor:'#c6a15b';
+  if(color)color.value=/^#[0-9a-f]{6}$/i.test(btn.textColor||'')?btn.textColor:'#171d19';
+  setPageOverrideField('page-button-radius',btn.borderRadius??'');setPageOverrideField('page-button-size',btn.fontSize??'');
+  const labels={primary:'Primary hero',secondary:'Secondary hero',header:'Navbar CTA',section:'Section CTA'};
+  const buttonName=document.getElementById('page-button-selected-name');
+  if(buttonName)buttonName.textContent=name+' · '+(labels[target]||'Button');
+  const logo=page.logo||{};
+  setPageOverrideField('page-logo-placement',logo.placement||'navbar');
+  syncPageOverridePair('page-logo-slider-x','page-logo-num-x','page-logo-val-x',logo.x,50,'%');
+  syncPageOverridePair('page-logo-slider-y','page-logo-num-y','page-logo-val-y',logo.y,15,'%');
+}
+function initPageSpecificControls() {
+  const selector=document.getElementById('page-selector');
+  if(selector) {
+    STUDIO.currentEditPage=currentEditPageKey();
+    selector.addEventListener('change',()=>{
+      STUDIO.currentEditPage=currentEditPageKey();
+      document.querySelectorAll('.s-right-panel iframe').forEach(frame=>{
+        frame.setAttribute('src',STUDIO.currentEditPage);
+        frame.addEventListener('load',()=>syncPreviewStyles(),{once:true});
+      });
+      syncPageSpecificControls();setTimeout(syncPreviewStyles,100);
+    });
+  }
+  const bindField=(id,section,property)=>{
+    const field=document.getElementById(id);if(!field)return;let captured=false;
+    field.addEventListener('focus',()=>{captured=false;});
+    field.addEventListener('input',()=>{
+      if(!captured){pushUndo('Edit page '+section);captured=true;}
+      assignPageOverride(section,property,field.value);
+    });
+    field.addEventListener('change',()=>{captured=false;});field.addEventListener('blur',()=>{captured=false;});
+  };
+  bindField('page-hero-src','hero','src');bindField('page-hero-title','hero','title');
+  bindField('page-hero-subtitle','hero','subtitle');bindField('page-hero-overlay-color','hero','overlayColor');
+
+  const buttonFields={'page-button-label':'label','page-button-href':'href','page-button-bg':'bgColor',
+    'page-button-color':'textColor','page-button-radius':'borderRadius','page-button-size':'fontSize'};
+  Object.entries(buttonFields).forEach(([id,property])=>{
+    const field=document.getElementById(id);if(!field)return;let captured=false;
+    field.addEventListener('focus',()=>{captured=false;});
+    field.addEventListener('input',()=>{
+      if(!captured){pushUndo('Edit selected page button');captured=true;}
+      let value=field.value;if(['borderRadius','fontSize'].includes(property))value=value===''?'':Number(value);
+      assignPageOverride('buttons',property,value,document.getElementById('page-button-target')?.value||'primary');
+    });
+    field.addEventListener('change',()=>{captured=false;});field.addEventListener('blur',()=>{captured=false;});
+  });
+  document.getElementById('page-button-target')?.addEventListener('change',syncPageSpecificControls);
+  const bindRange=(sliderId,numberId,section,property)=>{
+    const slider=document.getElementById(sliderId),number=document.getElementById(numberId);if(!slider||!number)return;let captured=false;
+    const apply=value=>{
+      const n=Math.max(Number(slider.min||0),Math.min(Number(slider.max||100),Number(value)));if(!Number.isFinite(n))return;
+      slider.value=String(n);number.value=String(n);
+      const label=document.getElementById(sliderId.replace('slider-','val-'));
+      if(label)label.textContent=String(n)+(property==='height'?'vh':'%');
+      if(!captured){pushUndo('Edit page '+section+' '+property);captured=true;}
+      assignPageOverride(section,property,n);
+    };
+    slider.addEventListener('input',()=>apply(slider.value));number.addEventListener('input',()=>apply(number.value));
+    [slider,number].forEach(field=>{field.addEventListener('change',()=>{captured=false;});field.addEventListener('blur',()=>{captured=false;});});
+  };
+  bindRange('page-hero-slider-posx','page-hero-num-posx','hero','posX');
+  bindRange('page-hero-slider-posy','page-hero-num-posy','hero','posY');
+  bindRange('page-hero-slider-height','page-hero-num-height','hero','height');
+  bindRange('page-hero-slider-opacity','page-hero-num-opacity','hero','overlayOpacity');
+  document.getElementById('btn-page-hero-upload')?.addEventListener('click',()=>document.getElementById('page-hero-upload')?.click());
+  document.getElementById('page-hero-upload')?.addEventListener('change',async event=>{
+    const file=event.target.files?.[0];if(!file)return;
+    if(!file.type.startsWith('image/')||file.size>15*1024*1024){toast('Choose an image smaller than 15 MB.','error');event.target.value='';return;}
+    const upload=event.target;upload.disabled=true;
+    try{
+      const media=await uploadMediaToCloudinary(file);pushUndo('Upload page hero image');
+      assignPageOverride('hero','src',media.url);setPageOverrideField('page-hero-src',media.url);
+      toast('Hero image uploaded for '+(STUDIO_PAGE_OPTIONS[currentEditPageKey()]||'selected page')+'. Save Draft, then Publish.','success');
+    }catch(error){toast('Page hero upload failed: '+(error.message||'Unknown error.'),'error');}
+    finally{upload.disabled=false;upload.value='';}
+  });
+  document.getElementById('btn-page-hero-reset')?.addEventListener('click',()=>{
+    pushUndo('Reset selected page hero overrides');const key=currentEditPageKey(),page=getSelectedPageOverride(false);
+    if(page){delete page.hero;if(!Object.keys(page).length)delete STUDIO.cms.pageOverrides[key];}
+    syncPageSpecificControls();syncPreviewStyles();markDirty();
+  });
+  document.getElementById('btn-page-button-reset')?.addEventListener('click',()=>{
+    pushUndo('Reset selected page button override');const key=currentEditPageKey(),target=document.getElementById('page-button-target')?.value||'primary',page=getSelectedPageOverride(false);
+    if(page?.buttons){delete page.buttons[target];if(!Object.keys(page.buttons).length)delete page.buttons;}
+    if(page&&!Object.keys(page).length)delete STUDIO.cms.pageOverrides[key];
+    syncPageSpecificControls();syncPreviewStyles();markDirty();
+  });
+  document.getElementById('page-logo-placement')?.addEventListener('change',event=>{
+    pushUndo('Change page logo placement');assignPageOverride('logo','placement',event.target.value);
+  });
+  bindRange('page-logo-slider-x','page-logo-num-x','logo','x');bindRange('page-logo-slider-y','page-logo-num-y','logo','y');
+  document.getElementById('btn-page-logo-reset')?.addEventListener('click',()=>{
+    pushUndo('Reset selected page logo placement');const key=currentEditPageKey(),page=getSelectedPageOverride(false);
+    if(page){delete page.logo;if(!Object.keys(page).length)delete STUDIO.cms.pageOverrides[key];}
+    syncPageSpecificControls();syncPreviewStyles();markDirty();
+  });
+  document.querySelectorAll('.s-right-panel iframe').forEach(frame=>{
+    frame.setAttribute('src',STUDIO.currentEditPage);frame.addEventListener('load',()=>syncPreviewStyles());
+  });
+  syncPageSpecificControls();
 }
 
 function syncPreviewStyles() {
@@ -2780,6 +2947,7 @@ function syncAllControls() {
     }
   });
 
+  syncPageSpecificControls();
   syncPreviewStyles();
 }
 
@@ -2996,11 +3164,7 @@ function initAll() {
     btn.addEventListener('click', () => setViewport(btn.dataset.vp));
   });
 
-  // Page selector
-  document.getElementById('page-selector')?.addEventListener('change', e => {
-    const iframe = document.getElementById('studio-preview-frame');
-    if (iframe) iframe.src = e.target.value;
-  });
+  // Page selector is connected to the page-specific editor context by initPageSpecificControls().
 
   // Page-specific init
   initLogoPage();
@@ -3018,6 +3182,7 @@ function initAll() {
   initFontAnimPage();
   initFooterActionButtons();
   initStudioSettingsControls();
+  initPageSpecificControls();
 
   // Inner tabs
   document.querySelectorAll('.s-inner-tab').forEach(tab => {
