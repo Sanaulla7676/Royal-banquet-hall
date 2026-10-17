@@ -103,6 +103,7 @@ const DEFAULT_CMS = {
 
 let databaseClient = null;
 let schemaPromise = null;
+let backupSchemaPromise = null;
 function serviceError(message, statusCode = 503) { const error = new Error(message); error.statusCode = statusCode; return error; }
 function hasDatabase() { return Boolean(process.env.DATABASE_URL); }
 function getDatabase() {
@@ -116,13 +117,34 @@ async function ensureSchema() {
   await schemaPromise;
   return db;
 }
+async function ensureBackupSchema() {
+  const db = getDatabase();
+  if (!backupSchemaPromise) {
+    backupSchemaPromise = db.query('CREATE TABLE IF NOT EXISTS public.cms_backups (key TEXT PRIMARY KEY, data JSONB NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())')
+      .catch(error => { backupSchemaPromise = null; throw error; });
+  }
+  await backupSchemaPromise;
+  return db;
+}
 async function queryRows(sql, params = []) {
   const result = await (await ensureSchema()).query(sql, params);
   if (Array.isArray(result)) return result;
   return Array.isArray(result && result.rows) ? result.rows : [];
 }
+async function queryBackupRows(sql, params = []) {
+  const result = await (await ensureBackupSchema()).query(sql, params);
+  if (Array.isArray(result)) return result;
+  return Array.isArray(result && result.rows) ? result.rows : [];
+}
 async function getRecord(key) {
   const rows = await queryRows('SELECT key,data,updated_at FROM public.cms_state WHERE key=$1 LIMIT 1',[key]);
+  if (!rows.length) return null;
+  const row=rows[0];
+  if (typeof row.data==='string') { try { row.data=JSON.parse(row.data); } catch {} }
+  return row;
+}
+async function getBackupRecord(key) {
+  const rows = await queryBackupRows('SELECT key,data,updated_at FROM public.cms_backups WHERE key=$1 LIMIT 1',[key]);
   if (!rows.length) return null;
   const row=rows[0];
   if (typeof row.data==='string') { try { row.data=JSON.parse(row.data); } catch {} }
@@ -134,8 +156,9 @@ async function putRecord(key,data) {
 async function backupDraft() {
   const current=await getRecord('draft');
   if (!current) return;
-  await putRecord('backup:'+Date.now()+':'+crypto.randomUUID(),current.data);
-  await queryRows("DELETE FROM public.cms_state WHERE key LIKE 'backup:%' AND key NOT IN (SELECT key FROM public.cms_state WHERE key LIKE 'backup:%' ORDER BY updated_at DESC LIMIT 20)");
+  const key='backup:'+Date.now()+':'+crypto.randomUUID();
+  await queryBackupRows('INSERT INTO public.cms_backups (key,data,updated_at) VALUES ($1,$2::jsonb,NOW()) ON CONFLICT (key) DO UPDATE SET data=EXCLUDED.data,updated_at=NOW()',[key,JSON.stringify(current.data)]);
+  await queryBackupRows('DELETE FROM public.cms_backups WHERE key NOT IN (SELECT key FROM public.cms_backups ORDER BY updated_at DESC LIMIT 20)');
 }
 function cloneJson(value) { return JSON.parse(JSON.stringify(value)); }
 async function readCMS() {
@@ -429,7 +452,7 @@ app.post('/api/rename-image', requireAdminApi, async (req, res) => {
 app.get('/api/backups',requireAdminApi,async(req,res)=>{
   try {
     if(hasDatabase()) {
-      const rows=await queryRows("SELECT key,data,updated_at FROM public.cms_state WHERE key LIKE 'backup:%' ORDER BY updated_at DESC LIMIT 20");
+      const rows=await queryBackupRows("SELECT key,data,updated_at FROM public.cms_backups ORDER BY updated_at DESC LIMIT 20");
       const backups=rows.map(row=>({file:row.key,date:row.updated_at,size:Buffer.byteLength(JSON.stringify(row.data||{}))}));
       return res.json({success:true,count:backups.length,backups,source:'neon-postgres'});
     }
@@ -448,7 +471,7 @@ app.post('/api/restore',requireAdminApi,async(req,res)=>{
   try {
     if(hasDatabase()) {
       if(!file.startsWith('backup:')) return res.status(400).json({success:false,message:'Invalid database backup key.'});
-      const backup=await getRecord(file);
+      const backup=await getBackupRecord(file);
       if(!backup) return res.status(404).json({success:false,message:'Backup not found.'});
       await backupDraft(); await putRecord('draft',backup.data);
       return res.json({success:true,message:'Draft restored from Neon backup.',restored_at:new Date().toISOString()});
