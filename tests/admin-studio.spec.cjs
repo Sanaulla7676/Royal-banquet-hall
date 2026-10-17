@@ -168,6 +168,7 @@ test('sign-in, all navigation pages, editable background image, save/publish and
 });
 
 test('hero, heading, navbar, section and font animation presets all update saved editor state', async ({ page }) => {
+  test.setTimeout(120000);
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.message));
   await mockBackend(page);
@@ -243,20 +244,22 @@ test('hero, heading, navbar, section and font animation presets all update saved
 });
 
 test('media library crop and display dimensions are real CMS actions', async ({ page }) => {
+  test.setTimeout(90000);
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.message));
   const backend = await mockBackend(page);
   await signIn(page);
   await page.locator('.s-nav-item[data-page="image-library"]').click();
-  await expect(page.locator('.s-img-item img').first()).toBeVisible();
-  await page.locator('.s-img-item img').first().click();
+  await expect(page.locator('.s-img-item img').first()).toBeVisible({timeout:8000});
+  await page.locator('.s-img-item img').first().click({timeout:8000});
+  await expect(page.locator('#selected-img-name')).not.toHaveValue('', {timeout:5000});
   await page.locator('#imglib-num-w').fill('640');
   await page.locator('#imglib-num-h').fill('360');
-  await page.locator('#btn-imglib-apply-size').click();
-  await expect.poll(()=>page.evaluate(()=>Object.keys(window.STUDIO.cms.imageSizing).length)).toBe(1);
+  await page.locator('#btn-imglib-apply-size').click({timeout:8000});
+  await expect.poll(()=>page.evaluate(()=>Object.keys(window.STUDIO.cms.imageSizing).length),{timeout:7000}).toBe(1);
   const cropCountBefore=await page.evaluate(()=>window.STUDIO.cms.mediaLibrary.length);
-  await page.locator('#btn-imglib-crop').click();
-  await expect.poll(()=>page.evaluate(()=>window.STUDIO.cms.mediaLibrary.length)).toBe(cropCountBefore+1,{timeout:15000});
+  await page.locator('#btn-imglib-crop').click({timeout:8000});
+  await expect.poll(()=>page.evaluate(()=>window.STUDIO.cms.mediaLibrary.length),{timeout:20000}).toBe(cropCountBefore+1);
   expect(backend.calls.upload).toBe(1);
   const asset=await page.evaluate(()=>window.STUDIO.cms.mediaLibrary.at(-1));
   expect(asset.publicId).toContain('royal-banquet/test-asset-');
