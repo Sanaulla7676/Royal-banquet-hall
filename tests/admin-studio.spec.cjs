@@ -401,12 +401,12 @@ test('visual builder edits a real preview, saves page-specific properties and pr
   await page.locator('#vb-page-select').selectOption('events.html');
   console.log('[visual-builder] page selected');
   const preview = page.frameLocator('#vb-page-frame');
-  await expect(preview.locator('.page-hero h1').first()).toBeVisible({ timeout: 15000 });
+  await expect(preview.locator('.page-hero .lede').first()).toBeVisible({ timeout: 15000 });
   console.log('[visual-builder] preview heading visible');
-  await preview.locator('.page-hero h1').first().click();
+  await preview.locator('.page-hero .lede').first().click();
   console.log('[visual-builder] heading selected');
   await expect(page.locator('#vb-inspector-title')).not.toHaveText('Select an element');
-  await page.locator('#vb-text').fill('Visual Builder QA Heading');
+  await page.locator('#vb-text').fill('Visual Builder QA summary copy');
   console.log('[visual-builder] content changed');
   await page.locator('[data-tab="design"]').click();
   await page.locator('#vb-color').evaluate((node) => {
@@ -421,13 +421,13 @@ test('visual builder edits a real preview, saves page-specific properties and pr
   await page.locator('#vb-save-draft').click();
   console.log('[visual-builder] draft save clicked');
 
-  await expect(preview.locator('.page-hero h1').first()).toHaveText('Visual Builder QA Heading');
+  await expect(preview.locator('.page-hero .lede').first()).toHaveText('Visual Builder QA summary copy');
   console.log('[visual-builder] preview reflects saved heading');
-  await expect(preview.locator('.page-hero h1').first()).toHaveAttribute('data-rbh-vb-motion','fade-up');
+  await expect(preview.locator('.page-hero .lede').first()).toHaveAttribute('data-rbh-vb-motion','fade-up');
   await expect.poll(() => backend.calls.save).toBeGreaterThan(0);
   const draft = backend.snapshot().draft;
   const entries = Object.values(draft.pageOverrides['events.html'].elements || {});
-  const edited = entries.find(entry => entry.text === 'Visual Builder QA Heading');
+  const edited = entries.find(entry => entry.text === 'Visual Builder QA summary copy');
   expect(edited).toBeTruthy();
   expect(edited.styles.color).toBe('#abcddf');
   expect(edited.motion).toMatchObject({ preset:'fade-up', duration:650 });
@@ -449,9 +449,9 @@ test('visual builder edits a real preview, saves page-specific properties and pr
   console.log('[visual-builder] public loaded CMS selectors', JSON.stringify(await page.evaluate(() => {
     try { return Object.keys(JSON.parse(localStorage.getItem('royal_cms_published') || '{}').pageOverrides?.['events.html']?.elements || {}); } catch { return []; }
   })));
-  await expect(page.locator('.page-hero h1').first()).toHaveText('Visual Builder QA Heading');
-  await expect(page.locator('.page-hero h1').first()).toHaveAttribute('data-rbh-vb-motion','fade-up');
-  const rendered = await page.locator('.page-hero h1').first().evaluate(node => ({
+  await expect(page.locator('.page-hero .lede').first()).toHaveText('Visual Builder QA summary copy');
+  await expect(page.locator('.page-hero .lede').first()).toHaveAttribute('data-rbh-vb-motion','fade-up');
+  const rendered = await page.locator('.page-hero .lede').first().evaluate(node => ({
     color: getComputedStyle(node).color,
     transition: getComputedStyle(document.querySelector('.page-hero .btn')).transition
   }));
