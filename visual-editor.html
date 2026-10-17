@@ -81,7 +81,7 @@
       <label class="vb-search"><span>⌕</span><input id="vb-page-search" placeholder="Find a page…" aria-label="Find a page"></label>
       <div class="vb-page-list" id="vb-page-list"></div>
       <div class="vb-divider"></div>
-      <div class="vb-section-heading"><span>Layers</span><button class="vb-text-btn" id="vb-refresh-layers">Refresh</button></div>
+      <div class="vb-section-heading vb-layers-heading"><span>Layers</span><div><button class="vb-text-btn" id="vb-expand-layers" type="button">Expand</button><button class="vb-text-btn" id="vb-collapse-layers" type="button">Collapse</button><button class="vb-text-btn" id="vb-refresh-layers" type="button">Refresh</button></div></div>
       <label class="vb-search"><span>⌕</span><input id="vb-layer-search" placeholder="Find an element…" aria-label="Find a layer"></label>
       <div class="vb-layer-meta" id="vb-layer-meta">Choose an element in the canvas</div>
       <div class="vb-layer-tree" id="vb-layer-tree"></div>
@@ -93,6 +93,7 @@
         <div class="vb-select-tools">
           <button id="vb-select-mode" class="is-active" title="Click components to edit">⌖ Select</button>
           <button id="vb-hand-mode" title="Scroll and interact with the page">✋ Hand</button>
+          <button id="vb-move-mode" title="Drag the selected element to reposition it">↔ Move</button>
         </div>
         <div class="vb-canvas-hint" id="vb-canvas-hint">Click any supported element on the page to edit it</div>
         <div class="vb-zoom-tools"><button id="vb-zoom-out" aria-label="Zoom out">−</button><span id="vb-zoom-value">100%</span><button id="vb-zoom-in" aria-label="Zoom in">+</button><button id="vb-zoom-reset" title="Reset zoom">Fit</button></div>
@@ -148,8 +149,11 @@
             <div class="vb-property-title">Typography</div>
             <label class="vb-field"><span>Text color</span><div class="vb-color-control"><input type="color" id="vb-color" value="#ffffff"><input id="vb-color-text" type="text" placeholder="#ffffff"></div></label>
             <label class="vb-field"><span>Background color</span><div class="vb-color-control"><input type="color" id="vb-bg" value="#171d19"><input id="vb-bg-text" type="text" placeholder="transparent / #171d19"></div></label>
-            <label class="vb-field"><span>Font size</span><input id="vb-font-size" type="text" placeholder="e.g. 48px or 3rem"></label>
-            <label class="vb-field"><span>Font family</span><input id="vb-font-family" type="text" placeholder="Inherited or custom font"></label>
+            <label class="vb-field"><span>Font size <b id="vb-font-size-label">48px</b></span><div class="vb-slider-number"><input id="vb-font-size" type="range" min="8" max="120" step="1" value="48" aria-label="Font size"><input id="vb-font-size-number" type="number" min="8" max="120" step="1" value="48" aria-label="Font size in pixels"></div><div class="vb-quick-presets"><button type="button" data-font-size="16">S</button><button type="button" data-font-size="24">M</button><button type="button" data-font-size="36">L</button><button type="button" data-font-size="48">XL</button><button type="button" data-font-size="64">2XL</button><button type="button" data-font-size="80">3XL</button></div></label>
+            <label class="vb-field"><span>Line height <b id="vb-line-height-label">1.4</b></span><div class="vb-slider-number"><input id="vb-line-height" type="range" min="0.8" max="2.6" step="0.05" value="1.4" aria-label="Line height"><input id="vb-line-height-number" type="number" min="0.8" max="2.6" step="0.05" value="1.4" aria-label="Line height value"></div><div class="vb-quick-presets"><button type="button" data-line-height="1">Tight</button><button type="button" data-line-height="1.2">Compact</button><button type="button" data-line-height="1.4">Balanced</button><button type="button" data-line-height="1.6">Readable</button><button type="button" data-line-height="2">Relaxed</button></div></label>
+            <label class="vb-field"><span>Letter spacing <b id="vb-letter-spacing-label">0px</b></span><div class="vb-slider-number"><input id="vb-letter-spacing" type="range" min="-4" max="20" step="0.5" value="0" aria-label="Letter spacing"><input id="vb-letter-spacing-number" type="number" min="-4" max="20" step="0.5" value="0" aria-label="Letter spacing in pixels"></div></label>
+            <label class="vb-field"><span>Text transform</span><select id="vb-text-transform"><option value="">Keep original</option><option value="none">Normal</option><option value="capitalize">Capitalize words</option><option value="uppercase">UPPERCASE</option><option value="lowercase">lowercase</option></select></label>
+            <label class="vb-field"><span>Font family</span><div class="vb-font-field"><input id="vb-font-family" type="text" readonly placeholder="Choose a font"><button class="vb-btn vb-btn-outline" id="vb-open-font-picker" type="button">Browse fonts</button></div></label>
             <label class="vb-field"><span>Font weight</span><select id="vb-font-weight"><option value="">Inherit</option><option value="300">Light · 300</option><option value="400">Regular · 400</option><option value="500">Medium · 500</option><option value="600">Semi-bold · 600</option><option value="700">Bold · 700</option><option value="800">Extra bold · 800</option></select></label>
             <label class="vb-field"><span>Text alignment</span><select id="vb-text-align"><option value="">Inherit</option><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option><option value="justify">Justify</option></select></label>
           </div>
@@ -163,8 +167,8 @@
         <section class="vb-inspector-pane" data-pane="layout">
           <div class="vb-property-group">
             <div class="vb-property-title">Size and spacing</div>
-            <label class="vb-field"><span>Width</span><input id="vb-width" type="text" placeholder="auto, 100%, 320px"></label>
-            <label class="vb-field"><span>Height</span><input id="vb-height" type="text" placeholder="auto, 50vh, 320px"></label>
+            <label class="vb-field"><span>Width <b id="vb-width-label">auto</b></span><select id="vb-width-preset" aria-label="Quick width preset"><option value="">Custom / keep current</option><option value="auto">Auto</option><option value="fit-content">Fit content</option><option value="25%">25% width</option><option value="50%">50% width</option><option value="75%">75% width</option><option value="100%">100% width</option></select><div class="vb-slider-number"><input id="vb-width" type="range" min="20" max="1800" step="10" value="640" aria-label="Width in pixels"><input id="vb-width-number" type="number" min="20" max="1800" step="10" value="640" aria-label="Width in pixels"></div></label>
+            <label class="vb-field"><span>Height <b id="vb-height-label">auto</b></span><select id="vb-height-preset" aria-label="Quick height preset"><option value="">Custom / keep current</option><option value="auto">Auto</option><option value="25vh">25% of viewport</option><option value="50vh">50% of viewport</option><option value="70vh">70% of viewport</option><option value="100vh">Full viewport</option></select><div class="vb-slider-number"><input id="vb-height" type="range" min="20" max="1400" step="10" value="360" aria-label="Height in pixels"><input id="vb-height-number" type="number" min="20" max="1400" step="10" value="360" aria-label="Height in pixels"></div></label>
             <label class="vb-field"><span>Padding</span><input id="vb-padding" type="text" placeholder="e.g. 24px 32px"></label>
             <label class="vb-field"><span>Margin</span><input id="vb-margin" type="text" placeholder="e.g. 0 auto 24px"></label>
             <label class="vb-field" id="vb-object-position-row"><span>Image focal point</span><select id="vb-object-position"><option value="">Inherit</option><option>center center</option><option>center top</option><option>center bottom</option><option>left center</option><option>right center</option><option>25% 50%</option><option>75% 50%</option></select></label>
@@ -194,7 +198,21 @@
           <div class="vb-property-group">
             <div class="vb-property-title">Animation and effects</div>
             <div class="vb-motion-notice">Existing animations are preserved by default. Choose a new effect only when you intend to override motion for this element.</div>
-            <label class="vb-field"><span>Animation preset</span><select id="vb-motion"><option value="preserve">Preserve existing animation</option><option value="none">Disable animation on this element</option><option value="fade-in">Fade in</option><option value="fade-up">Fade up</option><option value="zoom-in">Zoom in</option><option value="slide-left">Slide from left</option><option value="slide-right">Slide from right</option><option value="float">Gentle float</option></select></label>
+            <label class="vb-field"><span>Animation preset</span><select id="vb-motion"><option value="preserve">Preserve existing animation</option><option value="none">Disable animation on this element</option><option value="fade-in">Fade in</option><option value="fade-up">Fade up</option><option value="slide-down">Slide down</option><option value="zoom-in">Zoom in</option><option value="slide-left">Slide from left</option><option value="slide-right">Slide from right</option><option value="blur-in">Blur reveal</option><option value="bounce">Bounce in</option><option value="pulse">Soft pulse</option><option value="rotate">Rotate in</option><option value="shimmer">Gold shimmer</option><option value="float">Gentle float</option></select></label>
+            <div class="vb-motion-grid" id="vb-motion-grid" aria-label="Visual animation presets">
+              <button type="button" class="vb-motion-card" data-motion-preset="fade-in"><span class="vb-motion-demo">Aa</span><span>Fade In</span></button>
+              <button type="button" class="vb-motion-card" data-motion-preset="fade-up"><span class="vb-motion-demo">↑ Aa</span><span>Fade Up</span></button>
+              <button type="button" class="vb-motion-card" data-motion-preset="slide-down"><span class="vb-motion-demo">↓ Aa</span><span>Slide Down</span></button>
+              <button type="button" class="vb-motion-card" data-motion-preset="zoom-in"><span class="vb-motion-demo">⊕</span><span>Zoom In</span></button>
+              <button type="button" class="vb-motion-card" data-motion-preset="slide-left"><span class="vb-motion-demo">← Aa</span><span>Slide Left</span></button>
+              <button type="button" class="vb-motion-card" data-motion-preset="slide-right"><span class="vb-motion-demo">Aa →</span><span>Slide Right</span></button>
+              <button type="button" class="vb-motion-card" data-motion-preset="blur-in"><span class="vb-motion-demo">░ Aa</span><span>Blur Reveal</span></button>
+              <button type="button" class="vb-motion-card" data-motion-preset="bounce"><span class="vb-motion-demo">↕ Aa</span><span>Bounce</span></button>
+              <button type="button" class="vb-motion-card" data-motion-preset="pulse"><span class="vb-motion-demo">◉</span><span>Soft Pulse</span></button>
+              <button type="button" class="vb-motion-card" data-motion-preset="rotate"><span class="vb-motion-demo">⟳ Aa</span><span>Rotate In</span></button>
+              <button type="button" class="vb-motion-card" data-motion-preset="shimmer"><span class="vb-motion-demo">✦ Aa</span><span>Gold Shimmer</span></button>
+              <button type="button" class="vb-motion-card" data-motion-preset="float"><span class="vb-motion-demo">⌃</span><span>Gentle Float</span></button>
+            </div>
             <label class="vb-field"><span>Duration (ms)</span><input id="vb-motion-duration" type="number" min="100" max="15000" step="50" value="800"></label>
             <label class="vb-field"><span>Delay (ms)</span><input id="vb-motion-delay" type="number" min="0" max="10000" step="50" value="0"></label>
             <label class="vb-field"><span>Easing</span><select id="vb-motion-easing"><option value="ease">Ease</option><option value="ease-out">Ease out</option><option value="ease-in-out">Ease in-out</option><option value="linear">Linear</option><option value="cubic-bezier(.2,.7,.2,1)">Luxury reveal</option></select></label>
@@ -209,6 +227,16 @@
       </div>
     </aside>
   </main>
+  <div class="vb-font-picker" id="vb-font-picker" hidden>
+    <button class="vb-font-picker-backdrop" id="vb-close-font-picker-backdrop" type="button" aria-label="Close font library"></button>
+    <section class="vb-font-picker-card" role="dialog" aria-modal="true" aria-labelledby="vb-font-picker-title">
+      <header class="vb-font-picker-header"><div><span class="vb-eyebrow">TYPE LIBRARY</span><h2 id="vb-font-picker-title">Choose a font</h2><p>Preview the style, then apply it to the selected element.</p></div><button class="vb-icon-btn vb-font-close" id="vb-close-font-picker" type="button" aria-label="Close font library">×</button></header>
+      <label class="vb-font-search"><span>⌕</span><input id="vb-font-search" type="search" placeholder="Search 24 curated fonts…" autocomplete="off"></label>
+      <div class="vb-font-categories" id="vb-font-categories" role="group" aria-label="Font categories"><button type="button" data-font-category="all" class="is-active">All fonts</button><button type="button" data-font-category="serif">Serif</button><button type="button" data-font-category="sans">Sans serif</button><button type="button" data-font-category="display">Display</button><button type="button" data-font-category="editorial">Editorial</button></div>
+      <div class="vb-font-grid" id="vb-font-grid" role="list"></div>
+      <footer class="vb-font-picker-footer"><span id="vb-font-count">24 fonts</span><button class="vb-btn vb-btn-outline" id="vb-cancel-font-picker" type="button">Cancel</button></footer>
+    </section>
+  </div>
   <div class="vb-toast" id="vb-toast" role="status" aria-live="polite"></div>
   <div class="vb-confirm" id="vb-confirm" hidden>
     <div class="vb-confirm-card">
