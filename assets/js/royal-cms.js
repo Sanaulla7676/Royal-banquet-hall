@@ -662,6 +662,206 @@ function buildStudioSelectionAnimationCss(settings) {
     }
   }
 
+
+  // Visual Builder component overrides. Existing motion hooks are untouched unless
+  // a component explicitly receives a motion override in the published CMS.
+  const rbhVisualBuilderOriginals = new WeakMap();
+  const rbhVisualBuilderTouched = new Set();
+  let rbhVisualBuilderLastPublished = null;
+  let rbhVisualBuilderLastMobile = window.matchMedia('(max-width: 767px)').matches;
+
+  function rbhVisualBuilderCapture(el) {
+    let base = rbhVisualBuilderOriginals.get(el);
+    if (base) return base;
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) {
+      if (node.parentElement && !node.parentElement.closest('script,style,svg')) {
+        textNodes.push({ node, value: node.nodeValue });
+      }
+    }
+    const styleProps = [
+      'color','background-color','font-size','font-family','font-weight','text-align',
+      'border-radius','opacity','width','height','padding','margin','object-position',
+      'cursor','display','--rbh-vb-duration','--rbh-vb-delay','--rbh-vb-easing'
+    ];
+    const styles = {};
+    styleProps.forEach(prop => styles[prop] = {
+      value: el.style.getPropertyValue(prop),
+      priority: el.style.getPropertyPriority(prop)
+    });
+    base = {
+      textNodes,
+      href: el.getAttribute('href'), src: el.getAttribute('src'),
+      alt: el.getAttribute('alt'), target: el.getAttribute('target'),
+      rel: el.getAttribute('rel'), hidden: el.hasAttribute('hidden'), styles,
+      motion: el.getAttribute('data-rbh-vb-motion'),
+      duration: el.getAttribute('data-rbh-vb-duration'),
+      delay: el.getAttribute('data-rbh-vb-delay'),
+      easing: el.getAttribute('data-rbh-vb-easing')
+    };
+    rbhVisualBuilderOriginals.set(el, base);
+    return base;
+  }
+
+  function rbhVisualBuilderRestore(el) {
+    const base = rbhVisualBuilderOriginals.get(el);
+    if (!base) return;
+    base.textNodes.forEach(item => {
+      if (item.node && item.node.isConnected) item.node.nodeValue = item.value;
+    });
+    [['href',base.href],['src',base.src],['alt',base.alt],['target',base.target],['rel',base.rel]].forEach(item => {
+      if (item[1] === null) el.removeAttribute(item[0]); else el.setAttribute(item[0], item[1]);
+    });
+    if (base.hidden) el.setAttribute('hidden',''); else el.removeAttribute('hidden');
+    Object.entries(base.styles).forEach(([prop,item]) => {
+      if (item.value) el.style.setProperty(prop,item.value,item.priority);
+      else el.style.removeProperty(prop);
+    });
+    [['data-rbh-vb-motion',base.motion],['data-rbh-vb-duration',base.duration],
+     ['data-rbh-vb-delay',base.delay],['data-rbh-vb-easing',base.easing]].forEach(item => {
+      if (item[1] === null) el.removeAttribute(item[0]); else el.setAttribute(item[0],item[1]);
+    });
+  }
+
+  function rbhVisualBuilderSafeSelector(selector) {
+    return typeof selector === 'string' && selector.length < 1200 &&
+      !/[{};]/.test(selector) && /^[a-zA-Z0-9_#.:>\[\]="'\\*+~()\-\\s]+$/.test(selector);
+  }
+
+  function rbhVisualBuilderSafeUrl(value, media) {
+    if (typeof value !== 'string' || value.length > 2000) return false;
+    const v = value.trim();
+    if (media) return /^https?:\/\//i.test(v) || v.startsWith('/') || v.startsWith('assets/') || v.startsWith('./') || v.startsWith('../');
+    return /^(https?:\/\/|\/|\.\/|\.\.\/|#|mailto:|tel:)/i.test(v) ||
+      (/^[a-z0-9][a-z0-9._/-]*(?:[?#].*)?$/i.test(v) && !/^(javascript|data|vbscript):/i.test(v));
+  }
+
+  function rbhVisualBuilderValidStyle(prop, value) {
+    if (value === '' || value === null || value === undefined) return false;
+    const v = String(value).trim();
+    if (v.length > 180 || /[;{}<>]/.test(v) || /url\\s*\\(|expression\\s*\\(|javascript:/i.test(v)) return false;
+    if (['font-size','width','height','padding','margin','border-radius'].includes(prop)) {
+      return /^(auto|inherit|initial|unset|normal|none|fit-content|max-content|min-content|0|[-+]?(?:\\d+\\.?\\d*|\\.\\d+)(?:px|rem|em|vh|vw|%|ch|ex|svh|dvh)?)(?:\\s+[-+]?(?:\\d+\\.?\\d*|\\.\\d+)(?:px|rem|em|vh|vw|%|ch|ex|svh|dvh)?){0,3}$/i.test(v) ||
+        /^calc\\([0-9a-zA-Z.%+*/()\\s-]+\\)$/i.test(v);
+    }
+    if (['color','background-color'].includes(prop)) return /^(#[0-9a-f]{3,8}|rgba?\\([\\d.,%\\s]+\\)|hsla?\\([\\d.,%\\sdeg-]+\\)|[a-z]{1,25}|var\\(--[a-z0-9-]+\\))$/i.test(v);
+    if (prop === 'opacity') return Number.isFinite(Number(v)) && Number(v) >= 0 && Number(v) <= 1;
+    if (prop === 'font-weight') return /^(normal|bold|[1-9]00)$/i.test(v);
+    if (prop === 'font-family') return /^[a-zA-Z0-9 ,"'-]{1,100}$/.test(v);
+    if (prop === 'text-align') return ['left','right','center','justify','start','end'].includes(v);
+    if (prop === 'object-position') return /^[a-zA-Z0-9.%\\s-]+$/.test(v) && v.length < 60;
+    if (prop === 'cursor') return ['pointer','default','grab','grabbing','move','text','not-allowed'].includes(v);
+    return false;
+  }
+
+  function rbhVisualBuilderSetText(el, text, base) {
+    const nodes = base.textNodes.filter(item => item.node && item.node.isConnected);
+    if (!nodes.length) return;
+    nodes[0].node.nodeValue = String(text).slice(0,12000);
+    nodes.slice(1).forEach(item => { item.node.nodeValue = ''; });
+  }
+
+  function rbhVisualBuilderApplyMotion(el, motion) {
+    const presets = ['none','fade-in','fade-up','zoom-in','slide-left','slide-right','float'];
+    if (!motion || !presets.includes(motion.preset)) return;
+    el.setAttribute('data-rbh-vb-motion',motion.preset);
+    const duration = Math.max(100,Math.min(15000,Number(motion.duration) || 800));
+    const delay = Math.max(0,Math.min(10000,Number(motion.delay) || 0));
+    const easing = ['ease','ease-in','ease-out','ease-in-out','linear','cubic-bezier(.2,.7,.2,1)'].includes(motion.easing) ? motion.easing : 'ease-out';
+    el.setAttribute('data-rbh-vb-duration',String(duration));
+    el.setAttribute('data-rbh-vb-delay',String(delay));
+    el.setAttribute('data-rbh-vb-easing',easing);
+    el.style.setProperty('--rbh-vb-duration',duration+'ms');
+    el.style.setProperty('--rbh-vb-delay',delay+'ms');
+    el.style.setProperty('--rbh-vb-easing',easing);
+    let style = document.getElementById('rbh-visual-builder-motion-css');
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'rbh-visual-builder-motion-css';
+      style.textContent = [
+        '@keyframes rbhVbFadeIn{from{opacity:0}to{opacity:1}}',
+        '@keyframes rbhVbFadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}',
+        '@keyframes rbhVbZoomIn{from{opacity:.5;transform:scale(.94)}to{opacity:1;transform:scale(1)}}',
+        '@keyframes rbhVbSlideLeft{from{opacity:.2;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}',
+        '@keyframes rbhVbSlideRight{from{opacity:.2;transform:translateX(-24px)}to{opacity:1;transform:translateX(0)}}',
+        '@keyframes rbhVbFloat{from{transform:translateY(0)}to{transform:translateY(-8px)}}',
+        '[data-rbh-vb-motion="none"]{animation:none!important}',
+        '[data-rbh-vb-motion="fade-in"]{animation:rbhVbFadeIn var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease) var(--rbh-vb-delay,0ms) both!important}',
+        '[data-rbh-vb-motion="fade-up"]{animation:rbhVbFadeUp var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
+        '[data-rbh-vb-motion="zoom-in"]{animation:rbhVbZoomIn var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
+        '[data-rbh-vb-motion="slide-left"]{animation:rbhVbSlideLeft var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
+        '[data-rbh-vb-motion="slide-right"]{animation:rbhVbSlideRight var(--rbh-vb-duration,800ms) var(--rbh-vb-easing,ease-out) var(--rbh-vb-delay,0ms) both!important}',
+        '[data-rbh-vb-motion="float"]{animation:rbhVbFloat 3s ease-in-out infinite alternate}'
+      ].join('\\n');
+      document.head.appendChild(style);
+    }
+  }
+
+  function applyVisualElementOverrides(pub) {
+    if (!pub || typeof pub !== 'object') return;
+    // Restore the original page before reapplying the latest CMS snapshot, so the
+    // local and server configuration cannot stack styles or duplicate animations.
+    rbhVisualBuilderTouched.forEach(el => rbhVisualBuilderRestore(el));
+    rbhVisualBuilderTouched.clear();
+    rbhVisualBuilderLastPublished = pub;
+    const pageKey = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
+    const page = pub.pageOverrides && pub.pageOverrides[pageKey] && typeof pub.pageOverrides[pageKey] === 'object' ? pub.pageOverrides[pageKey] : {};
+    const entries = page.elements && typeof page.elements === 'object' ? page.elements : {};
+    const mobile = window.matchMedia('(max-width: 767px)').matches;
+    const styleMap = {
+      color:'color','backgroundColor':'background-color','fontSize':'font-size','fontFamily':'font-family',
+      fontWeight:'font-weight','textAlign':'text-align','borderRadius':'border-radius','opacity':'opacity',
+      width:'width',height:'height',padding:'padding',margin:'margin',objectPosition:'object-position'
+    };
+    Object.entries(entries).forEach(([selector,entry]) => {
+      if (!rbhVisualBuilderSafeSelector(selector) || !entry || typeof entry !== 'object') return;
+      let el;
+      try { el = document.querySelector(selector); } catch { return; }
+      if (!el) return;
+      const base = rbhVisualBuilderCapture(el);
+      rbhVisualBuilderTouched.add(el);
+      if (entry.text !== undefined) rbhVisualBuilderSetText(el,entry.text,base);
+      if (entry.href !== undefined && el.tagName.toLowerCase() === 'a' && rbhVisualBuilderSafeUrl(entry.href,false)) {
+        el.setAttribute('href',entry.href);
+      }
+      if (entry.src !== undefined && ['img','video','source'].includes(el.tagName.toLowerCase()) && rbhVisualBuilderSafeUrl(entry.src,true)) {
+        el.setAttribute('src',entry.src);
+      }
+      if (entry.alt !== undefined && el.tagName.toLowerCase() === 'img') el.setAttribute('alt',String(entry.alt).slice(0,500));
+      if (entry.target !== undefined && el.tagName.toLowerCase() === 'a') {
+        el.setAttribute('target',entry.target === '_blank' ? '_blank' : '_self');
+        if (entry.target === '_blank') el.setAttribute('rel','noopener noreferrer');
+      }
+      if (entry.hidden === true) el.style.setProperty('display','none','important');
+      Object.entries(entry.styles || {}).forEach(([key,value]) => {
+        const prop = styleMap[key];
+        if (prop && rbhVisualBuilderValidStyle(prop,value)) el.style.setProperty(prop,String(value),'important');
+      });
+      if (entry.cursor && rbhVisualBuilderValidStyle('cursor',entry.cursor)) el.style.setProperty('cursor',entry.cursor,'important');
+      const responsive = mobile && entry.responsive && entry.responsive.mobile ? entry.responsive.mobile : null;
+      if (responsive) {
+        if (responsive.fontSize && rbhVisualBuilderValidStyle('font-size',responsive.fontSize)) el.style.setProperty('font-size',responsive.fontSize,'important');
+        if (responsive.width && rbhVisualBuilderValidStyle('width',responsive.width)) el.style.setProperty('width',responsive.width,'important');
+        if (responsive.hidden === true) el.style.setProperty('display','none','important');
+      }
+      if (entry.motion && typeof entry.motion === 'object') rbhVisualBuilderApplyMotion(el,entry.motion);
+    });
+    rbhVisualBuilderLastMobile = mobile;
+  }
+
+  if (!window.__rbhVisualBuilderResponsiveListener) {
+    window.__rbhVisualBuilderResponsiveListener = true;
+    window.addEventListener('resize',() => {
+      const mobile = window.matchMedia('(max-width: 767px)').matches;
+      if (mobile !== rbhVisualBuilderLastMobile && rbhVisualBuilderLastPublished) {
+        rbhVisualBuilderLastMobile = mobile;
+        applyVisualElementOverrides(rbhVisualBuilderLastPublished);
+      }
+    },{passive:true});
+  }
+
   function applyStudioPublished(pub) {
     if (!pub || typeof pub !== 'object') return;
     cmsData.studioPublished = pub;
@@ -927,6 +1127,7 @@ function buildStudioSelectionAnimationCss(settings) {
     applySectionOrdering();
     applyStudioAdvancedStyles(pub);
     applyPageSpecificOverrides(pub);
+    applyVisualElementOverrides(pub);
   }
 
   try {
