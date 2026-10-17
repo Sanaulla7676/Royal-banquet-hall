@@ -62,32 +62,42 @@ function sendPublicFile(filePath, res, next, cacheControl = 'no-cache') {
 app.get('/', (req,res,next) => {
   sendPublicFile(path.join(BASE_DIR,'index.html'),res,next,'no-cache');
 });
-app.get(/^\\/([a-z0-9_-]+\\.html)$/i, (req,res,next) => {
-  const page = req.params[0];
-  if (!PUBLIC_HTML_FILES.has(page)) return next();
-  sendPublicFile(path.join(BASE_DIR,page),res,next,'no-cache');
-});
-app.get(/^\\/(robots\\.txt|sitemap\\.xml)$/i, (req,res,next) => {
-  sendPublicFile(path.join(BASE_DIR,req.params[0]),res,next,'public, max-age=3600');
-});
-app.get(/^\\/assets\\/(css|js|images|videos)\\/(.+)$/i, (req,res,next) => {
-  const category = String(req.params[0] || '').toLowerCase();
-  if (!PUBLIC_ASSET_CATEGORIES.has(category)) return res.sendStatus(404);
-  let relative;
-  try { relative = decodeURIComponent(req.params[1] || ''); }
-  catch { return res.sendStatus(400); }
-  if (!relative || relative.includes('\\0') || relative.split(/[\\\\/]/).some(part => part === '..')) {
-    return res.sendStatus(400);
+app.get('*', (req,res,next) => {
+  const requestPath = req.path;
+  if (requestPath === '/') {
+    return sendPublicFile(path.join(BASE_DIR,'index.html'),res,next,'no-cache');
   }
-  const assetRoot = path.resolve(BASE_DIR,'assets',category);
-  const filePath = path.resolve(assetRoot,relative);
-  const fromRoot = path.relative(assetRoot,filePath);
-  if (!fromRoot || fromRoot.startsWith('..') || path.isAbsolute(fromRoot)) return res.sendStatus(404);
-  sendPublicFile(filePath,res,next,'public, max-age=3600');
+
+  if (requestPath === '/robots.txt' || requestPath === '/sitemap.xml') {
+    const fileName = requestPath.slice(1);
+    return sendPublicFile(path.join(BASE_DIR,fileName),res,next,'public, max-age=3600');
+  }
+
+  if (requestPath.startsWith('/assets/')) {
+    let decoded;
+    try { decoded = decodeURIComponent(requestPath); }
+    catch { return res.sendStatus(400); }
+    if (decoded.includes('\\\\') || decoded.includes('\\0')) return res.sendStatus(400);
+    const segments = decoded.slice('/assets/'.length).split('/');
+    const category = String(segments.shift() || '').toLowerCase();
+    const relative = segments.join('/');
+    if (!PUBLIC_ASSET_CATEGORIES.has(category) || !relative || segments.includes('..')) return next();
+    const assetRoot = path.resolve(BASE_DIR,'assets',category);
+    const filePath = path.resolve(assetRoot,relative);
+    const fromRoot = path.relative(assetRoot,filePath);
+    if (!fromRoot || fromRoot.startsWith('..') || path.isAbsolute(fromRoot)) return res.sendStatus(404);
+    return sendPublicFile(filePath,res,next,'public, max-age=3600');
+  }
+
+  if (requestPath.startsWith('/') && requestPath.indexOf('/',1) === -1) {
+    const page = requestPath.slice(1);
+    if (PUBLIC_HTML_FILES.has(page) && page.toLowerCase().endsWith('.html')) {
+      return sendPublicFile(path.join(BASE_DIR,page),res,next,'no-cache');
+    }
+  }
+  return next();
 });
 // Any unlisted HTML document, repository file, or directory intentionally falls through to 404.
-
-// ── Multer (file uploads) ─────────────────────────────────────────────────
 
 // ── Multer (file uploads) ─────────────────────────────────────────────────
 const imgStorage = multer.diskStorage({
