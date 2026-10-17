@@ -458,7 +458,7 @@
           <button class="s-btn s-btn-gold" onclick="window.STUDIO&&window.STUDIO.cms&&(window.pushUndo&&pushUndo('Logo save'),saveSection('Logo'))">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Save Logo
           </button>
-          <button class="s-btn s-btn-outline" onclick="toast('Logo reset to default','gold')">Reset</button>
+          <button class="s-btn s-btn-outline" >Reset</button>
         </div>
       </div>
 
@@ -713,7 +713,7 @@
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="12" height="12"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 Change Image
               </button>
-              <button class="s-btn s-btn-danger s-btn-sm" onclick="toast('Hero image removed','error')">Remove</button>
+              <button class="s-btn s-btn-danger s-btn-sm" id="btn-hero-image-reset" type="button">Restore Default</button>
             </div>
             <p style="font-size:0.65rem;color:var(--s-text-dim)">Recommended: 1920 × 800 or higher</p>
           </div>
@@ -1129,6 +1129,9 @@
               <label class="s-label" for="bg-url-input">Background image URL / site path</label>
               <input type="url" class="s-input" id="bg-url-input" placeholder="https://res.cloudinary.com/…/image/upload/…jpg" autocomplete="url">
               <small style="color:var(--s-text-dim);line-height:1.5;">Use a permanent HTTPS/CDN URL so every visitor can load the image.</small>
+              <div class="s-row" style="gap:8px;margin-top:10px;">
+                <button type="button" class="s-btn s-btn-outline s-btn-sm" id="btn-bg-image-remove">Remove Background Image</button>
+              </div>
             </div>
           </div>
 
@@ -1335,7 +1338,7 @@
           </div>
           <div class="s-row" style="gap:8px;margin-bottom:14px;">
             <button class="s-btn s-btn-gold s-btn-sm" style="flex:1" id="btn-imglib-apply-size">Apply Display Size</button>
-            <button class="s-btn s-btn-outline s-btn-sm" onclick="toast('Crop-to-file is not supported in the browser editor. Replace the image with a cropped upload instead.','gold')">Crop</button>
+            <button class="s-btn s-btn-outline s-btn-sm" id="btn-imglib-crop" type="button">Crop</button>
           </div>
         </div>
         <div class="s-left-footer">
@@ -1396,7 +1399,7 @@
         </div>
         <div class="s-left-footer">
           <button class="s-btn s-btn-gold" onclick="saveSection('Theme')">Save Theme</button>
-          <button class="s-btn s-btn-outline" onclick="toast('Theme reset to default','gold')">Reset</button>
+          <button class="s-btn s-btn-outline" >Reset</button>
         </div>
       </div>
       <div class="s-right-panel">

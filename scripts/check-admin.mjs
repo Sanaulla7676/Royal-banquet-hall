@@ -30,6 +30,26 @@ for (const route of [
 if (!server.includes('process.env.DATABASE_URL') || !server.includes('cloudinary.utils.api_sign_request')) {
   throw new Error('Neon persistence or signed Cloudinary upload support is missing.');
 }
+
+const studioJs = read('assets/js/admin-studio.js');
+const runtimeJs = read('assets/js/royal-cms.js');
+for (const control of [
+  'id="bg-upload"', 'id="bg-url-input"', 'id="bg-anim-grid"',
+  'id="btn-bg-image-remove"', 'id="btn-hero-image-reset"',
+  'id="btn-imglib-apply-size"', 'id="btn-imglib-crop"'
+]) {
+  if (!html.includes(control)) throw new Error('Missing functional media control: ' + control);
+}
+if (/onclick=["']toast\(/i.test(html)) throw new Error('A button is wired to a toast-only placeholder.');
+for (const marker of [
+  "cms.animation = i;", "syncPreviewStyles();", "btn-imglib-apply-size",
+  "btn-imglib-crop", "btn-hero-image-reset", "btn-bg-image-remove",
+  "buildStudioSelectionAnimationCss(c)"
+]) {
+  if (!studioJs.includes(marker)) throw new Error('Studio interaction wiring is missing: ' + marker);
+}
+if (!runtimeJs.includes('buildStudioSelectionAnimationCss(pub)')) throw new Error('Published hero/heading/background animation styles are not applied.');
+if (!runtimeJs.includes('const sizing = pub.imageSizing')) throw new Error('Published image display-size settings are not applied.');
 if (server.includes('express.static(BASE_DIR)')) throw new Error('Render exposes repository files through express.static.');
 
 const config = JSON.parse(read('vercel.json'));
