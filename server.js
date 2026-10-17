@@ -41,7 +41,53 @@ const app = express();
 app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
-// Static website files are served by Vercel. Render exposes API routes only.
+
+// Allowlisted website hosting fallback. Never expose the repository root, data,
+// environment files, server source, or tests through a blanket static middleware.
+const PUBLIC_HTML_FILES = new Set([
+  'index.html','events.html','gallery.html','experience.html','catering.html',
+  'reviews.html','contact.html','booking.html','packages.html',
+  'admin.html','admin-studio.html','visual-editor.html'
+]);
+const PUBLIC_ASSET_CATEGORIES = new Set(['css','js','images','videos']);
+
+function sendPublicFile(filePath, res, next, cacheControl = 'no-cache') {
+  res.setHeader('X-Content-Type-Options','nosniff');
+  res.setHeader('Cache-Control',cacheControl);
+  res.sendFile(filePath, error => {
+    if (error && !res.headersSent) next(error);
+  });
+}
+
+app.get('/', (req,res,next) => {
+  sendPublicFile(path.join(BASE_DIR,'index.html'),res,next,'no-cache');
+});
+app.get(/^\\/([a-z0-9_-]+\\.html)$/i, (req,res,next) => {
+  const page = req.params[0];
+  if (!PUBLIC_HTML_FILES.has(page)) return next();
+  sendPublicFile(path.join(BASE_DIR,page),res,next,'no-cache');
+});
+app.get(/^\\/(robots\\.txt|sitemap\\.xml)$/i, (req,res,next) => {
+  sendPublicFile(path.join(BASE_DIR,req.params[0]),res,next,'public, max-age=3600');
+});
+app.get(/^\\/assets\\/(css|js|images|videos)\\/(.+)$/i, (req,res,next) => {
+  const category = String(req.params[0] || '').toLowerCase();
+  if (!PUBLIC_ASSET_CATEGORIES.has(category)) return res.sendStatus(404);
+  let relative;
+  try { relative = decodeURIComponent(req.params[1] || ''); }
+  catch { return res.sendStatus(400); }
+  if (!relative || relative.includes('\\0') || relative.split(/[\\\\/]/).some(part => part === '..')) {
+    return res.sendStatus(400);
+  }
+  const assetRoot = path.resolve(BASE_DIR,'assets',category);
+  const filePath = path.resolve(assetRoot,relative);
+  const fromRoot = path.relative(assetRoot,filePath);
+  if (!fromRoot || fromRoot.startsWith('..') || path.isAbsolute(fromRoot)) return res.sendStatus(404);
+  sendPublicFile(filePath,res,next,'public, max-age=3600');
+});
+// Any unlisted HTML document, repository file, or directory intentionally falls through to 404.
+
+// ── Multer (file uploads) ─────────────────────────────────────────────────
 
 // ── Multer (file uploads) ─────────────────────────────────────────────────
 const imgStorage = multer.diskStorage({
