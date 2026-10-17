@@ -77,7 +77,7 @@ app.get('*', (req,res,next) => {
     let decoded;
     try { decoded = decodeURIComponent(requestPath); }
     catch { return res.sendStatus(400); }
-    if (decoded.includes('\\\\') || decoded.includes('\\0')) return res.sendStatus(400);
+    if (decoded.includes(String.fromCharCode(92)) || decoded.includes(String.fromCharCode(0))) return res.sendStatus(400);
     const segments = decoded.slice('/assets/'.length).split('/');
     const category = String(segments.shift() || '').toLowerCase();
     const relative = segments.join('/');
