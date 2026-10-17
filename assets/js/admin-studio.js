@@ -839,20 +839,39 @@ async function publishLive() {
   return true;
 }
 
+function mergeCmsInPlace(target, defaults, source) {
+  const isRecord = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+  const defaultRecord = isRecord(defaults) ? defaults : {};
+  const sourceRecord = isRecord(source) ? source : {};
+  const keys = new Set([...Object.keys(defaultRecord), ...Object.keys(sourceRecord)]);
+
+  // Discard stale browser-only keys while preserving the live object identities
+  // captured by editor handlers during Studio initialization.
+  Object.keys(target).forEach(key => { if (!keys.has(key)) delete target[key]; });
+  keys.forEach(key => {
+    const defaultValue = defaultRecord[key];
+    const sourceValue = sourceRecord[key];
+    const hasSource = Object.prototype.hasOwnProperty.call(sourceRecord, key);
+    if (isRecord(defaultValue) || isRecord(sourceValue)) {
+      const child = isRecord(target[key]) ? target[key] : {};
+      target[key] = child;
+      mergeCmsInPlace(child, isRecord(defaultValue) ? defaultValue : {}, isRecord(sourceValue) ? sourceValue : {});
+    } else {
+      target[key] = copyCmsValue(hasSource ? sourceValue : defaultValue);
+    }
+  });
+  return target;
+}
+
 async function loadFromBackend() {
   if (!API.available) return false;
   const res = await API.get('/api/admin/load-cms');
   if (res?.success && res.data && Object.keys(res.data).length) {
-    // A saved server draft is authoritative. Rebuilding from defaults first avoids
-    // stale keys from this browser silently overwriting settings deleted in the CMS.
-    STUDIO.cms = copyCmsValue(STUDIO_RESET_DEFAULTS);
-    mergeIntoCMS(res.data);
-    STUDIO.cms.hero = { ...STUDIO_RESET_DEFAULTS.hero, ...(STUDIO.cms.hero || {}) };
-    STUDIO.cms.heroHeading = { ...STUDIO_RESET_DEFAULTS.heroHeading, ...(STUDIO.cms.heroHeading || {}) };
-    STUDIO.cms.heroSub = { ...STUDIO_RESET_DEFAULTS.heroSub, ...(STUDIO.cms.heroSub || {}) };
-    STUDIO.cms.video = { ...STUDIO_RESET_DEFAULTS.video, ...(STUDIO.cms.video || {}) };
-    STUDIO.cms.theme = { ...STUDIO_RESET_DEFAULTS.theme, ...(STUDIO.cms.theme || {}) };
-    STUDIO.cms.theme.customColors = { ...STUDIO_RESET_DEFAULTS.theme.customColors, ...(STUDIO.cms.theme.customColors || {}) };
+    // Hydrate the existing state in place. Page handlers retain references to
+    // STUDIO.cms and nested section objects created at startup, so replacing
+    // those objects here makes edits appear to work while silently editing
+    // detached state after sign-in.
+    mergeCmsInPlace(STUDIO.cms, STUDIO_RESET_DEFAULTS, res.data);
     STUDIO.cms.integrations = STUDIO.cms.integrations || {};
     STUDIO.cms.integrations.cloudinary = STUDIO.cms.integrations.cloudinary || {};
     STUDIO.cms.mediaLibrary = Array.isArray(STUDIO.cms.mediaLibrary) ? STUDIO.cms.mediaLibrary : [];
