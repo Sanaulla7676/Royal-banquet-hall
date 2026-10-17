@@ -668,6 +668,7 @@ function buildStudioSelectionAnimationCss(settings) {
   const rbhVisualBuilderOriginals = new WeakMap();
   const rbhVisualBuilderTouched = new Set();
   const rbhVisualBuilderLastApplied = new WeakMap();
+  let rbhVisualBuilderDraftOverride = null;
   const rbhVisualBuilderSelector = new WeakMap();
   let rbhVisualBuilderLastPublished = null;
   let rbhVisualBuilderLastMobile = window.matchMedia('(max-width: 767px)').matches;
@@ -841,7 +842,15 @@ function buildStudioSelectionAnimationCss(settings) {
       else if (base.rel === null) el.removeAttribute('rel');
       else el.setAttribute('rel',base.rel);
     }
-    if (entry.hidden === true) el.style.setProperty('display','none','important');
+    if (entry.hidden === true) {
+      el.setAttribute('hidden','');
+      el.style.setProperty('display','none','important');
+    } else if (entry.hidden === false) {
+      el.removeAttribute('hidden');
+      const display = base.styles.display;
+      if (display && display.value) el.style.setProperty('display',display.value,display.priority);
+      else el.style.removeProperty('display');
+    }
     const styleMap = {
       color:'color',backgroundColor:'background-color',fontSize:'font-size',fontFamily:'font-family',
       fontWeight:'font-weight',textAlign:'text-align',borderRadius:'border-radius',opacity:'opacity',
@@ -862,7 +871,10 @@ function buildStudioSelectionAnimationCss(settings) {
     rbhVisualBuilderLastPublished = pub;
     const pageKey = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
     const page = pub.pageOverrides && pub.pageOverrides[pageKey] && typeof pub.pageOverrides[pageKey] === 'object' ? pub.pageOverrides[pageKey] : {};
-    const entries = page.elements && typeof page.elements === 'object' ? page.elements : {};
+    let entries = page.elements && typeof page.elements === 'object' ? page.elements : {};
+    if (rbhVisualBuilderDraftOverride && rbhVisualBuilderDraftOverride.pageKey === pageKey) {
+      entries = rbhVisualBuilderDraftOverride.elements;
+    }
     const activeSelectors = new Set(Object.keys(entries).filter(rbhVisualBuilderSafeSelector));
 
     // Remove old overrides only when their configuration was removed from the
@@ -1225,8 +1237,35 @@ function buildStudioSelectionAnimationCss(settings) {
 
   // Listen for studio preview postMessage
   window.addEventListener('message', ev => {
-    if (ev.data && ev.data.type === 'STUDIO_PREVIEW_SYNC') {
+    if (ev.origin !== window.location.origin || !ev.data) return;
+    if (ev.data.type === 'STUDIO_PREVIEW_SYNC') {
       applyStudioPublished(ev.data.cms);
+      return;
+    }
+    if (ev.data.type === 'RBH_VB_PREVIEW_ELEMENTS') {
+      const actualPageKey = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
+      const requestedPage = typeof ev.data.pageKey === 'string' ? ev.data.pageKey.toLowerCase() : '';
+      if (requestedPage !== actualPageKey) return;
+      const elements = ev.data.elements && typeof ev.data.elements === 'object' ? ev.data.elements : {};
+      rbhVisualBuilderDraftOverride = { pageKey: actualPageKey, elements };
+      applyVisualElementOverrides({ pageOverrides: { [actualPageKey]: { elements } } });
+      return;
+    }
+    if (ev.data.type === 'RBH_VB_REPLAY_MOTION') {
+      const selector = ev.data.selector;
+      if (!rbhVisualBuilderSafeSelector(selector)) return;
+      const actualPageKey = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
+      const page = rbhVisualBuilderDraftOverride && rbhVisualBuilderDraftOverride.pageKey === actualPageKey
+        ? rbhVisualBuilderDraftOverride
+        : null;
+      const entry = page && page.elements ? page.elements[selector] : null;
+      if (!entry || !entry.motion || !entry.motion.preset || entry.motion.preset === 'preserve') return;
+      let el;
+      try { el = document.querySelector(selector); } catch { return; }
+      if (!el) return;
+      el.removeAttribute('data-rbh-vb-motion');
+      void el.offsetWidth;
+      rbhVisualBuilderApplyMotion(el, entry.motion);
     }
   });
 
