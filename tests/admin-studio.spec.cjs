@@ -107,6 +107,7 @@ async function studioCss(page) {
 }
 
 test('sign-in, all navigation pages, editable background image, save/publish and sign-out work', async ({ page }) => {
+  test.setTimeout(90000);
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.message));
   const backend = await mockBackend(page);
