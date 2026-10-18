@@ -46,6 +46,7 @@ for (const marker of [
   'width:var(--rbh-footer-crest-size)!important',
   'border-radius:50%!important',
   'object-fit:cover!important',
+  'transform:scale(3.15)!important',
   'site-footer>.container'
 ]) {
   if (!siteCss.includes(marker)) throw new Error('The Royal Hall circular crest layout is missing: ' + marker);

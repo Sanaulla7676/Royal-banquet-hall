@@ -3184,7 +3184,9 @@ body.site-revealed .hero .hero-brand-crest.fx-logo-pop{
   display:block!important;box-sizing:border-box!important;width:100%!important;height:100%!important;
   min-width:0!important;max-width:none!important;margin:0!important;border:0!important;
   border-radius:50%!important;object-fit:cover!important;object-position:center!important;
-  transform:none!important;transform-origin:center!important;position:relative!important;
+  /* The source artwork contains its own wide black margin. Zoom the artwork
+     inside the clipped circular frame so the wreath and monogram fill the seal. */
+  transform:scale(3.15)!important;transform-origin:center!important;position:relative!important;
   z-index:1!important;box-shadow:none!important;
 }
 /* Expand the footer content area so the medallion sits close to the viewport's left edge. */
@@ -3213,7 +3215,8 @@ body.site-revealed .hero .hero-brand-crest.fx-logo-pop{
   display:block!important;box-sizing:border-box!important;width:100%!important;height:100%!important;
   min-width:0!important;max-width:none!important;max-height:none!important;margin:0!important;
   border-radius:50%!important;object-fit:cover!important;object-position:center!important;
-  transform:none!important;box-shadow:none!important;
+  /* Use the same internal artwork zoom for the large footer medallion. */
+  transform:scale(3.15)!important;transform-origin:center!important;box-shadow:none!important;
 }
 /* Tablet: keep the crest prominent without squeezing navigation links. */
 @media(min-width:761px) and (max-width:1120px){
