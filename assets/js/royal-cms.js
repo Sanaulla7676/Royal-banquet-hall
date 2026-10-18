@@ -669,10 +669,14 @@ function buildStudioSelectionAnimationCss(settings) {
           img.style.setProperty('object-fit','cover','important');
           img.style.setProperty('object-position','center','important');
           img.style.setProperty('transform','scale(1.04)','important');
+          img.dataset.rbhMobileSizingApplied = '1';
         } else {
           if(Number.isFinite(Number(logoSettings.width)))img.style.setProperty('width',Math.max(40,Math.min(500,Number(logoSettings.width)))+'px','important');
           if(Number.isFinite(Number(logoSettings.height)))img.style.setProperty('height',Math.max(24,Math.min(260,Number(logoSettings.height)))+'px','important');
-          ['max-width','max-height','transform','object-position'].forEach(prop=>img.style.removeProperty(prop));
+          if(img.dataset.rbhMobileSizingApplied === '1') {
+            ['max-width','max-height','transform','object-position'].forEach(prop=>img.style.removeProperty(prop));
+            delete img.dataset.rbhMobileSizingApplied;
+          }
           img.style.setProperty('object-fit','contain','important');
         }
       };
