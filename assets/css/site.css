@@ -3246,3 +3246,35 @@ body.site-revealed .hero .hero-brand-crest.fx-logo-pop{
   .site-header .brand{width:98px!important;height:98px!important;min-width:98px!important}
   .site-footer .footer-grid{grid-template-columns:minmax(0,1fr)!important}
 }
+
+
+/* Mobile-only crest correction: keep the primary logo in the header and remove the overlapping duplicate. */
+@media(max-width:760px){
+  :root{--rbh-nav-crest-size:58px!important;--rbh-footer-crest-size:112px!important}
+  .site-header{height:66px!important;min-height:66px!important}
+  .site-header .container.nav{
+    height:66px!important;min-height:66px!important;
+    padding-left:68px!important;padding-right:0!important;
+    justify-content:flex-end!important;
+  }
+  .site-header .brand{
+    top:50%!important;left:0!important;transform:translateY(-50%)!important;
+    width:58px!important;height:58px!important;min-width:58px!important;padding:3px!important;
+  }
+  .site-header .brand-logo{
+    width:100%!important;height:100%!important;max-width:none!important;
+    object-fit:contain!important;object-position:center!important;
+  }
+  .mobile-hero-crest-seal{display:none!important}
+  .site-footer .brand{
+    width:112px!important;height:112px!important;min-width:112px!important;max-width:112px!important;
+    margin-bottom:12px!important;
+  }
+}
+@media(max-width:420px){
+  :root{--rbh-nav-crest-size:54px!important;--rbh-footer-crest-size:96px!important}
+  .site-header .container.nav{padding-left:64px!important}
+  .site-header .brand{width:54px!important;height:54px!important;min-width:54px!important}
+  .site-header .brand-logo{width:100%!important;height:100%!important}
+  .site-footer .brand{width:96px!important;height:96px!important;min-width:96px!important;max-width:96px!important}
+}
