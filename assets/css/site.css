@@ -3152,27 +3152,94 @@ body.site-revealed .hero .hero-brand-crest.fx-logo-pop{
 @media(max-width:760px){.rbh-page-logo-positioned{max-width:40vw!important;padding:4px!important}.rbh-page-logo-positioned .brand-logo{max-width:40vw!important;height:auto!important}}
 
 
-/* THE ROYAL HALL: deliberately oversized crest, as requested. The header crest
-   scales visually beyond the navbar without clipping the image. */
-.site-header{position:relative;z-index:1000;overflow:visible!important}
-.site-header .container.nav{overflow:visible!important}
-.site-header .brand{position:relative;z-index:1001;overflow:visible!important}
+/* THE ROYAL HALL: circular crest medallions, not clipped rectangular scaling. */
+:root{
+  --rbh-nav-crest-size:180px;
+  --rbh-footer-crest-size:264px;
+  --rbh-crest-gold:#d8b25f;
+  --rbh-crest-gold-light:#f8e8ad;
+  --rbh-crest-shadow:0 10px 28px rgba(0,0,0,.48),0 0 24px rgba(216,178,95,.19);
+}
+.site-header{position:sticky!important;top:0!important;z-index:1100!important;overflow:visible!important;isolation:isolate}
+.site-header .container.nav{
+  position:relative!important;overflow:visible!important;
+  padding-left:calc(var(--rbh-nav-crest-size) + 22px)!important;
+}
+.site-header .brand{
+  position:absolute!important;left:0!important;top:0!important;transform:none!important;
+  display:grid!important;place-items:center!important;box-sizing:border-box!important;
+  width:var(--rbh-nav-crest-size)!important;height:var(--rbh-nav-crest-size)!important;
+  min-width:var(--rbh-nav-crest-size)!important;max-width:none!important;aspect-ratio:1/1!important;
+  padding:7px!important;margin:0!important;border:2px solid var(--rbh-crest-gold)!important;
+  border-radius:50%!important;
+  background:radial-gradient(circle at 35% 25%,#242016 0,#080808 53%,#000 100%)!important;
+  box-shadow:var(--rbh-crest-shadow),inset 0 0 0 2px rgba(248,232,173,.2)!important;
+  overflow:hidden!important;z-index:1102!important;
+}
+.site-header .brand::before,.site-footer .brand::before{
+  content:"";position:absolute;inset:4px;border:1px solid rgba(248,232,173,.72);
+  border-radius:50%;pointer-events:none;z-index:3;
+}
 .site-header .brand-logo{
-  transform:scale(3)!important;
-  transform-origin:center left!important;
-  position:relative!important;
-  z-index:1002!important;
-  max-width:none!important;
+  display:block!important;box-sizing:border-box!important;width:100%!important;height:100%!important;
+  min-width:0!important;max-width:none!important;margin:0!important;border:0!important;
+  border-radius:50%!important;object-fit:cover!important;object-position:center!important;
+  transform:none!important;transform-origin:center!important;position:relative!important;
+  z-index:1!important;box-shadow:none!important;
 }
-/* Footer logo is 3x the existing desktop/mobile sizes and reserves its space. */
-.site-footer .brand{display:inline-flex;position:relative;z-index:4;max-width:none!important;overflow:visible!important}
+/* Expand the footer content area so the medallion sits close to the viewport's left edge. */
+.site-footer>.container{
+  width:min(calc(100% - 48px),1680px)!important;max-width:1680px!important;
+  margin-left:auto!important;margin-right:auto!important;
+}
+.site-footer .footer-grid{
+  grid-template-columns:minmax(264px,1.35fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)!important;
+  align-items:start!important;gap:clamp(22px,3vw,48px)!important;
+}
+.site-footer .footer-grid>div:first-child{
+  justify-self:start!important;min-width:0!important;max-width:100%!important;margin-left:0!important;
+}
+.site-footer .brand{
+  position:relative!important;display:grid!important;place-items:center!important;box-sizing:border-box!important;
+  width:var(--rbh-footer-crest-size)!important;height:var(--rbh-footer-crest-size)!important;
+  min-width:var(--rbh-footer-crest-size)!important;max-width:none!important;aspect-ratio:1/1!important;
+  padding:8px!important;margin:0 0 18px 0!important;border:3px solid var(--rbh-crest-gold)!important;
+  border-radius:50%!important;
+  background:radial-gradient(circle at 35% 25%,#242016 0,#080808 53%,#000 100%)!important;
+  box-shadow:var(--rbh-crest-shadow),inset 0 0 0 2px rgba(248,232,173,.22)!important;
+  overflow:hidden!important;z-index:2!important;
+}
 .site-footer .brand-logo{
-  width:auto!important;
-  height:264px!important;
-  max-width:468px!important;
-  object-fit:contain!important;
-  transform:none!important;
+  display:block!important;box-sizing:border-box!important;width:100%!important;height:100%!important;
+  min-width:0!important;max-width:none!important;max-height:none!important;margin:0!important;
+  border-radius:50%!important;object-fit:cover!important;object-position:center!important;
+  transform:none!important;box-shadow:none!important;
 }
+/* Tablet: keep the crest prominent without squeezing navigation links. */
+@media(min-width:761px) and (max-width:1120px){
+  :root{--rbh-nav-crest-size:142px;--rbh-footer-crest-size:220px}
+  .site-header .container.nav{padding-left:158px!important}
+  .site-footer .footer-grid{grid-template-columns:minmax(220px,1.2fr) repeat(3,minmax(0,1fr))!important;gap:22px!important}
+}
+/* Mobile: use a smaller full circle and reserve a clean lane for the menu. */
 @media(max-width:760px){
-  .site-footer .brand-logo{height:216px!important;max-width:396px!important}
+  :root{--rbh-nav-crest-size:108px;--rbh-footer-crest-size:216px}
+  .site-header .container.nav{padding-left:118px!important;padding-right:0!important;overflow:visible!important}
+  .site-header .brand{
+    top:0!important;left:0!important;width:var(--rbh-nav-crest-size)!important;
+    height:var(--rbh-nav-crest-size)!important;min-width:var(--rbh-nav-crest-size)!important;padding:5px!important;
+  }
+  .site-header .brand-logo{width:100%!important;height:100%!important}
+  .site-footer>.container{width:calc(100% - 28px)!important;max-width:none!important}
+  .site-footer .footer-grid{grid-template-columns:minmax(0,1fr)!important;gap:20px!important}
+  .site-footer .brand{
+    width:var(--rbh-footer-crest-size)!important;height:var(--rbh-footer-crest-size)!important;
+    min-width:var(--rbh-footer-crest-size)!important;margin-bottom:16px!important;
+  }
+}
+@media(max-width:420px){
+  :root{--rbh-nav-crest-size:98px;--rbh-footer-crest-size:196px}
+  .site-header .container.nav{padding-left:108px!important}
+  .site-header .brand{width:98px!important;height:98px!important;min-width:98px!important}
+  .site-footer .footer-grid{grid-template-columns:minmax(0,1fr)!important}
 }

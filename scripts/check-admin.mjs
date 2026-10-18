@@ -39,8 +39,16 @@ for (const page of pages) {
 }
 
 const siteCss = read('assets/css/site.css');
-for (const marker of ['transform:scale(3)!important','height:264px!important','height:216px!important']) {
-  if (!siteCss.includes(marker)) throw new Error('The Royal Hall oversized logo styling is missing: ' + marker);
+for (const marker of [
+  '--rbh-nav-crest-size:180px',
+  '--rbh-footer-crest-size:264px',
+  'width:var(--rbh-nav-crest-size)!important',
+  'width:var(--rbh-footer-crest-size)!important',
+  'border-radius:50%!important',
+  'object-fit:cover!important',
+  'site-footer>.container'
+]) {
+  if (!siteCss.includes(marker)) throw new Error('The Royal Hall circular crest layout is missing: ' + marker);
 }
 const server = read('server.js');
 for (const marker of [
