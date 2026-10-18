@@ -54,7 +54,7 @@ for(const page of pages){
   const html=fs.readFileSync(path.join(root,page),'utf8');
   if(!html.includes('assets/css/site.css?v=20261018-mobile-nav-logo-v3')) errors.push(page+' is missing the mobile navbar logo CSS version.');
   if(!html.includes('assets/js/site.js?v=20261018-video-priority-v2')) errors.push(page+' is missing the direct-video startup script version.');
-  if(!html.includes('assets/js/royal-cms.js?v=20261018-mobile-logo-sizing-v1')) errors.push(page+' is missing the CMS logo-sizing fix.');
+  if(!html.includes('assets/js/royal-cms.js?v=20261018-mobile-logo-sizing-v2')) errors.push(page+' is missing the CMS logo-sizing fix.');
   const introStart=html.indexOf('<div id="site-intro"');
   if(introStart>=0){
     const introEnd=html.indexOf('</video>',introStart);
