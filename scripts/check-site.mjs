@@ -51,8 +51,10 @@ for(const page of pages){
   const html=fs.readFileSync(path.join(root,page),'utf8');
   if(!html.includes('assets/css/site.css?v=20261018-royal-mobile-intro-v1')) errors.push(page+' is missing the mobile crest/intro stylesheet version.');
   if(!html.includes('assets/js/site.js?v=20261018-royal-letter-fallback-v1')) errors.push(page+' is missing the resilient intro script version.');
-  const intro=html.match(/<div id="site-intro"[\\s\\S]*?<\\/div>/);
-  if(intro && /\\bposter=/.test(intro[0])) errors.push(page+' should use the animated brand fallback, not a venue-photo poster.');
+  const introStart=html.indexOf('<div id="site-intro"');
+  const introEnd=introStart>=0?html.indexOf('</div>',introStart):-1;
+  const intro=introStart>=0&&introEnd>=0?html.slice(introStart,introEnd+6):'';
+  if(intro.includes('poster=')) errors.push(page+' should use the animated brand fallback, not a venue-photo poster.');
 }
 
 if(errors.length){console.error(errors.join('\n'));process.exit(1);}
