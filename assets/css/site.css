@@ -3405,3 +3405,16 @@ body.site-revealed .hero .hero-brand-crest.fx-logo-pop{
     animation:none!important;transition:none!important;filter:none!important;opacity:1!important;transform:none!important;
   }
 }
+
+
+/* Apply the metallic fill to each animated glyph so the wordmark stays visible while letters move. */
+.intro-fallback-the .intro-fallback-letter{
+  color:#f7e5b2!important;-webkit-text-fill-color:#f7e5b2!important;
+  text-shadow:0 0 18px rgba(230,192,106,.14);
+}
+.intro-fallback-royal .intro-fallback-letter,.intro-fallback-hall .intro-fallback-letter{
+  background:linear-gradient(115deg,#a77c2d 0%,#f8e8ab 24%,#bf9847 43%,#fff7d8 54%,#c39a46 73%,#f3daa0 100%)!important;
+  background-size:220% 100%!important;background-position:0% 50%;
+  -webkit-background-clip:text!important;background-clip:text!important;
+  color:transparent!important;-webkit-text-fill-color:transparent!important;
+}
