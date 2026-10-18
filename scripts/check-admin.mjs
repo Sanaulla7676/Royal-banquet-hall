@@ -62,12 +62,18 @@ for (const marker of [
   if (!server.includes(marker)) throw new Error('Safe Render website hosting is missing: ' + marker);
 }
 for (const route of [
-  "app.post('/api/auth/login'", "app.get('/api/auth/session'", "app.post('/api/auth/logout'",
+  "app.post('/api/auth/login'", "app.get('/api/auth/session'", "app.get('/api/auth/credentials'", "app.post('/api/auth/change-credentials'", "app.post('/api/auth/logout'",
   "app.get('/api/cloudinary/signature'", "app.get('/api/cloudinary/status'",
   "app.post('/api/save-cms',requireAdminApi", "app.post('/api/publish',requireAdminApi",
   "app.post('/api/restore',requireAdminApi", "app.post('/api/reset',requireAdminApi"
 ]) {
   if (!server.includes(route)) throw new Error('Missing/protection gap on route: ' + route);
+}
+for (const marker of ['public.admin_auth_config', 'crypto.scrypt', 'passwordHash', 'crypto.timingSafeEqual', 'credentials changed']) {
+  if (!server.includes(marker)) throw new Error('Secure credential-management support is missing: ' + marker);
+}
+for (const marker of ['id="admin-credentials-form"', 'id="admin-current-password"', 'id="admin-new-username"', 'id="admin-new-password"', 'id="admin-confirm-password"']) {
+  if (!html.includes(marker)) throw new Error('Missing admin credential control: ' + marker);
 }
 if (!server.includes('process.env.DATABASE_URL') || !server.includes('cloudinary.utils.api_sign_request')) {
   throw new Error('Neon persistence or signed Cloudinary upload support is missing.');

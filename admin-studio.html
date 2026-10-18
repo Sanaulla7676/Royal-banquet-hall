@@ -1694,6 +1694,37 @@
         <div class="s-page-header"><h1><span class="pg-num">⚙</span> Settings</h1><p>Studio configuration and global preferences.</p></div>
         <div class="s-panel-scroll">
           <div class="s-card">
+            <div class="s-card-head">
+              <div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Admin Login Credentials</div>
+              <span class="s-card-badge">Secure</span>
+            </div>
+            <p style="color:var(--s-text-muted);font-size:.78rem;line-height:1.65;margin:0 0 14px">Change the Login ID and password used to access Admin Studio. Your current password is required, and you will be signed out after saving.</p>
+            <div style="display:grid;gap:6px;margin-bottom:14px">
+              <label for="admin-current-login-id" style="font-size:.72rem;font-weight:700;color:var(--s-text-muted)">Current Login ID</label>
+              <div id="admin-current-login-id" class="s-input" aria-live="polite">Checking secure session…</div>
+            </div>
+            <form id="admin-credentials-form" autocomplete="off">
+              <div style="display:grid;gap:6px;margin-bottom:12px">
+                <label for="admin-current-password" style="font-size:.72rem;font-weight:700;color:var(--s-text-muted)">Current password</label>
+                <input id="admin-current-password" name="currentPassword" class="s-input" type="password" autocomplete="current-password" required>
+              </div>
+              <div style="display:grid;gap:6px;margin-bottom:12px">
+                <label for="admin-new-username" style="font-size:.72rem;font-weight:700;color:var(--s-text-muted)">New Login ID</label>
+                <input id="admin-new-username" name="newUsername" class="s-input" type="text" minlength="3" maxlength="80" autocomplete="username" required>
+              </div>
+              <div style="display:grid;gap:6px;margin-bottom:12px">
+                <label for="admin-new-password" style="font-size:.72rem;font-weight:700;color:var(--s-text-muted)">New password (12+ characters)</label>
+                <input id="admin-new-password" name="newPassword" class="s-input" type="password" minlength="12" maxlength="128" autocomplete="new-password" required>
+              </div>
+              <div style="display:grid;gap:6px;margin-bottom:14px">
+                <label for="admin-confirm-password" style="font-size:.72rem;font-weight:700;color:var(--s-text-muted)">Confirm new password</label>
+                <input id="admin-confirm-password" name="confirmPassword" class="s-input" type="password" minlength="12" maxlength="128" autocomplete="new-password" required>
+              </div>
+              <button type="submit" id="admin-credentials-submit" class="s-btn s-btn-gold" style="width:100%">Update Login ID &amp; Password</button>
+              <p id="admin-credentials-status" role="status" aria-live="polite" style="font-size:.76rem;line-height:1.55;margin:10px 0 0;color:var(--s-text-muted)"></p>
+            </form>
+          </div>
+          <div class="s-card">
             <div class="s-card-head"><div class="s-card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg>General Settings</div></div>
             <div class="s-toggle-row"><span class="s-toggle-label">Auto-save every 2 minutes</span><div class="s-toggle on" id="setting-autosave-toggle" role="switch" aria-checked="true" tabindex="0"></div></div>
             <div class="s-toggle-row"><span class="s-toggle-label">Show live preview updates</span><div class="s-toggle on" id="setting-live-preview-toggle" role="switch" aria-checked="true" tabindex="0"></div></div>
@@ -1756,6 +1787,6 @@
 </div>
 
 <script src="assets/js/gallery-data.js"></script>
-<script src="assets/js/admin-studio.js?v=1.5"></script>
+<script src="assets/js/admin-studio.js?v=20261018-admin-credentials-v1"></script>
 </body>
 </html>

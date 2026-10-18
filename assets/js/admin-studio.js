@@ -3304,6 +3304,9 @@ function initAll() {
     if (STUDIO.cms.settings?.autoSave !== false) saveDraft({ silent:true });
   }, 120000);
 
+  // Initialize credential controls before checking the current admin session.
+  initAdminCredentialControls();
+
   // ── Authentication Gate (server-validated session)
   initAuth();
 
@@ -3325,6 +3328,87 @@ function initAll() {
   setTimeout(syncPreviewStyles, 400);
 
   console.log('Royal Banquet Admin Studio initialized ✓ (backend: auto-detect)');
+}
+
+/* ── ADMIN CREDENTIAL MANAGEMENT ── */
+function initAdminCredentialControls() {
+  const form = document.getElementById('admin-credentials-form');
+  const currentLogin = document.getElementById('admin-current-login-id');
+  const currentPassword = document.getElementById('admin-current-password');
+  const newUsername = document.getElementById('admin-new-username');
+  const newPassword = document.getElementById('admin-new-password');
+  const confirmPassword = document.getElementById('admin-confirm-password');
+  const submit = document.getElementById('admin-credentials-submit');
+  const status = document.getElementById('admin-credentials-status');
+  if (!form || !submit || !status) return;
+
+  const refreshCurrentLogin = async () => {
+    try {
+      const response = await fetch('/api/auth/credentials', { credentials: 'same-origin', cache: 'no-store' });
+      const result = await response.json().catch(() => ({}));
+      if (response.ok && result.success && currentLogin) currentLogin.textContent = result.username;
+    } catch {}
+  };
+  window.addEventListener('rbh-authenticated', refreshCurrentLogin);
+  refreshCurrentLogin();
+
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    status.textContent = '';
+    if (newPassword.value !== confirmPassword.value) {
+      status.textContent = 'The new password and confirmation do not match.';
+      confirmPassword.focus();
+      return;
+    }
+    if (newPassword.value.length < 12) {
+      status.textContent = 'Use a unique password with at least 12 characters.';
+      newPassword.focus();
+      return;
+    }
+
+    submit.disabled = true;
+    submit.textContent = 'Updating credentials…';
+    try {
+      const response = await fetch('/api/auth/change-credentials', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        body: JSON.stringify({
+          currentPassword: currentPassword.value,
+          newUsername: newUsername.value,
+          newPassword: newPassword.value,
+          confirmPassword: confirmPassword.value
+        })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) {
+        status.textContent = result.message || 'Could not update admin credentials.';
+        return;
+      }
+
+      const loginOverlay = document.getElementById('studio-login-overlay');
+      const loginUsername = document.getElementById('login-username');
+      const loginPassword = document.getElementById('login-password');
+      const loginError = document.getElementById('login-error-msg');
+      form.reset();
+      if (currentLogin) currentLogin.textContent = result.username;
+      if (loginUsername) loginUsername.value = result.username;
+      if (loginPassword) loginPassword.value = '';
+      if (loginError) {
+        loginError.textContent = 'Credentials changed successfully. Sign in with your new Login ID and password.';
+        loginError.style.display = 'block';
+        loginError.style.color = '#5e9d79';
+      }
+      studioAuthenticated = false;
+      loginOverlay?.classList.remove('hidden');
+    } catch {
+      status.textContent = 'The sign-in service is unavailable. No changes were confirmed.';
+    } finally {
+      submit.disabled = false;
+      submit.textContent = 'Update Login ID & Password';
+    }
+  });
 }
 
 /* ── SERVER-VALIDATED ADMIN SESSION ── */
@@ -3356,6 +3440,7 @@ function initAuth() {
       if (response.ok && result.success) {
         studioAuthenticated = true;
         overlay?.classList.add('hidden');
+        window.dispatchEvent(new Event('rbh-authenticated'));
         loadFromBackend();
       } else {
         studioAuthenticated = false;
@@ -3407,6 +3492,7 @@ function initAuth() {
       studioAuthenticated = true;
       overlay?.classList.add('hidden');
       await loadFromBackend();
+      window.dispatchEvent(new Event('rbh-authenticated'));
       toast('Admin session verified. Welcome to Royal Studio.', 'gold');
     } catch {
       studioAuthenticated = false;

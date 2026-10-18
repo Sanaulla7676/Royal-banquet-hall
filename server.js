@@ -18,6 +18,7 @@ const { v2: cloudinary } = require('cloudinary');
 const {
   authConfig,
   credentialsMatch,
+  normalizeUsername,
   setSessionCookie,
   clearSessionCookie,
   isAuthenticated,
@@ -160,6 +161,7 @@ const DEFAULT_CMS = {
 let databaseClient = null;
 let schemaPromise = null;
 let backupSchemaPromise = null;
+let adminAuthSchemaPromise = null;
 function serviceError(message, statusCode = 503) { const error = new Error(message); error.statusCode = statusCode; return error; }
 function hasDatabase() { return Boolean(process.env.DATABASE_URL); }
 function getDatabase() {
@@ -186,6 +188,84 @@ async function queryRows(sql, params = []) {
   const result = await (await ensureSchema()).query(sql, params);
   if (Array.isArray(result)) return result;
   return Array.isArray(result && result.rows) ? result.rows : [];
+}
+
+async function ensureAdminAuthSchema() {
+  const db = getDatabase();
+  if (!adminAuthSchemaPromise) {
+    adminAuthSchemaPromise = db.query('CREATE TABLE IF NOT EXISTS public.admin_auth_config (key TEXT PRIMARY KEY, data JSONB NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())')
+      .catch(error => { adminAuthSchemaPromise = null; throw error; });
+  }
+  await adminAuthSchemaPromise;
+  return db;
+}
+
+async function getStoredAdminCredentials() {
+  const db = await ensureAdminAuthSchema();
+  const result = await db.query('SELECT data FROM public.admin_auth_config WHERE key=$1 LIMIT 1', ['primary']);
+  const rows = Array.isArray(result) ? result : (Array.isArray(result && result.rows) ? result.rows : []);
+  if (!rows.length) return null;
+  let data = rows[0].data;
+  if (typeof data === 'string') {
+    try { data = JSON.parse(data); } catch { throw serviceError('Stored admin credentials could not be read.', 503); }
+  }
+  if (!data || !data.username || !data.salt || !data.passwordHash || !data.version) {
+    throw serviceError('Stored admin credentials are invalid. Contact the site administrator.', 503);
+  }
+  return {
+    username: String(data.username),
+    salt: String(data.salt),
+    passwordHash: String(data.passwordHash),
+    version: String(data.version),
+    source: 'database'
+  };
+}
+
+async function getActiveAdminCredentials() {
+  if (hasDatabase()) {
+    const stored = await getStoredAdminCredentials();
+    if (stored) return stored;
+  }
+  const config = authConfig();
+  if (!config.configured) return null;
+  return { username: config.username, version: 'environment', source: 'environment' };
+}
+
+function adminSessionReady(credentials) {
+  return Boolean(credentials && credentials.username && String(process.env.ADMIN_SESSION_SECRET || '').length >= 32);
+}
+
+function deriveAdminPasswordHash(password, salt) {
+  return new Promise((resolve, reject) => {
+    crypto.scrypt(String(password || ''), salt, 64, (error, key) => {
+      if (error) return reject(error);
+      resolve(key.toString('hex'));
+    });
+  });
+}
+
+async function verifyActiveAdminCredentials(username, password, credentials) {
+  if (!credentials || normalizeUsername(username) !== normalizeUsername(credentials.username)) return false;
+  if (credentials.source !== 'database') return credentialsMatch(username, password);
+  try {
+    const supplied = Buffer.from(await deriveAdminPasswordHash(password, credentials.salt), 'hex');
+    const expected = Buffer.from(credentials.passwordHash, 'hex');
+    return supplied.length === expected.length && expected.length === 64 && crypto.timingSafeEqual(supplied, expected);
+  } catch {
+    return false;
+  }
+}
+
+async function saveAdminCredentials(username, password) {
+  const db = await ensureAdminAuthSchema();
+  const salt = crypto.randomBytes(16).toString('hex');
+  const passwordHash = await deriveAdminPasswordHash(password, salt);
+  const data = { username, salt, passwordHash, version: crypto.randomUUID() };
+  await db.query(
+    'INSERT INTO public.admin_auth_config (key,data,updated_at) VALUES ($1,$2::jsonb,NOW()) ON CONFLICT (key) DO UPDATE SET data=EXCLUDED.data,updated_at=NOW()',
+    ['primary', JSON.stringify(data)]
+  );
+  return { username: data.username, version: data.version, source: 'database' };
 }
 async function queryBackupRows(sql, params = []) {
   const result = await (await ensureBackupSchema()).query(sql, params);
@@ -294,59 +374,119 @@ function cloudinaryUploadSignature(req,res) {
 
 // ── API Routes ────────────────────────────────────────────────────────────
 
-// Authentication is shared with the Vercel serverless API; no credentials are hard-coded in source.
-function requireAdminApi(req, res, next) {
+// Authentication is server-validated. Credential changes are stored as password hashes in Neon.
+async function requireAdminApi(req, res, next) {
   if (!isSameOrigin(req)) {
     return res.status(403).json({ success: false, message: 'Cross-origin request rejected.' });
   }
-  if (!authConfig().configured) {
-    return res.status(503).json({
-      success: false,
-      message: 'Admin authentication is not configured. Set ADMIN_USERNAME, ADMIN_PASSWORD and ADMIN_SESSION_SECRET.'
-    });
+  try {
+    const credentials = await getActiveAdminCredentials();
+    if (!adminSessionReady(credentials)) {
+      return res.status(503).json({
+        success: false,
+        message: 'Admin authentication is not configured. Set ADMIN_USERNAME, ADMIN_PASSWORD and a 32+ character ADMIN_SESSION_SECRET in Render.'
+      });
+    }
+    if (!isAuthenticated(req, credentials)) {
+      return res.status(401).json({ success: false, message: 'Your admin session expired. Sign in again.' });
+    }
+    req.adminCredentials = credentials;
+    return next();
+  } catch (error) {
+    return res.status(error.statusCode || 503).json({ success: false, message: error.statusCode ? error.message : 'Could not verify admin credentials with persistent storage.' });
   }
-  if (!isAuthenticated(req)) {
-    return res.status(401).json({ success: false, message: 'Your admin session expired. Sign in again.' });
-  }
-  return next();
 }
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   if (!isSameOrigin(req)) {
     return res.status(403).json({ success: false, message: 'Cross-origin sign-in rejected.' });
   }
-  if (!authConfig().configured) {
-    return res.status(503).json({
-      success: false,
-      message: 'Admin sign-in is not configured. Set ADMIN_USERNAME, ADMIN_PASSWORD and ADMIN_SESSION_SECRET.'
+  try {
+    const credentials = await getActiveAdminCredentials();
+    if (!adminSessionReady(credentials)) {
+      return res.status(503).json({
+        success: false,
+        message: 'Admin sign-in is not configured. Check the admin credentials and session secret in Render.'
+      });
+    }
+    const body = req.body || {};
+    if (!(await verifyActiveAdminCredentials(body.username, body.password, credentials))) {
+      return res.status(401).json({ success: false, message: 'Invalid Login ID or password.' });
+    }
+    if (!setSessionCookie(req, res, body.remember === true, credentials)) {
+      return res.status(503).json({ success: false, message: 'Admin session signing is not configured.' });
+    }
+    return res.json({
+      success: true,
+      message: 'Authentication successful.',
+      user: { id: credentials.username, role: 'Administrator' }
     });
+  } catch (error) {
+    return res.status(error.statusCode || 503).json({ success: false, message: error.statusCode ? error.message : 'Admin sign-in is temporarily unavailable.' });
   }
-  const body = req.body || {};
-  if (!credentialsMatch(body.username, body.password)) {
-    return res.status(401).json({ success: false, message: 'Invalid Login ID or password.' });
-  }
-  setSessionCookie(req, res, body.remember === true);
-  return res.json({
-    success: true,
-    message: 'Authentication successful.',
-    user: { id: process.env.ADMIN_USERNAME, role: 'Administrator' }
-  });
 });
 
-app.get('/api/auth/session', (req, res) => {
-  if (!authConfig().configured) {
-    return res.status(503).json({
-      success: false,
-      message: 'Admin authentication is not configured. Set ADMIN_USERNAME, ADMIN_PASSWORD and ADMIN_SESSION_SECRET.'
-    });
+app.get('/api/auth/session', async (req, res) => {
+  try {
+    const credentials = await getActiveAdminCredentials();
+    if (!adminSessionReady(credentials)) {
+      return res.status(503).json({
+        success: false,
+        message: 'Admin authentication is not configured. Check the Render environment and database settings.'
+      });
+    }
+    if (!isAuthenticated(req, credentials)) return res.status(401).json({ success: false, message: 'Not signed in.' });
+    return res.json({ success: true, user: { id: credentials.username, role: 'Administrator' } });
+  } catch (error) {
+    return res.status(error.statusCode || 503).json({ success: false, message: error.statusCode ? error.message : 'Could not verify the admin session.' });
   }
-  if (!isAuthenticated(req)) return res.status(401).json({ success: false, message: 'Not signed in.' });
-  return res.json({ success: true, user: { id: process.env.ADMIN_USERNAME, role: 'Administrator' } });
+});
+
+app.get('/api/auth/credentials', requireAdminApi, (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  return res.json({ success: true, username: req.adminCredentials.username });
+});
+
+app.post('/api/auth/change-credentials', requireAdminApi, async (req, res) => {
+  if (!isSameOrigin(req)) return res.status(403).json({ success: false, message: 'Cross-origin request rejected.' });
+  if (!hasDatabase()) return res.status(503).json({ success: false, message: 'Credential changes require the configured Neon database.' });
+
+  const body = req.body || {};
+  const currentCredentials = req.adminCredentials;
+  if (!(await verifyActiveAdminCredentials(currentCredentials.username, body.currentPassword, currentCredentials))) {
+    return res.status(401).json({ success: false, message: 'Current password is incorrect.' });
+  }
+
+  const username = String(body.newUsername || '').replace(/[\u00A0\u200B\u200E\s]+/g, ' ').trim();
+  const password = String(body.newPassword || '');
+  const confirmPassword = String(body.confirmPassword || '');
+  if (username.length < 3 || username.length > 80) {
+    return res.status(400).json({ success: false, message: 'New Login ID must be between 3 and 80 characters.' });
+  }
+  if (password.length < 12 || password.length > 128) {
+    return res.status(400).json({ success: false, message: 'Use a new password between 12 and 128 characters.' });
+  }
+  if (password !== confirmPassword) {
+    return res.status(400).json({ success: false, message: 'The new password and confirmation do not match.' });
+  }
+
+  try {
+    const saved = await saveAdminCredentials(username, password);
+    clearSessionCookie(req, res);
+    res.setHeader('Cache-Control', 'no-store, max-age=0');
+    return res.json({
+      success: true,
+      message: 'Admin credentials changed. Sign in again with the new Login ID and password.',
+      username: saved.username
+    });
+  } catch (error) {
+    return res.status(error.statusCode || 503).json({ success: false, message: error.statusCode ? error.message : 'Credentials could not be saved. No changes were applied.' });
+  }
 });
 
 app.post('/api/auth/logout', (req, res) => {
   if (!isSameOrigin(req)) {
-    return res.status(403).json({ success: false, message: 'Cross-origin request rejected.' });
+    return res.status(403).json({ success: false, message: 'Cross-origin sign-out rejected.' });
   }
   clearSessionCookie(req, res);
   return res.json({ success: true, message: 'Signed out.' });
@@ -412,7 +552,12 @@ app.get('/api/admin/load-cms',requireAdminApi,async(req,res)=>{
 
 app.get('/api/load-cms',async(req,res)=>{
   try {
-    if(isAuthenticated(req)) return res.json({success:true,data:await readCMS(),source:hasDatabase()?'neon-draft':'local-development'});
+    let authenticated = false;
+    try {
+      const credentials = await getActiveAdminCredentials();
+      authenticated = adminSessionReady(credentials) && isAuthenticated(req, credentials);
+    } catch {}
+    if (authenticated) return res.json({success:true,data:await readCMS(),source:hasDatabase()?'neon-draft':'local-development'});
     const snapshot=await readPublished();
     if(snapshot&&snapshot.cms&&typeof snapshot.cms==='object') return res.json({success:true,data:snapshot.cms,source:hasDatabase()?'neon-published':'published-file',updatedAt:snapshot.published_at||null});
     return res.json({success:true,data:{},source:'no-published-cms'});
