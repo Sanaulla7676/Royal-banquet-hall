@@ -3295,126 +3295,29 @@ body.site-revealed .hero .hero-brand-crest.fx-logo-pop{
   .site-header .brand-logo,.site-footer .brand-logo{transform:scale(1.04)!important}
 }
 
-/* Animated Royal Hall wordmark for slow or unavailable intro video. */
-.site-intro-video{position:relative;z-index:1;opacity:0;transition:opacity .7s ease}
-.site-intro-fallback{
-  position:absolute;inset:0;z-index:2;isolation:isolate;overflow:hidden;
-  display:flex;align-items:center;justify-content:center;flex-direction:column;
-  gap:clamp(14px,2.4vh,28px);padding:28px 20px;text-align:center;color:#f8edcf;
-  background:radial-gradient(ellipse at 50% 47%,rgba(162,116,32,.24),transparent 32%),
-    radial-gradient(ellipse at 50% 100%,rgba(103,69,15,.16),transparent 48%),
-    linear-gradient(145deg,#030303 0%,#11100d 48%,#030303 100%);
-  opacity:1;visibility:visible;pointer-events:none;animation:royal-fallback-stage-in .8s ease both;
-  transition:opacity .65s ease,visibility .65s step-end;
-}
-.site-intro-fallback:before{
-  content:"";position:absolute;z-index:-1;width:min(78vw,760px);aspect-ratio:1;border-radius:50%;
-  border:1px solid rgba(225,188,99,.22);
-  box-shadow:0 0 0 24px rgba(225,188,99,.025),0 0 0 76px rgba(225,188,99,.018),inset 0 0 75px rgba(201,156,61,.055);
-  animation:royal-fallback-orbit 7s ease-in-out infinite;
-}
-.site-intro-fallback:after{
-  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
-  background:linear-gradient(112deg,transparent 15%,rgba(244,214,139,.055) 48%,transparent 70%);
-  transform:translateX(-100%);animation:royal-fallback-light-pass 4.6s ease-in-out infinite;
-}
-.intro-fallback-kicker{
-  font:700 clamp(.62rem,1.2vw,.9rem)/1.4 Arial,Helvetica,sans-serif;letter-spacing:.36em;text-transform:uppercase;color:#d7b766;
-  opacity:0;animation:royal-fallback-caption-in .8s .12s ease forwards;
-}
-.intro-fallback-title{
-  position:relative;display:flex;align-items:baseline;justify-content:center;flex-wrap:wrap;
-  gap:clamp(8px,1.3vw,22px);max-width:100%;font-family:"Baskerville Old Face","Book Antiqua",Georgia,serif;
-  font-weight:500;line-height:.98;letter-spacing:-.045em;filter:drop-shadow(0 5px 22px rgba(0,0,0,.75));
-}
-.intro-fallback-word{position:relative;display:inline-flex;white-space:nowrap}
-.intro-fallback-the{font-size:clamp(1.05rem,2.5vw,2rem);letter-spacing:.24em;color:#f7e5b2}
-.intro-fallback-royal,.intro-fallback-hall{
-  font-size:clamp(3.2rem,10.8vw,8.4rem);
-  background:linear-gradient(115deg,#a77c2d 0%,#f8e8ab 24%,#bf9847 43%,#fff7d8 54%,#c39a46 73%,#f3daa0 100%);
-  background-size:220% 100%;background-position:0% 50%;-webkit-background-clip:text;background-clip:text;color:transparent;
-}
-.intro-fallback-letter{
-  display:inline-block;opacity:0;transform:translate3d(0,32px,0) rotateX(-60deg) scale(.96);filter:blur(5px);transform-origin:50% 100%;
-  animation:royal-fallback-letter-in .78s cubic-bezier(.2,.8,.2,1) forwards;
-  animation-delay:var(--letter-delay,0ms);
-}
-.intro-fallback-royal .intro-fallback-letter,.intro-fallback-hall .intro-fallback-letter{
-  animation-name:royal-fallback-letter-in,royal-fallback-metal;
-  animation-duration:.78s,4s;animation-timing-function:cubic-bezier(.2,.8,.2,1),ease-in-out;
-  animation-delay:var(--letter-delay,0ms),1.4s;animation-iteration-count:1,infinite;
-}
-.intro-fallback-title:after{
-  content:"";position:absolute;top:-14%;bottom:-14%;left:-10%;width:28%;pointer-events:none;opacity:0;
-  background:linear-gradient(105deg,transparent 0%,rgba(255,252,226,.06) 28%,rgba(255,249,212,.62) 49%,rgba(255,252,226,.08) 70%,transparent 100%);
-  filter:blur(2px);transform:translateX(-180%) skewX(-12deg);animation:royal-fallback-shine 3.9s 1s ease-in-out infinite;
-}
-.intro-fallback-rule{display:flex;align-items:center;justify-content:center;gap:12px;width:min(360px,72vw)}
-.intro-fallback-rule:before,.intro-fallback-rule:after{
-  content:"";height:1px;flex:1;transform:scaleX(0);background:linear-gradient(90deg,transparent,#d9b562);
-  animation:royal-fallback-rule-in .7s 1.15s ease forwards;
-}
-.intro-fallback-rule:after{background:linear-gradient(90deg,#d9b562,transparent)}
-.intro-fallback-rule span{
-  width:7px;height:7px;flex:none;transform:rotate(45deg);border:1px solid #f5dc9b;
-  box-shadow:0 0 14px rgba(241,204,113,.65);opacity:0;animation:royal-fallback-caption-in .5s 1.45s ease forwards;
-}
-.intro-fallback-tagline{
-  font:600 clamp(.6rem,1.05vw,.78rem)/1.6 Arial,Helvetica,sans-serif;letter-spacing:.25em;text-transform:uppercase;
-  color:rgba(244,226,181,.74);opacity:0;animation:royal-fallback-caption-in .8s 1.35s ease forwards;
-}
-.intro-fallback-spark{
-  position:absolute;color:#f2d28a;font-size:clamp(10px,1.25vw,18px);text-shadow:0 0 13px rgba(245,210,124,.75);
-  opacity:0;animation:royal-fallback-sparkle 2.6s ease-in-out infinite;
-}
-.intro-fallback-spark.one{left:17%;top:28%;animation-delay:.2s}
-.intro-fallback-spark.two{right:18%;top:32%;animation-delay:1.05s}
-.intro-fallback-spark.three{left:23%;bottom:25%;animation-delay:1.65s}
-.intro-fallback-spark.four{right:23%;bottom:23%;animation-delay:.75s}
-.site-intro.intro-video-active .site-intro-video{opacity:1;z-index:4}
-.site-intro.intro-video-active .site-intro-fallback{opacity:0;visibility:hidden}
-@keyframes royal-fallback-stage-in{from{opacity:0;filter:blur(7px)}to{opacity:1;filter:blur(0)}}
-@keyframes royal-fallback-caption-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-@keyframes royal-fallback-letter-in{
-  0%{opacity:0;transform:translate3d(0,32px,0) rotateX(-60deg) scale(.96);filter:blur(5px)}
-  72%{opacity:1;transform:translate3d(0,-3px,0) rotateX(7deg) scale(1.01);filter:blur(0)}
-  100%{opacity:1;transform:none;filter:blur(0)}
-}
-@keyframes royal-fallback-metal{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
-@keyframes royal-fallback-shine{
-  0%,17%{opacity:0;transform:translateX(-180%) skewX(-12deg)}31%{opacity:.9}
-  62%,100%{opacity:0;transform:translateX(450%) skewX(-12deg)}
-}
-@keyframes royal-fallback-rule-in{to{transform:scaleX(1)}}
-@keyframes royal-fallback-orbit{0%,100%{transform:scale(.94);opacity:.62}50%{transform:scale(1.04);opacity:1}}
-@keyframes royal-fallback-light-pass{0%,18%{transform:translateX(-100%);opacity:.1}55%,100%{transform:translateX(100%);opacity:.65}}
-@keyframes royal-fallback-sparkle{0%,100%{opacity:0;transform:scale(.65) rotate(0)}42%{opacity:.95;transform:scale(1.12) rotate(50deg)}72%{opacity:.18;transform:scale(.8) rotate(90deg)}}
-@media(max-width:600px){
-  .intro-fallback-title{flex-direction:column;align-items:center;gap:2px}
-  .intro-fallback-the{font-size:1rem;margin-bottom:4px}
-  .intro-fallback-royal,.intro-fallback-hall{font-size:clamp(3.05rem,16vw,5.2rem)}
-  .intro-fallback-kicker{letter-spacing:.22em}
-  .intro-fallback-tagline{letter-spacing:.14em;max-width:290px}
-  .intro-fallback-spark.one{left:9%;top:24%}
-  .intro-fallback-spark.two{right:9%;top:25%}
-}
-@media(prefers-reduced-motion:reduce){
-  .site-intro-fallback,.site-intro-fallback:before,.site-intro-fallback:after,
-  .intro-fallback-kicker,.intro-fallback-letter,.intro-fallback-title:after,.intro-fallback-rule:before,.intro-fallback-rule:after,
-  .intro-fallback-rule span,.intro-fallback-tagline,.intro-fallback-spark{
-    animation:none!important;transition:none!important;filter:none!important;opacity:1!important;transform:none!important;
+
+/* Mobile navbar crest: larger, complete artwork like the footer. These rules are phone-only. */
+@media(max-width:760px){
+  .site-header .container.nav{
+    padding-left:116px!important;padding-right:0!important;overflow:visible!important;
+  }
+  .site-header .container.nav > .brand{
+    position:absolute!important;top:50%!important;left:0!important;
+    transform:translateY(-50%)!important;z-index:1005!important;
+    width:106px!important;height:106px!important;min-width:106px!important;max-width:106px!important;
+    padding:4px!important;overflow:hidden!important;
+  }
+  .site-header .container.nav > .brand > img.brand-logo{
+    display:block!important;width:100%!important;height:100%!important;
+    min-width:0!important;min-height:0!important;max-width:none!important;max-height:none!important;
+    object-fit:cover!important;object-position:center!important;
+    transform:scale(1.04)!important;transform-origin:center!important;
   }
 }
-
-
-/* Apply the metallic fill to each animated glyph so the wordmark stays visible while letters move. */
-.intro-fallback-the .intro-fallback-letter{
-  color:#f7e5b2!important;-webkit-text-fill-color:#f7e5b2!important;
-  text-shadow:0 0 18px rgba(230,192,106,.14);
-}
-.intro-fallback-royal .intro-fallback-letter,.intro-fallback-hall .intro-fallback-letter{
-  background:linear-gradient(115deg,#a77c2d 0%,#f8e8ab 24%,#bf9847 43%,#fff7d8 54%,#c39a46 73%,#f3daa0 100%)!important;
-  background-size:220% 100%!important;background-position:0% 50%;
-  -webkit-background-clip:text!important;background-clip:text!important;
-  color:transparent!important;-webkit-text-fill-color:transparent!important;
+@media(max-width:420px){
+  .site-header .container.nav{padding-left:108px!important}
+  .site-header .container.nav > .brand{
+    width:98px!important;height:98px!important;min-width:98px!important;max-width:98px!important;
+  }
+  .site-header .container.nav > .brand > img.brand-logo{transform:scale(1.04)!important}
 }

@@ -656,9 +656,34 @@ function buildStudioSelectionAnimationCss(settings) {
     const img=brand.querySelector('img');
     if(img) {
       if(logoSettings.src)img.src=logoSettings.src;
-      if(Number.isFinite(Number(logoSettings.width)))img.style.setProperty('width',Math.max(40,Math.min(500,Number(logoSettings.width)))+'px','important');
-      if(Number.isFinite(Number(logoSettings.height)))img.style.setProperty('height',Math.max(24,Math.min(260,Number(logoSettings.height)))+'px','important');
-      img.style.setProperty('object-fit','contain','important');
+
+      // The phone navbar uses the full circular crest, not the desktop pixel dimensions.
+      // Inline !important sizing was forcing a 145x98 image into a 54px circle, cropping it to the R.
+      const syncBrandImageSize = () => {
+        const mobileNavbar = Boolean(window.matchMedia && window.matchMedia('(max-width:760px)').matches && placement === 'navbar');
+        if(mobileNavbar) {
+          img.style.setProperty('width','100%','important');
+          img.style.setProperty('height','100%','important');
+          img.style.setProperty('max-width','none','important');
+          img.style.setProperty('max-height','none','important');
+          img.style.setProperty('object-fit','cover','important');
+          img.style.setProperty('object-position','center','important');
+          img.style.setProperty('transform','scale(1.04)','important');
+        } else {
+          if(Number.isFinite(Number(logoSettings.width)))img.style.setProperty('width',Math.max(40,Math.min(500,Number(logoSettings.width)))+'px','important');
+          if(Number.isFinite(Number(logoSettings.height)))img.style.setProperty('height',Math.max(24,Math.min(260,Number(logoSettings.height)))+'px','important');
+          ['max-width','max-height','transform','object-position'].forEach(prop=>img.style.removeProperty(prop));
+          img.style.setProperty('object-fit','contain','important');
+        }
+      };
+      img.__rbhSyncBrandImageSize = syncBrandImageSize;
+      syncBrandImageSize();
+      if(!window.__rbhBrandResizeBound) {
+        window.__rbhBrandResizeBound = true;
+        window.addEventListener('resize',()=>{
+          document.querySelectorAll('.site-header .brand img.brand-logo').forEach(image=>image.__rbhSyncBrandImageSize?.());
+        },{passive:true});
+      }
     }
   }
 
