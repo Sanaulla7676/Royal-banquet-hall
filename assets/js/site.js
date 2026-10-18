@@ -59,21 +59,35 @@
   const intro = document.getElementById('site-intro');
   if (intro) {
     const video = intro.querySelector('video');
-    const sessionKey = 'royalHallIntroPlayed_v1';
-    let alreadyPlayed = false;
+    const sessionKey = 'royalHallIntroPlayed_v2';
+    const INTRO_START_TIMEOUT_MS = 2200;
+    const INTRO_MAX_DURATION_MS = 6800;
+    let alreadyPlayed = Boolean(
+      window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    );
     try {
-      alreadyPlayed = sessionStorage.getItem(sessionKey) === '1' || (window.self !== window.top);
+      alreadyPlayed = alreadyPlayed ||
+        sessionStorage.getItem(sessionKey) === '1' ||
+        sessionStorage.getItem('royalHallIntroPlayed_v1') === '1' ||
+        (window.self !== window.top);
     } catch (_) {
       if (window.self !== window.top) alreadyPlayed = true;
     }
 
-    const finishIntro = (completed) => {
-      if (completed) {
-        try { sessionStorage.setItem(sessionKey, '1'); } catch (_) {}
-      }
+    let introFinished = false;
+    let videoStarted = false;
+    let startupFallbackTimer = 0;
+    let maximumIntroTimer = 0;
+    const finishIntro = () => {
+      if (introFinished) return;
+      introFinished = true;
+      if (startupFallbackTimer) window.clearTimeout(startupFallbackTimer);
+      if (maximumIntroTimer) window.clearTimeout(maximumIntroTimer);
+      // Remember completed or skipped intros so a slow remote video never blocks
+      // subsequent navigation during this tab's session.
+      try { sessionStorage.setItem(sessionKey, '1'); } catch (_) {}
       document.body.classList.remove('intro-pending');
       intro.classList.add('is-hidden');
-      // Let the intro veil begin fading away, then start the layered site entrance.
       window.setTimeout(revealWebsite, 140);
       window.setTimeout(() => intro.remove(), 760);
     };
@@ -84,26 +98,45 @@
     } else if (video) {
       document.body.classList.add('intro-pending');
       video.muted = true;
-      video.addEventListener('ended', () => finishIntro(true), {once:true});
-      video.addEventListener('error', () => finishIntro(false), {once:true});
+      video.playsInline = true;
+      video.preload = 'metadata';
+
+      video.addEventListener('ended', finishIntro, {once:true});
+      video.addEventListener('error', finishIntro, {once:true});
+      video.addEventListener('playing', () => {
+        videoStarted = true;
+        if (startupFallbackTimer) {
+          window.clearTimeout(startupFallbackTimer);
+          startupFallbackTimer = 0;
+        }
+      }, {once:true});
 
       const attemptPlayback = () => {
+        if (introFinished) return;
         const result = video.play();
         if (result && typeof result.catch === 'function') {
           result.catch(() => {
-            // Browser autoplay policies may require the visitor's first tap.
-            const retry = () => { video.muted = true; video.play().catch(() => {}); };
+            // Autoplay may be blocked; the startup deadline still reveals the page.
+            const retry = () => {
+              if (introFinished) return;
+              video.muted = true;
+              video.play().catch(() => {});
+            };
             intro.addEventListener('pointerdown', retry, {once:true});
             intro.addEventListener('keydown', retry, {once:true});
           });
         }
       };
 
+      startupFallbackTimer = window.setTimeout(() => {
+        if (!videoStarted && !(!video.paused && video.readyState >= 2)) finishIntro();
+      }, INTRO_START_TIMEOUT_MS);
+      maximumIntroTimer = window.setTimeout(finishIntro, INTRO_MAX_DURATION_MS);
       video.addEventListener('canplay', attemptPlayback, {once:true});
       video.src = video.dataset.src;
       video.load();
     } else {
-      finishIntro(false);
+      finishIntro();
     }
   } else {
     revealWebsite();

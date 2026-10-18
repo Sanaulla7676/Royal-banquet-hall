@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 const root=process.cwd();
-const pages=['index.html','events.html','gallery.html','booking.html','experience.html','contact.html'];
+const pages=['index.html','events.html','gallery.html','booking.html','experience.html','contact.html','catering.html','reviews.html','packages.html'];
 const requireMedia=process.env.REQUIRE_MEDIA==='1';
 const errors=[];
 for(const page of pages){
