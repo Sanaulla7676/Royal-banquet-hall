@@ -49,7 +49,7 @@ if(!adminHtml.includes('THE <span style="color:var(--s-gold)">ROYAL HALL</span>'
 if(adminHtml.includes('ROYAL BANQUET HALL')) errors.push('Old hall name remains in Admin Studio branding.');
 for(const page of pages){
   const html=fs.readFileSync(path.join(root,page),'utf8');
-  if(!html.includes('assets/css/site.css?v=20261018-royal-mobile-intro-v1')) errors.push(page+' is missing the mobile crest/intro stylesheet version.');
+  if(!html.includes('assets/css/site.css?v=20261018-royal-mobile-intro-v2')) errors.push(page+' is missing the mobile crest/intro stylesheet version.');
   if(!html.includes('assets/js/site.js?v=20261018-royal-letter-fallback-v1')) errors.push(page+' is missing the resilient intro script version.');
   const introStart=html.indexOf('<div id="site-intro"');
   const introEnd=introStart>=0?html.indexOf('</div>',introStart):-1;
