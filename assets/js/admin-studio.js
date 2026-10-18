@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Royal Banquet Hall – Admin Customization Studio
+   The Royal Hall – Admin Customization Studio
    admin-studio.js | 13-Page Functional Editor Logic
    Backend: Node.js (server.js) | PHP (api.php) | Python (server.py)
    ========================================================================== */
@@ -2060,7 +2060,7 @@ function initImageLibraryPage() {
       item.dataset.category = record.category || 'gallery';
       const img = document.createElement('img');
       img.src = record.src;
-      img.alt = record.name || 'Royal Banquet Hall asset';
+      img.alt = record.name || 'The Royal Hall asset';
       img.loading = 'lazy';
       const overlay = document.createElement('div');
       overlay.className = 's-img-overlay';

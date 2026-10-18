@@ -59,32 +59,31 @@
   const intro = document.getElementById('site-intro');
   if (intro) {
     const video = intro.querySelector('video');
-    const sessionKey = 'royalHallIntroPlayed_v2';
+    const sessionKey = 'royalHallIntroPlayed_v3';
     const INTRO_START_TIMEOUT_MS = 2200;
-    const INTRO_MAX_DURATION_MS = 6800;
+    const INTRO_FALLBACK_DURATION_MS = 3400;
+    const INTRO_MAX_DURATION_MS = 7600;
     let alreadyPlayed = Boolean(
       window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
     );
     try {
-      alreadyPlayed = alreadyPlayed ||
-        sessionStorage.getItem(sessionKey) === '1' ||
-        sessionStorage.getItem('royalHallIntroPlayed_v1') === '1' ||
-        (window.self !== window.top);
+      alreadyPlayed = alreadyPlayed || sessionStorage.getItem(sessionKey) === '1' || (window.self !== window.top);
     } catch (_) {
       if (window.self !== window.top) alreadyPlayed = true;
     }
 
     let introFinished = false;
     let videoStarted = false;
+    let fallbackActive = false;
     let startupFallbackTimer = 0;
+    let fallbackTimer = 0;
     let maximumIntroTimer = 0;
     const finishIntro = () => {
       if (introFinished) return;
       introFinished = true;
       if (startupFallbackTimer) window.clearTimeout(startupFallbackTimer);
+      if (fallbackTimer) window.clearTimeout(fallbackTimer);
       if (maximumIntroTimer) window.clearTimeout(maximumIntroTimer);
-      // Remember completed or skipped intros so a slow remote video never blocks
-      // subsequent navigation during this tab's session.
       try { sessionStorage.setItem(sessionKey, '1'); } catch (_) {}
       document.body.classList.remove('intro-pending');
       intro.classList.add('is-hidden');
@@ -96,19 +95,58 @@
       intro.remove();
       revealWebsite();
     } else if (video) {
+      const letters = (word,wordDelay) => Array.from(word).map((letter,index) =>
+        '<span class="intro-fallback-letter" style="--letter-delay:' + (wordDelay + index * 42) + 'ms">' + letter + '</span>'
+      ).join('');
+      const fallback = document.createElement('div');
+      fallback.className = 'site-intro-fallback';
+      fallback.setAttribute('aria-label', 'The Royal Hall');
+      fallback.innerHTML =
+        '<div class="intro-fallback-kicker">A PLACE FOR LIFE\'S SPECIAL MOMENTS</div>' +
+        '<div class="intro-fallback-title" aria-label="The Royal Hall">' +
+          '<span class="intro-fallback-word intro-fallback-the" aria-label="The">' + letters('THE',0) + '</span>' +
+          '<span class="intro-fallback-word intro-fallback-royal" aria-label="Royal">' + letters('ROYAL',180) + '</span>' +
+          '<span class="intro-fallback-word intro-fallback-hall" aria-label="Hall">' + letters('HALL',340) + '</span>' +
+        '</div>' +
+        '<div class="intro-fallback-rule" aria-hidden="true"><span></span></div>' +
+        '<div class="intro-fallback-tagline">A CELEBRATION OF YOUR SPECIAL MOMENTS</div>' +
+        '<span class="intro-fallback-spark one" aria-hidden="true">✦</span>' +
+        '<span class="intro-fallback-spark two" aria-hidden="true">✧</span>' +
+        '<span class="intro-fallback-spark three" aria-hidden="true">✦</span>' +
+        '<span class="intro-fallback-spark four" aria-hidden="true">✧</span>';
+      intro.appendChild(fallback);
+
+      const showIntroFallback = () => {
+        if (introFinished || fallbackActive || videoStarted) return;
+        fallbackActive = true;
+        intro.classList.add('intro-fallback-active');
+        if (startupFallbackTimer) {
+          window.clearTimeout(startupFallbackTimer);
+          startupFallbackTimer = 0;
+        }
+        fallbackTimer = window.setTimeout(finishIntro, INTRO_FALLBACK_DURATION_MS);
+      };
+
       document.body.classList.add('intro-pending');
       video.muted = true;
       video.playsInline = true;
       video.preload = 'metadata';
 
       video.addEventListener('ended', finishIntro, {once:true});
-      video.addEventListener('error', finishIntro, {once:true});
+      video.addEventListener('error', showIntroFallback, {once:true});
       video.addEventListener('playing', () => {
         videoStarted = true;
+        fallbackActive = false;
         if (startupFallbackTimer) {
           window.clearTimeout(startupFallbackTimer);
           startupFallbackTimer = 0;
         }
+        if (fallbackTimer) {
+          window.clearTimeout(fallbackTimer);
+          fallbackTimer = 0;
+        }
+        intro.classList.remove('intro-fallback-active');
+        intro.classList.add('intro-video-active');
       }, {once:true});
 
       const attemptPlayback = () => {
@@ -116,7 +154,6 @@
         const result = video.play();
         if (result && typeof result.catch === 'function') {
           result.catch(() => {
-            // Autoplay may be blocked; the startup deadline still reveals the page.
             const retry = () => {
               if (introFinished) return;
               video.muted = true;
@@ -129,7 +166,7 @@
       };
 
       startupFallbackTimer = window.setTimeout(() => {
-        if (!videoStarted && !(!video.paused && video.readyState >= 2)) finishIntro();
+        if (!videoStarted && !(!video.paused && video.readyState >= 2)) showIntroFallback();
       }, INTRO_START_TIMEOUT_MS);
       maximumIntroTimer = window.setTimeout(finishIntro, INTRO_MAX_DURATION_MS);
       video.addEventListener('canplay', attemptPlayback, {once:true});

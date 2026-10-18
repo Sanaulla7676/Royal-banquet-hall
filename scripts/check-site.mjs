@@ -34,5 +34,26 @@ else{
     }
   }catch(error){errors.push('Gallery manifest is not valid JSON: '+error.message);}
 }
+
+// Protect the phone-only crest scale, animated intro fallback and Admin Studio rebrand from regressions.
+const siteCss=fs.readFileSync(path.join(root,'assets/css/site.css'),'utf8');
+const siteJs=fs.readFileSync(path.join(root,'assets/js/site.js'),'utf8');
+const adminHtml=fs.readFileSync(path.join(root,'admin-studio.html'),'utf8');
+for(const marker of ['transform:scale(1.08)!important','site-intro-fallback','royal-fallback-letter-in','royal-fallback-shine']) {
+  if(!siteCss.includes(marker)) errors.push('Missing responsive logo or Royal Hall fallback style: '+marker);
+}
+for(const marker of ['royalHallIntroPlayed_v3','INTRO_FALLBACK_DURATION_MS','showIntroFallback','intro-video-active']) {
+  if(!siteJs.includes(marker)) errors.push('Missing resilient intro fallback behavior: '+marker);
+}
+if(!adminHtml.includes('THE <span style="color:var(--s-gold)">ROYAL HALL</span>')) errors.push('Admin header branding is not The Royal Hall.');
+if(adminHtml.includes('ROYAL BANQUET HALL')) errors.push('Old hall name remains in Admin Studio branding.');
+for(const page of pages){
+  const html=fs.readFileSync(path.join(root,page),'utf8');
+  if(!html.includes('assets/css/site.css?v=20261018-royal-mobile-intro-v1')) errors.push(page+' is missing the mobile crest/intro stylesheet version.');
+  if(!html.includes('assets/js/site.js?v=20261018-royal-letter-fallback-v1')) errors.push(page+' is missing the resilient intro script version.');
+  const intro=html.match(/<div id="site-intro"[\\s\\S]*?<\\/div>/);
+  if(intro && /\\bposter=/.test(intro[0])) errors.push(page+' should use the animated brand fallback, not a venue-photo poster.');
+}
+
 if(errors.length){console.error(errors.join('\n'));process.exit(1);}
 console.log('PASS: six pages, internal links and gallery manifest validated'+(requireMedia?' including every image/video asset.':'; run with REQUIRE_MEDIA=1 after importing assets to verify binary media.'));
