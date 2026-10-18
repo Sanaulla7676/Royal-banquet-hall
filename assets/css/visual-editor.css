@@ -235,3 +235,16 @@ a{color:inherit;text-decoration:none}
 @media(max-width:900px){.vb-workspace{grid-template-columns:200px minmax(280px,1fr)}.vb-left{width:200px}.vb-layer-row{font-size:10.5px}.vb-font-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.vb-font-picker{padding:8px}.vb-font-picker-card{width:100%;max-height:94vh;border-radius:12px}.vb-font-picker-header{padding:17px}.vb-font-search{margin:12px 14px 8px}.vb-font-categories{padding:0 14px 11px}.vb-font-grid{grid-template-columns:repeat(2,minmax(0,1fr));padding:0 14px 14px;gap:7px}.vb-font-card{padding:9px;min-height:94px}.vb-font-card .vb-font-preview{font-size:18px}.vb-font-picker-footer{padding:10px 14px}}
 @media(prefers-reduced-motion:reduce){.vb-font-card,.vb-motion-card,.vb-quick-presets button{transition:none}}
+
+
+/* The Royal Hall brand and direct photo upload controls. */
+.vb-upload-tools{display:flex;flex-direction:column;align-items:stretch;gap:7px;margin:-2px 0 13px;padding:10px;border:1px solid #e7e9ef;border-radius:9px;background:#fafbfc}
+.vb-upload-tools[hidden]{display:none!important}
+.vb-upload-tools .vb-btn{width:100%;min-height:37px;justify-content:center;border-color:#d8dce6;background:#fff;color:#343947;font-size:11px}
+.vb-upload-tools .vb-btn:hover{border-color:#c5b078;background:#fffaf0}
+.vb-upload-tools .vb-btn:disabled{opacity:.6;cursor:progress}
+.vb-upload-status{display:block;color:#858b98;font-size:10px;line-height:1.5;overflow-wrap:anywhere}
+.vb-upload-status.is-success{color:#267849}
+.vb-upload-status.is-error{color:#b13a32}
+.vb-brand strong{font-size:15px;letter-spacing:.075em}
+@media(max-width:760px){.vb-upload-tools{padding:8px}.vb-brand strong{font-size:11px;letter-spacing:.03em}}

@@ -119,6 +119,121 @@
     return result;
   }
 
+  async function handlePhotoUpload(event) {
+    const input = event.currentTarget;
+    const file = input.files && input.files[0];
+    if (!file) return;
+    const uploadButton = field('vb-photo-upload-button');
+    const status = field('vb-photo-upload-status');
+    const targetElement = currentElement;
+    const targetSelector = currentSelector;
+    const targetPage = activePage;
+
+    if (!authenticated || !ready) {
+      toast('Sign in and load the shared draft before uploading a photo.',true);
+      input.value = '';
+      return;
+    }
+    if (!targetElement || targetElement.tagName.toLowerCase() !== 'img' || !targetSelector) {
+      toast('Select an image in the page preview first.',true);
+      input.value = '';
+      return;
+    }
+    const allowedTypes = new Set(['image/jpeg','image/png','image/webp','image/gif']);
+    if (!allowedTypes.has(String(file.type || '').toLowerCase())) {
+      status.textContent = 'Unsupported file. Choose JPG, PNG, WebP or GIF.';
+      status.classList.add('is-error');
+      toast('Choose a JPG, PNG, WebP or GIF photo.',true);
+      input.value = '';
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      status.textContent = 'This photo is larger than 15 MB.';
+      status.classList.add('is-error');
+      toast('Photo uploads are limited to 15 MB.',true);
+      input.value = '';
+      return;
+    }
+    const frame = field('vb-page-frame');
+    const layerTree = field('vb-layer-tree');
+    const pageList = field('vb-page-list');
+    const pageSelect = field('vb-page-select');
+    const rightPanel = field('vb-right');
+    const previousPointerEvents = {
+      frame: frame.style.pointerEvents,
+      layers: layerTree.style.pointerEvents,
+      pages: pageList.style.pointerEvents,
+      inspector: rightPanel.style.pointerEvents
+    };
+    uploadButton.disabled = true;
+    input.disabled = true;
+    pageSelect.disabled = true;
+    frame.style.pointerEvents = 'none';
+    layerTree.style.pointerEvents = 'none';
+    pageList.style.pointerEvents = 'none';
+    rightPanel.style.pointerEvents = 'none';
+    status.classList.remove('is-error','is-success');
+    status.textContent = 'Requesting a secure upload…';
+
+    try {
+      const signed = await request('/api/cloudinary/signature?resource_type=image');
+      if (!signed.cloudName || !signed.apiKey || !signed.signature || !signed.timestamp) {
+        throw new Error('The media service did not return a valid upload signature.');
+      }
+      const form = new FormData();
+      form.append('file',file,file.name);
+      form.append('api_key',signed.apiKey);
+      form.append('timestamp',String(signed.timestamp));
+      form.append('folder',signed.folder || 'royal-banquet');
+      form.append('tags',signed.tags || 'royal-banquet,cms-upload');
+      form.append('signature',signed.signature);
+      status.textContent = 'Uploading ' + file.name + '…';
+      const response = await fetch(
+        'https://api.cloudinary.com/v1_1/' + encodeURIComponent(signed.cloudName) + '/image/upload',
+        { method:'POST', body:form, cache:'no-store' }
+      );
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.secure_url) {
+        throw new Error(payload.error && payload.error.message ? payload.error.message : 'Cloudinary rejected the photo upload.');
+      }
+      const secureUrl = String(payload.secure_url);
+      if (!/^https:\/\/res\.cloudinary\.com\//i.test(secureUrl)) {
+        throw new Error('The upload service returned an unexpected image URL.');
+      }
+      const photoUrl = secureUrl.replace('/upload/','/upload/f_auto,q_auto/');
+      if (activePage !== targetPage || currentSelector !== targetSelector || currentElement !== targetElement) {
+        throw new Error('The selected image changed during upload. Select it again and retry.');
+      }
+      beginEdit();
+      const entry = elementRecord(targetSelector,true);
+      entry.src = photoUrl;
+      const currentAlt = String(entry.alt !== undefined ? entry.alt : (targetElement.getAttribute('alt') || ''));
+      if (!currentAlt.trim()) entry.alt = file.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ').trim().slice(0,500);
+      setField('vb-src',photoUrl);
+      setField('vb-alt',entry.alt !== undefined ? entry.alt : currentAlt);
+      changed();
+      renderInspector(targetElement);
+      status.classList.remove('is-error');
+      status.classList.add('is-success');
+      status.textContent = 'Uploaded ' + file.name + '. Save Draft, then Publish to make it live.';
+      toast('Photo uploaded and applied to the selected image. Save Draft, then Publish.');
+    } catch (error) {
+      status.classList.remove('is-success');
+      status.classList.add('is-error');
+      status.textContent = 'Upload failed: ' + (error.message || 'Unknown error.');
+      toast('Photo upload failed: ' + (error.message || 'Unknown error.'),true);
+    } finally {
+      uploadButton.disabled = false;
+      input.disabled = false;
+      pageSelect.disabled = false;
+      frame.style.pointerEvents = previousPointerEvents.frame;
+      layerTree.style.pointerEvents = previousPointerEvents.layers;
+      pageList.style.pointerEvents = previousPointerEvents.pages;
+      rightPanel.style.pointerEvents = previousPointerEvents.inspector;
+      input.value = '';
+    }
+  }
+
   async function start() {
     $('#vb-login-form').addEventListener('submit', login);
     $('#vb-page-select').addEventListener('change', () => changePage($('#vb-page-select').value));
@@ -168,6 +283,14 @@
     bindInput('vb-href', 'href', 'change');
     bindInput('vb-behavior-href', 'href', 'change');
     bindInput('vb-src', 'src', 'change');
+    $('#vb-photo-upload-button').addEventListener('click', () => {
+      if (!currentElement || currentElement.tagName.toLowerCase() !== 'img') {
+        toast('Select an image in the website preview before uploading a replacement.',true);
+        return;
+      }
+      $('#vb-photo-upload').click();
+    });
+    $('#vb-photo-upload').addEventListener('change', handlePhotoUpload);
     bindInput('vb-alt', 'alt', 'change');
     bindInput('vb-target', 'target', 'change');
     $('#vb-font-family').addEventListener('change', event => updateStyle('fontFamily',event.target.value));
@@ -992,6 +1115,7 @@
     showRow('vb-text-row',text);
     showRow('vb-href-row',link);
     showRow('vb-src-row',media);
+    showRow('vb-upload-row',tag === 'img');
     showRow('vb-alt-row',tag === 'img');
     showRow('vb-target-row',link);
     showRow('vb-behavior-href-row',link);

@@ -504,3 +504,34 @@ test('guided typography, animation presets and layer navigation are selectable c
   expect(edited.motion).toMatchObject({ preset: 'shimmer' });
   expect(pageErrors).toEqual([]);
 });
+
+
+test('visual builder branding and signed photo upload work', async ({ page }) => {
+  test.setTimeout(90000);
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.message));
+  const backend = await mockBackend(page);
+  await page.goto(BASE_URL + '/visual-editor.html');
+  await expect(page).toHaveTitle('The Royal Hall | Visual Builder');
+  await expect(page.locator('#vb-login-form h1')).toHaveText('The Royal Hall Visual Builder');
+  await page.locator('#vb-username').fill(TEST_USER);
+  await page.locator('#vb-password').fill(TEST_PASSWORD);
+  await page.locator('#vb-login-submit').click();
+  await expect(page.locator('#vb-app')).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('.vb-brand strong')).toHaveText('THE ROYAL HALL');
+  const preview = page.frameLocator('#vb-page-frame');
+  const image = preview.locator('img').first();
+  await expect(image).toBeVisible({ timeout: 15000 });
+  await image.click();
+  await expect(page.locator('#vb-upload-row')).toBeVisible();
+  await page.locator('#vb-photo-upload').setInputFiles({name:'new-royal-hall-photo.png',mimeType:'image/png',buffer:PNG});
+  await expect(page.locator('#vb-photo-upload-status')).toContainText('Save Draft, then Publish', { timeout: 15000 });
+  await expect.poll(() => backend.calls.upload).toBe(1);
+  await expect(image).toHaveAttribute('src', /res\.cloudinary\.com\/test-cloud\/image\/upload\/f_auto,q_auto\/test-asset-1\.png/, { timeout: 10000 });
+  await page.locator('#vb-save-draft').click();
+  await expect.poll(() => backend.calls.save).toBeGreaterThan(0);
+  const draft = backend.snapshot().draft;
+  const entries = Object.values(draft.pageOverrides['index.html'].elements || {});
+  expect(entries.some(entry => String(entry.src || '').includes('res.cloudinary.com/test-cloud/image/upload/f_auto,q_auto/test-asset-1.png'))).toBeTruthy();
+  expect(pageErrors).toEqual([]);
+});

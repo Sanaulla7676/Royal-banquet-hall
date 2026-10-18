@@ -18,14 +18,17 @@ if (!html.includes('href="visual-editor.html"')) throw new Error('Admin Studio d
 for (const control of [
   'id="vb-page-select"','id="vb-page-frame"','id="vb-layer-tree"','id="vb-save-draft"','id="vb-publish"',
   'data-pane="motion"','id="vb-open-font-picker"','id="vb-font-picker"','id="vb-move-mode"',
-  'id="vb-expand-layers"','id="vb-font-size-number"','data-motion-preset="shimmer"'
+  'id="vb-expand-layers"','id="vb-font-size-number"','data-motion-preset="shimmer"',
+  'id="vb-photo-upload"','id="vb-photo-upload-button"','id="vb-upload-row"','THE ROYAL HALL'
 ]) {
   if (!visualEditorHtml.includes(control)) throw new Error('Missing Visual Builder feature: ' + control);
 }
 const visualJs = read('assets/js/visual-editor.js');
 for (const marker of [
   'function renderFontChoices()', 'function bindSliderStyle(', 'function startCanvasDrag(',
-  'function setLayersExpanded(', 'function setMoveMode(', 'prefers-reduced-motion:reduce'
+  'function setLayersExpanded(', 'function setMoveMode(', 'prefers-reduced-motion:reduce',
+  'async function handlePhotoUpload(', '/api/cloudinary/signature?resource_type=image',
+  'Save Draft, then Publish'
 ]) {
   if (!visualJs.includes(marker)) throw new Error('Visual Builder guided interaction is missing: ' + marker);
 }
@@ -35,6 +38,10 @@ for (const page of pages) {
   if (!html.includes('id="page-' + page + '"')) throw new Error('Missing numbered Studio section: ' + page);
 }
 
+const siteCss = read('assets/css/site.css');
+for (const marker of ['transform:scale(3)!important','height:264px!important','height:216px!important']) {
+  if (!siteCss.includes(marker)) throw new Error('The Royal Hall oversized logo styling is missing: ' + marker);
+}
 const server = read('server.js');
 for (const marker of [
   'const PUBLIC_HTML_FILES = new Set(',

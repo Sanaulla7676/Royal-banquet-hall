@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Visual website builder for Royal Banquet Hall">
-<title>Royal Banquet Hall | Visual Builder</title>
-<link rel="stylesheet" href="assets/css/visual-editor.css?v=2.0">
+<meta name="description" content="The Royal Hall visual website builder">
+<title>The Royal Hall | Visual Builder</title>
+<link rel="stylesheet" href="assets/css/visual-editor.css?v=2.1">
 </head>
 <body>
 <div class="vb-login" id="vb-login">
   <form class="vb-login-card" id="vb-login-form">
     <div class="vb-login-crest"><img src="assets/images/royal-hall-crest.webp" alt=""></div>
     <div class="vb-eyebrow">SECURE ADMIN ACCESS</div>
-    <h1>Royal Visual Builder</h1>
+    <h1>The Royal Hall Visual Builder</h1>
     <p>Sign in to edit the live website safely. Your edits remain drafts until you publish them.</p>
     <label for="vb-username">Login ID</label>
     <input id="vb-username" name="username" autocomplete="username" required>
@@ -27,9 +27,9 @@
 
 <div class="vb-app" id="vb-app" hidden>
   <header class="vb-topbar">
-    <a class="vb-brand" href="visual-editor.html" aria-label="Royal Banquet Hall Visual Builder">
-      <img src="assets/images/royal-hall-crest.webp" alt="">
-      <span><strong>ROYAL <i>BANQUET HALL</i></strong><small>VISUAL BUILDER</small></span>
+    <a class="vb-brand" href="visual-editor.html" aria-label="The Royal Hall Visual Builder">
+      <img src="assets/images/royal-hall-crest.webp" alt="The Royal Hall crest">
+      <span><strong>THE ROYAL HALL</strong><small>VISUAL BUILDER</small></span>
     </a>
     <nav class="vb-main-nav" aria-label="Editor tools">
       <span class="vb-nav-active"><span>◈</span> Visual Editor</span>
@@ -138,6 +138,11 @@
             <label class="vb-field" id="vb-text-row"><span>Text</span><textarea id="vb-text" rows="3" placeholder="Select a text element"></textarea></label>
             <label class="vb-field" id="vb-href-row"><span>Link destination</span><input id="vb-href" type="text" placeholder="/booking.html or https://…"></label>
             <label class="vb-field" id="vb-src-row"><span>Image / video URL</span><input id="vb-src" type="text" placeholder="Select an image or video"></label>
+            <div class="vb-upload-tools" id="vb-upload-row" hidden>
+              <input id="vb-photo-upload" type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
+              <button class="vb-btn vb-btn-outline" id="vb-photo-upload-button" type="button"><span aria-hidden="true">↑</span> Upload new photo</button>
+              <span class="vb-upload-status" id="vb-photo-upload-status" role="status" aria-live="polite">JPG, PNG, WebP or GIF · max 15 MB</span>
+            </div>
             <label class="vb-field" id="vb-alt-row"><span>Alternative text</span><input id="vb-alt" type="text" placeholder="Describe the image"></label>
             <label class="vb-field" id="vb-target-row"><span>Link opens</span><select id="vb-target"><option value="_self">Same tab</option><option value="_blank">New tab</option></select></label>
             <label class="vb-check vb-field-check" id="vb-hidden-row"><input type="checkbox" id="vb-hidden"> Hide this element on this page</label>
@@ -247,6 +252,6 @@
     </div>
   </div>
 </div>
-<script src="assets/js/visual-editor.js?v=2.0"></script>
+<script src="assets/js/visual-editor.js?v=2.1"></script>
 </body>
 </html>
